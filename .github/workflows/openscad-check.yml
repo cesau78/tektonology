@@ -18,10 +18,18 @@ jobs:
 
       - name: Verify Upper Boot Logic
         run: |
-          openscad -o check_upper.stl kneeler-boots-v2/kneeler_v2_logic.scad \
+          openscad -o check_upper.stl kneeler-boots-v2/kneeler-boot-logic.scad \
           -D 'upper_boot_pla();'
 
       - name: Verify Floor Pad Logic
         run: |
-          openscad -o check_pad.stl kneeler-boots-v2/kneeler_v2_logic.scad \
+          openscad -o check_pad.stl kneeler-boots-v2/kneeler-boot-logic.scad \
           -D 'floor_pad_tpu();'
+      
+      - name: Upload STLs
+        uses: actions/upload-artifact@v4
+        with:
+           name: kneeler-v2-stls
+           path: |
+             check_upper.stl
+             check_pad.stl
