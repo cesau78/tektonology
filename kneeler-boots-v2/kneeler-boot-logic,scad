@@ -8,7 +8,7 @@ lip_h = 12.7;
 wall = 3.5;
 sole = 6.0;   
 wedge_d = 5.0; 
-tolerance = 0.2; 
+tolerance = 0.2; // Increase to 0.3, then 0.4 if the TPU pad won't press into the PLA shell.
 
 $fn = 64;
 
