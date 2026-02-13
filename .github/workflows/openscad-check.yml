@@ -1,0 +1,27 @@
+name: Tektonology Code Validator
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  validate-scad:
+    runs-on: ubuntu-latest
+    container:
+      image: openscad/openscad:latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Verify Upper Boot Logic
+        run: |
+          openscad -o check_upper.stl kneeler-boots-v2/kneeler_v2_logic.scad \
+          -D 'upper_boot_pla();'
+
+      - name: Verify Floor Pad Logic
+        run: |
+          openscad -o check_pad.stl kneeler-boots-v2/kneeler_v2_logic.scad \
+          -D 'floor_pad_tpu();'
