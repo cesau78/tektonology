@@ -1,4 +1,3 @@
-
 // --- TEKTONOLOGY V2: WEDGE-LOCK SYSTEM ---
 // Material 1 (Upper): Polymaker PLA Pro (Rigid)
 // Material 2 (Pad): TPU 90A (Flexible)
