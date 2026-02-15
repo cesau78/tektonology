@@ -7,7 +7,7 @@ r = 2.0;
 $fn = 64; 
 
 // Converted target depths
-top_target_depth = 6.35;    // 1/4 inch
+top_target_depth = 3.175;    // 1/8 inch
 bottom_target_depth = 12.7; // 1/2 inch
 
 module kneeler_boot_socket() {
