@@ -1,9 +1,9 @@
 // --- TEKTONOLOGY KNEELER BOOT FOOT: 7-RIB INSERT ---
 
-leg_l = 48.0; 
-leg_w = 16.3;
-half_h = 19.05; // 3/4 inch
-tightness = 0.1; // Adjust this: 0.0 for snug, 0.2 for very tight
+leg_l = 33.0;
+leg_w = 19.0;
+half_h = 12.7; // 1/2 inch
+tightness = 0.2; // Adjust this: 0.0 for snug, 0.2 for very tight
 $fn = 64;
 
 ribs = 7; 

@@ -1,14 +1,12 @@
 // --- TEKTONOLOGY KNEELER BOOT SOCKET ---
-leg_l = 48.0;
-leg_w = 16.3;
-wall = 3.5;
-total_h = 25.4; // 1 inch
-r = 2.0;
-$fn = 64; 
-
-// Converted target depths
+leg_l = 33.0;
+leg_w = 19.0;
+wall = 6.0; // Thickness of the outer shell
 top_target_depth = 3.175;    // 1/8 inch
-bottom_target_depth = 12.7; // 1/2 inch
+bottom_target_depth = 6.35; // 1/4 inch
+total_h = top_target_depth + bottom_target_depth + wall;
+r = 3.0;
+$fn = 64; 
 
 module kneeler_boot_socket() {
     difference() {
