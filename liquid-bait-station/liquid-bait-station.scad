@@ -3,7 +3,7 @@ wall = 3;
 tardis_dia = 120;
 core_dia = 45;
 base_height = 40;
-bottle_id = 29;
+bottle_id = 24;
 tube_od = 10;
 tube_id = 6;
 tilt_angle = 30;
@@ -14,7 +14,7 @@ inner_well_dia = bottle_id + 4;
 // Standardized PCO 1881 Thread Profile
 thread_pitch = 3; 
 thread_depth = 3; // Slightly deeper for better grip
-thread_turns = 5;
+thread_turns = 7;
 
 // Geometry Calculations
 arm_length = (tardis_dia / 2) - (core_dia / 2) + 20;
