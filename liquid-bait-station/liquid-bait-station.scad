@@ -11,7 +11,7 @@ tilt_angle = 30;
 port_height = wall + (tube_id / 2);
 inner_well_dia = bottle_id + 4;
 
-size = 0; //small 0, medium 10, large 20
+size = 0; //compact: 0, stndard: 10, large: 20
 
 // Standardized PCO 1881 Thread Profile
 thread_pitch = 3; 
