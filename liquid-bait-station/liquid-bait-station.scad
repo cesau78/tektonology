@@ -140,26 +140,45 @@ module connecting_struts() {
 }
 module lower_tardis() {
     difference() {
-        // Outer Body
-        translate([0, 0, lower_z])
-        rotate_extrude() translate([tip_r, 0, 0]) circle(d=tube_od);
+        union() {
+            difference() {
+                // Outer Body
+                translate([0, 0, lower_z])
+                rotate_extrude() translate([tip_r, 0, 0]) circle(d=tube_od);
 
-        // Hollow Inner Path
-        translate([0, 0, lower_z])
-        rotate_extrude() translate([tip_r, 0, 0]) circle(d=tube_id);
+                // Hollow Inner Path
+                translate([0, 0, lower_z])
+                rotate_extrude() translate([tip_r, 0, 0]) circle(d=tube_id);
 
-        // Holes for vertical connectors
-         for (a = [30 : 60 : 359]) {
-            rotate([0, 0, a]) translate([tip_r, 0, lower_z]) // Start at center of tube
-                cylinder(h=tube_od, d=tube_id + 0.2); // Cut upwards only
+                // Holes for vertical connectors
+                 for (a = [30 : 60 : 359]) {
+                    rotate([0, 0, a]) translate([tip_r, 0, lower_z]) // Start at center of tube
+                        cylinder(h=tube_od, d=tube_id + 0.2); // Cut upwards only
+                }
+                
+                // entrance holes
+                for (a = [15 : 60 : 359]) {
+                    rotate([0, 0, a])
+                    translate([tip_r, 0, lower_z])
+                    rotate([0, 90, 0]) // Rotate to face outward perpendicular to the ring
+                        cylinder(h=tube_od + 1, d=tube_id + 0.2, center=true);
+                }
+            }
+            
+            //Spheres to fill the entrance holes (Backstops)
+            for (a = [18 : 60 : 359]) {
+                rotate([0, 0, a])
+                translate([tip_r, 0, lower_z])
+                    sphere(d=tube_id + 2);
+            }
         }
         
-        // entrance holes
+        // entrance holes (again!)
         for (a = [15 : 60 : 359]) {
             rotate([0, 0, a])
             translate([tip_r, 0, lower_z])
             rotate([0, 90, 0]) // Rotate to face outward perpendicular to the ring
-                cylinder(h=tube_od, d=tube_id + 0.2, center=true);
+                cylinder(h=tube_od + 1, d=tube_id + 0.2, center=true);
         }
     }
 }
