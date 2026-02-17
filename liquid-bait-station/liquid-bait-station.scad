@@ -11,13 +11,15 @@ tilt_angle = 30;
 port_height = wall + (tube_id / 2);
 inner_well_dia = bottle_id + 4;
 
+size = 0; //small 0, medium 10, large 20
+
 // Standardized PCO 1881 Thread Profile
 thread_pitch = 3; 
 thread_depth = 3; // Slightly deeper for better grip
 thread_turns = 7;
 
 // Geometry Calculations
-arm_length = (tardis_dia / 2) - (core_dia / 2) + 20;
+arm_length = (tardis_dia / 2) - (core_dia / 2) + size;
 upper_z = (port_height) + (arm_length + core_dia/2) * sin(tilt_angle);
 tip_r = (arm_length + core_dia/2) * cos(tilt_angle);
 lower_z = (tube_od / 2);
@@ -27,7 +29,6 @@ union() {
     for (a = [0 : 60 : 359]) {
         rotate([0, 0, a]) tube_arm();
     }
-    //tardis_ring();
     upper_tardis();
     lower_tardis();
     connecting_struts();
@@ -68,14 +69,14 @@ module tube_arm() {
     // Calculate the length based on your tardis_dia and core_dia 
 
     // Move to the tower face and tilt up 
-    translate([5, 0, 30 + port_height])
+    translate([5, 0, 29 + port_height])
     rotate([0, 90 - tilt_angle, 0])
     translate([core_dia / 2, 0, 0])
     
     // Using a single difference here creates the hollow straw effect
     difference() {
         // Main outer cylinder of the arm 
-        cylinder(h=arm_length, d=tube_od);
+        cylinder(h=arm_length + 3, d=tube_od);
         
         // Internal path (The Straw Hole) 
         // We start the cut slightly before the arm starts (-5) 
@@ -89,7 +90,7 @@ module tube_arm() {
 module upper_tardis() {
     difference() {
         // 1. The Main Ring
-        translate([0, 0, upper_z])
+        translate([0, 0, upper_z ])
         rotate_extrude()
         translate([tip_r, 0, 0])
         difference() {
