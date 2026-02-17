@@ -155,7 +155,7 @@ module lower_tardis() {
         }
         
         // entrance holes
-        for (a = [0 : 60 : 359]) {
+        for (a = [15 : 60 : 359]) {
             rotate([0, 0, a])
             translate([tip_r, 0, lower_z])
             rotate([0, 90, 0]) // Rotate to face outward perpendicular to the ring
