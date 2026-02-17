@@ -20,7 +20,7 @@ thread_turns = 7;
 arm_length = (tardis_dia / 2) - (core_dia / 2) + 20;
 upper_z = (port_height) + (arm_length + core_dia/2) * sin(tilt_angle);
 tip_r = (arm_length + core_dia/2) * cos(tilt_angle);
-lower_z = wall + (tube_od / 2);
+lower_z = (tube_od / 2);
 
 union() {
     central_tower();
