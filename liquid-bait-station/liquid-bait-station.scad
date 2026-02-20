@@ -1,9 +1,9 @@
 $fn = 64;
 wall = 3;
 tardis_dia = 120;
-core_dia = 45;
+core_dia = 30;
 base_height = 40;
-bottle_id = 24;
+bottle_id = 20;
 tube_od = 10;
 tube_id = 6;
 tilt_angle = 30;
@@ -69,14 +69,14 @@ module tube_arm() {
     // Calculate the length based on your tardis_dia and core_dia 
 
     // Move to the tower face and tilt up 
-    translate([5, 0, 29 + port_height])
+    translate([5, 0, port_height  + 20])
     rotate([0, 90 - tilt_angle, 0])
     translate([core_dia / 2, 0, 0])
     
     // Using a single difference here creates the hollow straw effect
     difference() {
         // Main outer cylinder of the arm 
-        cylinder(h=arm_length + 3, d=tube_od);
+        cylinder(h=arm_length, d=tube_od);
         
         // Internal path (The Straw Hole) 
         // We start the cut slightly before the arm starts (-5) 
