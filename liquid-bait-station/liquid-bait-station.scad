@@ -1,6 +1,6 @@
 $fn = 64;
 wall = 3;
-tardis_dia = 120;
+torus_dia = 120;
 core_dia = 30;
 base_height = 40;
 bottle_id = 20;
@@ -19,7 +19,7 @@ thread_depth = 3; // Slightly deeper for better grip
 thread_turns = 7;
 
 // Geometry Calculations
-arm_length = (tardis_dia / 2) - (core_dia / 2) + size;
+arm_length = (torus_dia / 2) - (core_dia / 2) + size;
 upper_z = (port_height) + (arm_length + core_dia/2) * sin(tilt_angle);
 tip_r = (arm_length + core_dia/2) * cos(tilt_angle);
 lower_z = (tube_od / 2);
@@ -29,8 +29,8 @@ union() {
     for (a = [0 : 60 : 359]) {
         rotate([0, 0, a]) tube_arm();
     }
-    upper_tardis();
-    lower_tardis();
+    upper_torus();
+    lower_torus();
     connecting_struts();
 }
 
@@ -66,7 +66,7 @@ module central_tower() {
     }
 }
 module tube_arm() {
-    // Calculate the length based on your tardis_dia and core_dia 
+    // Calculate the length based on your torus_dia and core_dia 
 
     // Move to the tower face and tilt up 
     translate([5, 0, port_height  + 20])
@@ -87,7 +87,7 @@ module tube_arm() {
 }
 
 
-module upper_tardis() {
+module upper_torus() {
     difference() {
         // 1. The Main Ring
         translate([0, 0, upper_z ])
@@ -138,7 +138,7 @@ module connecting_struts() {
         }
     }
 }
-module lower_tardis() {
+module lower_torus() {
     difference() {
         union() {
             difference() {
