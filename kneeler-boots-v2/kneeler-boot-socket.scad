@@ -1,6 +1,6 @@
 // --- TEKTONOLOGY KNEELER BOOT SOCKET ---
-leg_l = 48.0;
-leg_w = 19.0;
+leg_l = 51.5;
+leg_w = 18.5;
 wall = 4.0; // Thickness of the outer shell
 top_target_depth = 3.175;    // 1/8 inch
 bottom_target_depth = 6.35; // 1/4 inch

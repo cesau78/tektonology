@@ -1,7 +1,6 @@
 // --- TEKTONOLOGY KNEELER BOOT FOOT: 7-RIB INSERT ---
-
-leg_l = 48.0;
-leg_w = 19.0;
+leg_l = 51.5;
+leg_w = 18.5;
 socket_depth = 6.5; //depth of the socket to slip into
 core_protrusion = 2; //core extension beyond the socket
 
