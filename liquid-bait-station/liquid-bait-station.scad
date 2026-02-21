@@ -1,24 +1,19 @@
-preview = true;
+// Liquid Bait Station OpenSCAD Model
+
+//Performance Settings
+preview = false; //set preview=true for faster rendering with lower detail, or false for full detail.
+crosssection_view = false; // Set to true to cut the model along a plane and show only one side
+crosssection_axis = "y"; // axis: 'x', 'y', or 'z'
+crosssection_pos = 55; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
+
 $fn = preview ?  32 : 64;
 
-
-// Cross-section viewer
-// Set to true to cut the model along a plane and show only one side
-crosssection_view = false;
-// axis: 'x', 'y', or 'z'
-crosssection_axis = "z";
-// position (mm) along the chosen axis where the cut occurs (default 0 = origin)
-crosssection_pos =4.5;
-
-
-
 wall = 2;
-// Max torus diameter (inches) - set to 4 inches as requested
-torus_max_in = 4; // inches
+torus_max_in = 4; // Max torus diameter (inches)
 torus_dia = torus_max_in * 25.4; // convert inches to mm (4 in = 101.6 mm)
 core_dia = 30;
 base_height = 40;
-reservoir_id = 24; //standard plastic bottle od
+reservoir_id = 24; //24 = standard plastic bottle od
 tube_od = 10;
 tube_id = 6;
 tilt_angle = 30;
@@ -46,12 +41,12 @@ upper_backstop_offset = tube_id; // small tuned offset for backstops
 upper_z = wall + base_height - (tube_od / 2); // center height of torus ring so top aligns
 
 // Compute arm_length so that the slanted arm reaches the torus center at upper_z
-arm_length = (abs(sin(tilt_angle)) < 0.0001) ? ((torus_dia / 2) - (core_dia / 2) + size) : (((upper_z - port_height) / sin(tilt_angle)) - core_dia/2);
+arm_length = (abs(sin(tilt_angle)) < 0.0001) ? ((torus_dia / 2) - (core_dia / 2) + size) : (((upper_z - port_height) / sin(tilt_angle)) - core_dia/2 + 0.5);
 
 // radial tip radius (horizontal projection)
 tip_r = (arm_length + core_dia/2) * cos(tilt_angle);
 
-lower_z = (tube_od / 2);
+lower_z = (tube_od / 2) + 1; // slightly higher to keep off the bottom plate
 
 // Top-level staged assembly following your requested order:
 // 1) build all solids (union)
