@@ -5,10 +5,12 @@ on:
     branches: [ "main" ]
     paths:
       - 'kneeler-boots-v3/**'
+      - '.github/workflows/kneeler-boot-v3-validation.yml'
   pull_request:
     branches: [ "main" ]
     paths:
       - 'kneeler-boots-v3/**'
+      - '.github/workflows/kneeler-boot-v3-validation.yml'
 
 jobs:
   validate-scad:
