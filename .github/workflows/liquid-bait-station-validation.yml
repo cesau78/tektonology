@@ -23,10 +23,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Verify Coupler
+        # Ensure preview and cross-section overrides are applied so CI renders full model
+        env:
+          PREVIEW: 'false'
+          CROSSSECTION_VIEW: 'false'
         run: |
           # render the model into a known path so the upload step can find it
           openscad -o liquid-bait-station/liquid-bait-station.stl liquid-bait-station/liquid-bait-station.scad \
-          -D 'liquid_bait_station();'
+            -D "preview=$PREVIEW" -D "crosssection_view=$CROSSSECTION_VIEW" \
+            -D 'liquid_bait_station();'
 
       - name: Upload STLs
         uses: actions/upload-artifact@v4
@@ -34,4 +39,19 @@ jobs:
           name: liquid-bait-station-stls
           path: |
             liquid-bait-station/*.stl
+            
+      - name: Commit generated STL back to repo
+        # Commit the generated STL back to the repo so it overwrites the existing file.
+        # The commit message includes [skip ci] so this push does not retrigger workflows.
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add liquid-bait-station/liquid-bait-station.stl || true
+          # Commit only if there are staged changes
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update generated STL [skip ci]"
+            git push origin HEAD:${{ github.ref_name }}
+          fi
 
