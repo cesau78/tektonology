@@ -1,0 +1,34 @@
+name: Liquid Bait Station Validation
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'liquid-bait-station/**'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'liquid-bait-station/**'
+
+jobs:
+  validate-scad:
+    runs-on: ubuntu-latest
+    container:
+      image: openscad/openscad:latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Verify Coupler
+        run: |
+          openscad -o check_upper.stl liquid-bait-station/liquid-bait-station-coupler.scad \
+          -D 'liquid_bait_station();'
+
+      - name: Upload STLs
+        uses: actions/upload-artifact@v4
+        with:
+           name: liquid-bait-station-v2
+           path: |
+             liquid-bait-station.stl
+

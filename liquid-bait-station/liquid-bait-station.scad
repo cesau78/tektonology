@@ -24,7 +24,8 @@ upper_z = (port_height) + (arm_length + core_dia/2) * sin(tilt_angle);
 tip_r = (arm_length + core_dia/2) * cos(tilt_angle);
 lower_z = (tube_od / 2);
 
-union() {
+module liquid_bait_station() {
+    union() {
     central_tower();
     for (a = [0 : 60 : 359]) {
         rotate([0, 0, a]) tube_arm();
@@ -33,6 +34,8 @@ union() {
     lower_torus();
     connecting_struts();
 }
+}
+
 
 module central_tower() {
     difference() {
@@ -182,3 +185,4 @@ module lower_torus() {
         }
     }
 }
+liquid_bait_station();
