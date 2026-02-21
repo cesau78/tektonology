@@ -10,7 +10,7 @@ $fn = 64;
 ribs = 7; 
 radius = socket_depth / 2; // Radius of semi-cylinders
 
-module internal_tpu_insert() {
+module kneeler_boot_insert() {
     core_depth = socket_depth + core_protrusion; //thickness of main body
     insert_l = leg_l + tightness;
     insert_w = leg_w + tightness;
@@ -44,4 +44,4 @@ module internal_tpu_insert() {
     }
 }
 
-internal_tpu_insert();
+kneeler_boot_insert();
