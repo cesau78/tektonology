@@ -24,13 +24,14 @@ jobs:
 
       - name: Verify Coupler
         run: |
-          openscad -o check_upper.stl liquid-bait-station/liquid-bait-station.scad \
+          # render the model into a known path so the upload step can find it
+          openscad -o liquid-bait-station/liquid-bait-station.stl liquid-bait-station/liquid-bait-station.scad \
           -D 'liquid_bait_station();'
 
       - name: Upload STLs
         uses: actions/upload-artifact@v4
         with:
-           name: liquid-bait-station-v2
-           path: |
-             liquid-bait-station.stl
+          name: liquid-bait-station-stls
+          path: |
+            liquid-bait-station/*.stl
 

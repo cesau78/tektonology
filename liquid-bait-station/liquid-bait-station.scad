@@ -1,5 +1,6 @@
-preview = false;
+preview = true;
 $fn = preview ?  32 : 64;
+
 
 // Cross-section viewer
 // Set to true to cut the model along a plane and show only one side
@@ -125,160 +126,188 @@ module central_tower() {
 }
 
 module central_tower_solid() {
-    // Outer Tower Body
-    cylinder(h=base_height, d=core_dia);
+    render_if_needed() {
+        // Outer Tower Body
+        cylinder(h=base_height, d=core_dia);
+    }
 }
 
 module central_tower_cutouts() {
-    // Reservoir Well (cut from outer tower)
-    translate([0, 0, wall])
-        cylinder(h=base_height, d=reservoir_id);
+    render_if_needed() {
+        // Reservoir Well (cut from outer tower)
+        translate([0, 0, wall])
+            cylinder(h=base_height, d=reservoir_id);
 
     // Bottle Neck (cut)
     translate([0, 0, 15])
         cylinder(h=base_height + 1, d=reservoir_id);
 
-    // Internal Threads: a series of small cuts that form a spiral thread
-    for (i = [0 : 5 : 360 * thread_turns]) {
-        rotate([0, 0, i])
-        translate([reservoir_id/2, 0, base_height- 1.5 - ((i/360) * thread_pitch)]) {
-            rotate([45, 0, 0]) 
-                cube([thread_depth * 2, 1.5, 1.5], center=true);
+        // Internal Threads: a series of small cuts that form a spiral thread
+        for (i = [0 : 5 : 360 * thread_turns]) {
+            rotate([0, 0, i])
+            translate([reservoir_id/2, 0, base_height- 1.5 - ((i/360) * thread_pitch)]) {
+                rotate([45, 0, 0]) 
+                    cube([thread_depth * 2, 1.5, 1.5], center=true);
+            }
         }
-    }
 
-    // Port Holes for the Arms
-    for (a = [0 : arm_step : 359]) {
-            rotate([0, 0, a])
-            translate([0, 0, port_height]) 
-                rotate([0, 90 - tilt_angle, 0]) 
-                    cylinder(h=core_dia, d=tube_id);
+        // Port Holes for the Arms
+        for (a = [0 : arm_step : 359]) {
+                rotate([0, 0, a])
+                translate([0, 0, port_height]) 
+                    rotate([0, 90 - tilt_angle, 0]) 
+                        cylinder(h=core_dia, d=tube_id);
+        }
     }
 }
 
 module tube_arm_solid() {
-    // Move to the tower face and tilt up (outer cylinder only)
-    for (a = [0 : arm_step : 359]) rotate([0,0,a]) {
-        translate([5, 0, port_height + 20])
-        rotate([0, 90 - tilt_angle, 0])
-        translate([core_dia / 2, 0, 0])
-            cylinder(h=arm_length - (tube_od / 3) + 3, d=tube_od);
+    render_if_needed() {
+        // Move to the tower face and tilt up (outer cylinder only)
+        for (a = [0 : arm_step : 359]) rotate([0,0,a]) {
+            translate([5, 0, port_height + 20])
+            rotate([0, 90 - tilt_angle, 0])
+            translate([core_dia / 2, 0, 0])
+                cylinder(h=arm_length - (tube_od / 3) + 3, d=tube_od);
+        }
     }
 }
 
 module tube_arm_cutouts() {
-    // Internal path (The Straw Hole) - cut
-    for (a = [0 : arm_step : 359]) rotate([0,0,a]) {
-            translate([5, 0, port_height + 20])
-        rotate([0, 90 - tilt_angle, 0])
-        translate([core_dia / 2, 0, 0])
-            translate([0, 0, -5]) 
-                cylinder(h=arm_length - (tube_od / 3) + 7, d=tube_id);
+    render_if_needed() {
+        // Internal path (The Straw Hole) - cut
+        for (a = [0 : arm_step : 359]) rotate([0,0,a]) {
+                translate([5, 0, port_height + 20])
+            rotate([0, 90 - tilt_angle, 0])
+            translate([core_dia / 2, 0, 0])
+                translate([0, 0, -5]) 
+                    cylinder(h=arm_length - (tube_od / 3) + 7, d=tube_id);
+        }
     }
 }
 
 module upper_torus_solid() {
-    // Solid outer ring
-    translate([0, 0, upper_z ])
-        rotate_extrude()
-            translate([tip_r, 0, 0])
-                circle(d=tube_od);
+    render_if_needed() {
+        // Solid outer ring
+        translate([0, 0, upper_z ])
+            rotate_extrude()
+                translate([tip_r, 0, 0])
+                    circle(d=tube_od);
+    }
 }
 
 module upper_torus_cutouts() {
-    // Hollow inner path
-    translate([0, 0, upper_z ])
-        rotate_extrude()
-            translate([tip_r, 0, 0])
-                circle(d=tube_id);
+    render_if_needed() {
+        // Hollow inner path
+        translate([0, 0, upper_z ])
+            rotate_extrude()
+                translate([tip_r, 0, 0])
+                    circle(d=tube_id);
 
-    // ONE-WAY ARM ENTRANCE HOLES (these are internal arm-to-ring cuts)
-    for (a = [0 : arm_step : 359]) {
-        rotate([0, 0, a])
-        translate([5, 0, 30 + port_height]) 
-        rotate([0, 90 - tilt_angle, 0])
-        translate([core_dia / 2, 0, 0])
-            // cut only deep enough to reach the center of the ring path.
-            translate([0, 0, arm_length - 5]) 
-                cylinder(h=10, d=tube_id + 0.2);
-    }
+        // ONE-WAY ARM ENTRANCE HOLES (these are internal arm-to-ring cuts)
+        for (a = [0 : arm_step : 359]) {
+            rotate([0, 0, a])
+            translate([5, 0, 30 + port_height]) 
+            rotate([0, 90 - tilt_angle, 0])
+            translate([core_dia / 2, 0, 0])
+                // cut only deep enough to reach the center of the ring path.
+                translate([0, 0, arm_length - 5]) 
+                    cylinder(h=10, d=tube_id + 0.2);
+        }
 
-    // ONE-WAY EXIT HOLES (Downward only)
-    for (a = [strut_offset : arm_step : 359]) {
-        rotate([0, 0, a])
-        translate([tip_r, 0, upper_z]) 
-            rotate([180, 0, 0]) 
-                cylinder(h=tube_od/2 + 1, d=tube_id + 0.2);
+        // ONE-WAY EXIT HOLES (Downward only)
+        for (a = [strut_offset : arm_step : 359]) {
+            rotate([0, 0, a])
+            translate([tip_r, 0, upper_z]) 
+                rotate([180, 0, 0]) 
+                    cylinder(h=tube_od/2 + 1, d=tube_id + 0.2);
+        }
     }
 }
 
 module connecting_struts_solid() {
-    for (a = [strut_offset : arm_step : 359]) { // Offset by half-step to be halfway between arms
-        rotate([0, 0, a])
-        translate([tip_r, 0, lower_z])
-            // Main vertical strut body
-            cylinder(h = upper_z - lower_z, d = tube_od);
+    render_if_needed() {
+        for (a = [strut_offset : arm_step : 359]) { // Offset by half-step to be halfway between arms
+            rotate([0, 0, a])
+            translate([tip_r, 0, lower_z])
+                // Main vertical strut body
+                cylinder(h = upper_z - lower_z, d = tube_od);
+        }
     }
 }
 
 module connecting_struts_cutouts() {
-    for (a = [strut_offset : arm_step : 359]) {
-        rotate([0, 0, a])
-        translate([tip_r, 0, lower_z])
-            // Internal path (The Hole) - cut
-            translate([0, 0, -1])
-                cylinder(h = (upper_z - lower_z) + 2, d = tube_id);
+    render_if_needed() {
+        for (a = [strut_offset : arm_step : 359]) {
+            rotate([0, 0, a])
+            translate([tip_r, 0, lower_z])
+                // Internal path (The Hole) - cut
+                translate([0, 0, -1])
+                    cylinder(h = (upper_z - lower_z) + 2, d = tube_id);
+        }
     }
 }
 
 module lower_torus_solid() {
-    // Solid outer torus
-    translate([0, 0, lower_z])
-        rotate_extrude() translate([tip_r, 0, 0]) circle(d=tube_od);
+    render_if_needed() {
+        // Solid outer torus
+        translate([0, 0, lower_z])
+            rotate_extrude() translate([tip_r, 0, 0]) circle(d=tube_od);
+    }
 }
 
 module lower_torus_cutouts() {
-    // Hollow Inner Path (cut)
-    translate([0, 0, lower_z])
-        rotate_extrude() translate([tip_r, 0, 0]) circle(d=tube_id);
+    render_if_needed() {
+        // Hollow Inner Path (cut)
+        translate([0, 0, lower_z])
+            rotate_extrude() translate([tip_r, 0, 0]) circle(d=tube_id);
 
-    // Holes for vertical connectors (cut)
-    for (a = [strut_offset : arm_step : 359]) {
-        rotate([0, 0, a]) translate([tip_r, 0, lower_z]) // Start at center of tube
-            cylinder(h=tube_od, d=tube_id + 0.2); // Cut upwards only
+        // Holes for vertical connectors (cut)
+        for (a = [strut_offset : arm_step : 359]) {
+            rotate([0, 0, a]) translate([tip_r, 0, lower_z]) // Start at center of tube
+                cylinder(h=tube_od, d=tube_id + 0.2); // Cut upwards only
+        }
     }
 }
 
 module upper_backstops_solid() {
-    // Spheres placed inside the lower torus as backstops
-    for (a = [upper_backstop_offset : arm_step : 359]) {
-        rotate([0, 0, a])
-        translate([tip_r, 0, upper_z])
-            sphere(d=tube_id + 2);
+    render_if_needed() {
+        // Spheres placed inside the lower torus as backstops
+        for (a = [upper_backstop_offset : arm_step : 359]) {
+            rotate([0, 0, a])
+            translate([tip_r, 0, upper_z])
+                sphere(d=tube_id + 2);
+        }
     }
 }
 module upper_backstops_cutouts() {
-    // Spheres placed inside the lower torus as backstops
-    for (a = [2 : arm_step : 359]) {
-        rotate([0, 0, a])
-        translate([tip_r, 0, upper_z])
-            sphere(d=tube_id);
+    render_if_needed() {
+        // Spheres placed inside the lower torus as backstops
+        for (a = [2 : arm_step : 359]) {
+            rotate([0, 0, a])
+            translate([tip_r, 0, upper_z])
+                sphere(d=tube_id);
+        }
     }
 }
 module lower_backstops_solid() {
-    // Spheres placed inside the lower torus as backstops
-    for (a = [lower_backstop_offset : arm_step : 359]) {
-        rotate([0, 0, a])
-        translate([tip_r, 0, lower_z])
-            sphere(d=tube_id + 2);
+    render_if_needed() {
+        // Spheres placed inside the lower torus as backstops
+        for (a = [lower_backstop_offset : arm_step : 359]) {
+            rotate([0, 0, a])
+            translate([tip_r, 0, lower_z])
+                sphere(d=tube_id + 2);
+        }
     }
 }
 module lower_backstops_cutouts() {
-    // Spheres placed inside the lower torus as backstops
-    for (a = [entrance_offset : arm_step : 359]) {
-        rotate([0, 0, a])
-        translate([tip_r, 0, lower_z])
-            sphere(d=tube_id);
+    render_if_needed() {
+        // Spheres placed inside the lower torus as backstops
+        for (a = [entrance_offset : arm_step : 359]) {
+            rotate([0, 0, a])
+            translate([tip_r, 0, lower_z])
+                sphere(d=tube_id);
+        }
     }
 }
 
@@ -313,4 +342,13 @@ if (!crosssection_view) {
             translate([-half_space, -half_space, crosssection_pos])
                 cube([half_space*2, half_space*2, half_space*2]);
     }
+}
+
+// Helper: conditionally wrap children() with render() when not in preview mode.
+// Use this to avoid duplicate code while ensuring expensive geometry is pre-tessellated.
+module render_if_needed() {
+    if (!preview)
+        render() children();
+    else
+        children();
 }
