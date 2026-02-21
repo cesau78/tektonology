@@ -3,20 +3,20 @@ wall = 3;
 torus_dia = 120;
 core_dia = 30;
 base_height = 40;
-bottle_id = 20;
+reservoir_id = 24; //standard plastic bottle od
 tube_od = 10;
 tube_id = 6;
 tilt_angle = 30;
 
 port_height = wall + (tube_id / 2);
-inner_well_dia = bottle_id + 4;
+//inner_well_dia = bottle_id + 4;
 
 size = 0; //compact: 0, stndard: 10, large: 20
 
 // Standardized PCO 1881 Thread Profile
 thread_pitch = 3; 
-thread_depth = 3; // Slightly deeper for better grip
-thread_turns = 7;
+thread_depth = 1; // Slightly deeper for better grip
+thread_turns = 5;
 
 // Geometry Calculations
 arm_length = (torus_dia / 2) - (core_dia / 2) + size;
@@ -41,16 +41,16 @@ module central_tower() {
         
         // Reservoir Well
         translate([0, 0, wall]) 
-            cylinder(h=base_height, d=inner_well_dia);
+            cylinder(h=base_height, d=reservoir_id);
         
         // Bottle Neck
         translate([0, 0, 15]) 
-            cylinder(h=base_height + 1, d=bottle_id);
+            cylinder(h=base_height + 1, d=reservoir_id);
         
         // Internal Threads: a series of small cuts that form a spiral thread
         for (i = [0 : 5 : 360 * thread_turns]) {
             rotate([0, 0, i])
-            translate([bottle_id/2, 0, 18 + (i/360) * thread_pitch]) {
+            translate([reservoir_id/2, 0, base_height- 1.5 - ((i/360) * thread_pitch)]) {
                 rotate([45, 0, 0]) 
                     cube([thread_depth * 2, 1.5, 1.5], center=true);
             }
