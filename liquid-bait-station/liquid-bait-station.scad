@@ -1,22 +1,22 @@
 // Liquid Bait Station OpenSCAD Model
 
 //Performance Settings
-preview = false; //set preview=true for faster rendering with lower detail, or false for full detail.
-crosssection_view = false; // Set to true to cut the model along a plane and show only one side
-crosssection_axis = "y"; // axis: 'x', 'y', or 'z'
-crosssection_pos = 55; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
+preview = true; //set preview=true for faster rendering with lower detail, or false for full detail.
+crosssection_view = true; // Set to true to cut the model along a plane and show only one side
+crosssection_axis = "x"; // axis: 'x', 'y', or 'z'
+crosssection_pos = 5; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
 
 $fn = preview ?  32 : 64;
 
 wall = 2;
-torus_max_in = 4; // Max torus diameter (inches)
-torus_dia = torus_max_in * 25.4; // convert inches to mm (4 in = 101.6 mm)
+torus_max_in = 3.0; // Max torus diameter (inches)
+
 core_dia = 30;
 base_height = 40;
 reservoir_id = 24; //24 = standard plastic bottle od
 tube_od = 10;
 tube_id = 6;
-tilt_angle = 30;
+
 
 port_height = wall + (tube_id / 2);
 
@@ -26,7 +26,7 @@ size = 0; //compact: 0, stndard: 10, large: 20
 // Standardized PCO 1881 Thread Profile
 thread_pitch = 3; 
 thread_depth = 1; // Slightly deeper for better grip
-thread_turns = 7;
+thread_turns = 6;
 
 // Geometry Calculations
 // Number of arms and derived angular offsets
@@ -35,18 +35,28 @@ arm_step = 360 / arms;
 strut_offset = arm_step / 2; // halfway between arms
 entrance_offset = strut_offset - 10; // entrance offset (e.g., 15 deg for 6 arms)
 lower_backstop_offset = entrance_offset + 3; // small tuned offset for backstops
-upper_backstop_offset = tube_id; // small tuned offset for backstops
+upper_backstop_offset = 6; // small tuned offset for backstops
 
 // Desired top of torus aligns with top of reservoir: top = wall + base_height
 upper_z = wall + base_height - (tube_od / 2); // center height of torus ring so top aligns
 
 // Compute arm_length so that the slanted arm reaches the torus center at upper_z
-arm_length = (abs(sin(tilt_angle)) < 0.0001) ? ((torus_dia / 2) - (core_dia / 2) + size) : (((upper_z - port_height) / sin(tilt_angle)) - core_dia/2 + 0.5);
+torus_dia = torus_max_in * 25.4; // convert inches to mm (4 in = 101.6 mm)
+// horizontal distance from tower outer to torus centerline
+horizontal_run = (torus_dia / 2) - (core_dia / 2) + (tube_od / 2);
+// vertical distance from the port up to the torus centerline
+vertical_run = upper_z - port_height - (tube_od) - 1.2;
 
-// radial tip radius (horizontal projection)
-tip_r = (arm_length + core_dia/2) * cos(tilt_angle);
+// compute tilt angle so the arm points from the port up to the torus centerline
+tilt_angle = atan(vertical_run / horizontal_run);
+// compute arm length from horizontal run and tilt angle: arm_length * cos(tilt_angle) = horizontal_run
+// guard against near-90deg tilt where cos is ~0
+arm_length = (horizontal_run / cos(tilt_angle));
 
-lower_z = (tube_od / 2) + 1; // slightly higher to keep off the bottom plate
+// radial tip radius (horizontal projection) - should equal torus center radius
+tip_r = (core_dia / 2) + (arm_length * cos(tilt_angle));
+
+lower_z = (tube_od / 2); // slightly higher to keep off the bottom plate
 
 // Top-level staged assembly following your requested order:
 // 1) build all solids (union)
@@ -70,8 +80,9 @@ module liquid_bait_station() {
             difference() {
                 tube_arm_solid();
                 tube_arm_cutouts();
-                central_tower_cutouts();
                 upper_torus_cutouts();
+                central_tower_cutouts();
+                
             }
             
             // upper torus
@@ -151,7 +162,7 @@ module central_tower_cutouts() {
                 rotate([0, 0, a])
                 translate([0, 0, port_height]) 
                     rotate([0, 90 - tilt_angle, 0]) 
-                        cylinder(h=core_dia, d=tube_id);
+                        cylinder(h=20, d=tube_id);
         }
     }
 }
@@ -159,11 +170,12 @@ module central_tower_cutouts() {
 module tube_arm_solid() {
     render_if_needed() {
         // Move to the tower face and tilt up (outer cylinder only)
+        inner_extension = 5; // how much the arm extends into the tower
         for (a = [0 : arm_step : 359]) rotate([0,0,a]) {
-            translate([5, 0, port_height + 20])
-            rotate([0, 90 - tilt_angle, 0])
-            translate([core_dia / 2, 0, 0])
-                cylinder(h=arm_length - (tube_od / 3) + 3, d=tube_od);
+            translate([0, 0, port_height + 12.5])
+                rotate([0, 90 - tilt_angle, 0])
+            translate([core_dia / 2 - inner_extension, 0, 0])
+                cylinder(h=arm_length+(tube_od)+1, d=tube_od); // REMOVE -10 - testing
         }
     }
 }
@@ -171,12 +183,13 @@ module tube_arm_solid() {
 module tube_arm_cutouts() {
     render_if_needed() {
         // Internal path (The Straw Hole) - cut
+        inner_extension = 5; // how much the arm extends into the tower
         for (a = [0 : arm_step : 359]) rotate([0,0,a]) {
-                translate([5, 0, port_height + 20])
-            rotate([0, 90 - tilt_angle, 0])
-            translate([core_dia / 2, 0, 0])
+            translate([0.5, 0, port_height + 13])
+                rotate([0, 90 - tilt_angle, 0])
+            translate([core_dia / 2 - inner_extension, 0, 0])
                 translate([0, 0, -5]) 
-                    cylinder(h=arm_length - (tube_od / 3) + 7, d=tube_id);
+                    cylinder(h=arm_length + (tube_od * 1.5) , d=tube_id);
         }
     }
 }
@@ -202,12 +215,12 @@ module upper_torus_cutouts() {
         // ONE-WAY ARM ENTRANCE HOLES (these are internal arm-to-ring cuts)
         for (a = [0 : arm_step : 359]) {
             rotate([0, 0, a])
-            translate([5, 0, 30 + port_height]) 
-            rotate([0, 90 - tilt_angle, 0])
+            translate([5, 0, 28]) 
+            rotate([0, 90- tilt_angle, 0])
             translate([core_dia / 2, 0, 0])
                 // cut only deep enough to reach the center of the ring path.
-                translate([0, 0, arm_length - 5]) 
-                    cylinder(h=10, d=tube_id + 0.2);
+                translate([0, 0, arm_length - (tube_od / 2) ]) 
+                    cylinder(h=5, d=tube_id);
         }
 
         // ONE-WAY EXIT HOLES (Downward only)
@@ -325,7 +338,7 @@ if (!crosssection_view) {
     // Intersect the model with a very large half-space cube to show only one side
     intersection() {
         liquid_bait_station();
-        half_space = 2000; // large extent to fully cover the model
+        half_space = torus_dia; // large extent to fully cover the model
         // keep the positive side of the chosen axis starting at crosssection_pos
         if (crosssection_axis == "x")
             translate([crosssection_pos, -half_space, -half_space])
