@@ -22,7 +22,7 @@ jobs:
 
       - name: Verify Coupler
         run: |
-          openscad -o check_upper.stl liquid-bait-station/liquid-bait-station-coupler.scad \
+          openscad -o check_upper.stl liquid-bait-station/liquid-bait-station.scad \
           -D 'liquid_bait_station();'
 
       - name: Upload STLs
