@@ -3,8 +3,12 @@ name: Kneeler Boot v3 Validation
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'kneeler-boots-v3/**'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'kneeler-boots-v3/**'
 
 jobs:
   validate-scad:
