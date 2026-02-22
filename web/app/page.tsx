@@ -2,6 +2,8 @@ import Link from "next/link";
 import { readdirSync, readFileSync } from "fs";
 import { join } from "path";
 import type { Product } from "@/data/types";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 function getProducts(): Product[] {
   const dir = join(process.cwd(), "data", "products");
@@ -23,36 +25,36 @@ export default function HomePage() {
   const grouped = groupByCategory(products);
 
   return (
-    <main className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Tektonology</h1>
-        <p className="text-gray-500 mb-10">
-          3D-printable solutions for church and home. Select a product to view
-          print settings, assembly guides, and downloads.
+    <div>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-foreground mb-1">Products</h1>
+        <p className="text-muted-foreground text-sm">
+          Select a product to view print settings, assembly guides, and downloads.
         </p>
-
-        {Object.entries(grouped).map(([category, items]) => (
-          <section key={category} className="mb-10">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
-              {category}
-            </h2>
-            <div className="grid gap-4">
-              {items.map((product) => (
-                <Link
-                  key={product.id}
-                  href={`/products/${product.id}`}
-                  className="block bg-white rounded-xl border border-gray-200 p-6 hover:border-blue-400 hover:shadow-md transition"
-                >
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    {product.name}
-                  </h3>
-                  <p className="text-gray-500 text-sm">{product.description}</p>
-                </Link>
-              ))}
-            </div>
-          </section>
-        ))}
       </div>
-    </main>
+
+      {Object.entries(grouped).map(([category, items]) => (
+        <section key={category} className="mb-8">
+          <div className="flex items-center gap-3 mb-3">
+            <Badge className="bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-100">
+              {category}
+            </Badge>
+            <div className="flex-1 border-t border-border" />
+          </div>
+          <div className="grid gap-3">
+            {items.map((product) => (
+              <Link key={product.id} href={`/products/${product.id}`}>
+                <Card className="bg-card shadow-sm hover:shadow-md hover:border-amber-300 transition-all cursor-pointer">
+                  <CardHeader>
+                    <CardTitle className="text-base">{product.name}</CardTitle>
+                    <CardDescription>{product.description}</CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
   );
 }

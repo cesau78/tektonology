@@ -3,6 +3,10 @@ import { join } from "path";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Product, Batch } from "@/data/types";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 function camelToLabel(key: string): string {
   return key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
@@ -44,103 +48,126 @@ export default async function BatchPage({
   if (!product || !batch) notFound();
 
   return (
-    <main className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex gap-3 mb-6 text-sm">
-          <Link href="/" className="text-blue-600 hover:underline">All Products</Link>
-          <span className="text-gray-400">›</span>
-          <Link href={`/products/${productId}`} className="text-blue-600 hover:underline">{product.name}</Link>
-          <span className="text-gray-400">›</span>
-          <span className="text-gray-500">Batch {batchId}</span>
+    <div>
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+        <Link href="/" className="hover:text-foreground transition-colors">Products</Link>
+        <span>›</span>
+        <Link href={`/products/${productId}`} className="hover:text-foreground transition-colors">{product.name}</Link>
+        <span>›</span>
+        <span className="text-foreground">Batch {batchId}</span>
+      </nav>
+
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-start justify-between gap-4 mb-2">
+          <h1 className="text-2xl font-bold text-foreground">{product.name}</h1>
+          <Badge className="bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-100 shrink-0 mt-1">{product.category}</Badge>
         </div>
+        <p className="text-muted-foreground text-sm">Batch {batch.id} — printed {batch.printedDate}</p>
+      </div>
 
-        <h1 className="text-3xl font-bold text-gray-900 mb-1">{product.name}</h1>
-        <p className="text-gray-500 mb-8">Batch {batch.id} — printed {batch.printedDate}</p>
+      <Separator className="mb-6" />
 
+      <div className="grid gap-4 [&>*]:shadow-sm">
         {/* Batch Info */}
-        <section className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Batch Info</h2>
-          <dl className="space-y-3">
-            <div>
-              <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">Batch ID</dt>
-              <dd className="text-gray-800 text-sm mt-0.5">{batch.id}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">Printed</dt>
-              <dd className="text-gray-800 text-sm mt-0.5">{batch.printedDate}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">Quantity</dt>
-              <dd className="text-gray-800 text-sm mt-0.5">{batch.quantity}</dd>
-            </div>
-            {batch.notes && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Batch Info</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="space-y-3">
               <div>
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">Notes</dt>
-                <dd className="text-gray-800 text-sm mt-0.5">{batch.notes}</dd>
+                <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Batch ID</dt>
+                <dd className="text-foreground text-sm">{batch.id}</dd>
               </div>
-            )}
-          </dl>
-        </section>
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Printed</dt>
+                <dd className="text-foreground text-sm">{batch.printedDate}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Quantity</dt>
+                <dd className="text-foreground text-sm">{batch.quantity}</dd>
+              </div>
+              {batch.notes && (
+                <div>
+                  <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Notes</dt>
+                  <dd className="text-foreground text-sm">{batch.notes}</dd>
+                </div>
+              )}
+            </dl>
+          </CardContent>
+        </Card>
 
         {/* Print Settings */}
-        <section className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Print Settings</h2>
-          <dl className="space-y-3">
-            {Object.entries(product.printSettings).map(([label, value]) => (
-              <div key={label}>
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">{camelToLabel(label)}</dt>
-                <dd className="text-gray-800 text-sm mt-0.5">{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Print Settings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="space-y-3">
+              {Object.entries(product.printSettings).map(([key, value]) => (
+                <div key={key}>
+                  <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+                    {camelToLabel(key)}
+                  </dt>
+                  <dd className="text-foreground text-sm">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </CardContent>
+        </Card>
 
         {/* Assembly Guide */}
-        <section className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Assembly Guide</h2>
-          <ol className="space-y-2 list-decimal list-inside">
-            {product.assemblyGuide.map((step, i) => (
-              <li key={i} className="text-gray-700 text-sm">{step}</li>
-            ))}
-          </ol>
-        </section>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Assembly Guide</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ol className="space-y-2 list-decimal list-inside">
+              {product.assemblyGuide.map((step, i) => (
+                <li key={i} className="text-foreground text-sm">{step}</li>
+              ))}
+            </ol>
+          </CardContent>
+        </Card>
 
         {/* Downloads */}
-        <section className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Downloads</h2>
-          <div className="flex flex-wrap gap-3">
-            {product.stlDownloadUrls.map((dl) => (
-              <a
-                key={dl.url}
-                href={dl.url}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
-              >
-                ↓ {dl.label}
-              </a>
-            ))}
-          </div>
-        </section>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Downloads</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {product.stlDownloadUrls.map((dl) => (
+                <Button key={dl.url} asChild>
+                  <a href={dl.url}>↓ {dl.label}</a>
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Purchase Links */}
         {product.purchaseLinks.length > 0 && (
-          <section className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Where to Buy</h2>
-            <div className="flex flex-wrap gap-3">
-              {product.purchaseLinks.map((link) => (
-                <a
-                  key={link.url}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition"
-                >
-                  {link.label} ↗
-                </a>
-              ))}
-            </div>
-          </section>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Where to Buy</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {product.purchaseLinks.map((link) => (
+                  <Button key={link.url} variant="outline" asChild>
+                    <a href={link.url} target="_blank" rel="noopener noreferrer">
+                      {link.label} ↗
+                    </a>
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
-    </main>
+    </div>
   );
 }
