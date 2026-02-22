@@ -1,7 +1,4 @@
-export interface PrintSettings {
-  upperBoot?: string;
-  floorPad?: string;
-}
+export type PrintSettings = Record<string, string>;
 
 export interface DownloadLink {
   label: string;
@@ -16,6 +13,7 @@ export interface PurchaseLink {
 export interface Product {
   id: string;
   name: string;
+  category: string;
   description: string;
   printSettings: PrintSettings;
   assemblyGuide: string[];

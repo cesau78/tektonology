@@ -1,9 +1,10 @@
 {
   "id": "kneeler-boot-monolithic-bonded",
   "name": "Kneeler Boot - Monolithic Bonded",
+  "category": "Kneeler Replacement Parts",
   "description": "A single-piece boot that slides over the pew kneeler leg and is secured with adhesive. Simple, rigid, and durable.",
   "printSettings": {
-    "upperBoot": "Polymaker PLA Pro (Black) | 4 Wall Loops | 35% Gyroid Infill"
+    "Upper Boot": "Polymaker PLA Pro (Black) | 4 Wall Loops | 35% Gyroid Infill"
   },
   "assemblyGuide": [
     "Clean the kneeler leg end, removing any paint or debris.",

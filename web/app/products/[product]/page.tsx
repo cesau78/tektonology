@@ -52,19 +52,13 @@ export default async function ProductPage({
         {/* Print Settings */}
         <section className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Print Settings</h2>
-          <dl className="space-y-2">
-            {product.printSettings.upperBoot && (
-              <div>
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">Upper Boot</dt>
-                <dd className="text-gray-800 text-sm mt-0.5">{product.printSettings.upperBoot}</dd>
+          <dl className="space-y-3">
+            {Object.entries(product.printSettings).map(([label, value]) => (
+              <div key={label}>
+                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</dt>
+                <dd className="text-gray-800 text-sm mt-0.5">{value}</dd>
               </div>
-            )}
-            {product.printSettings.floorPad && (
-              <div className="mt-3">
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">Floor Pad</dt>
-                <dd className="text-gray-800 text-sm mt-0.5">{product.printSettings.floorPad}</dd>
-              </div>
-            )}
+            ))}
           </dl>
         </section>
 

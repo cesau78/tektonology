@@ -1,10 +1,11 @@
 {
   "id": "kneeler-boot-compound-bonded",
   "name": "Kneeler Boot - Compound Bonded",
+  "category": "Kneeler Replacement Parts",
   "description": "A two-piece boot system with a rigid PLA upper shell for stability and a soft TPU floor pad for grip. Parts are bonded together with adhesive.",
   "printSettings": {
-    "upperBoot": "Polymaker PLA Pro (Black) | 4 Wall Loops | 35% Gyroid Infill",
-    "floorPad": "TPU 90A | 4 Wall Loops | 35% Gyroid Infill | Print Speed < 40mm/s"
+    "Upper Boot": "Polymaker PLA Pro (Black) | 4 Wall Loops | 35% Gyroid Infill",
+    "Floor Pad": "TPU 90A | 4 Wall Loops | 35% Gyroid Infill | Print Speed < 40mm/s"
   },
   "assemblyGuide": [
     "Clean surfaces: remove any stringing from the internal wedge cavity.",
