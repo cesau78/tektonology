@@ -3,7 +3,7 @@ $fn = 64;
 
 //inputs
 total_height = 24; // Total height of the bushing, including the collar and the insert
-id=9.5; // Inner diameter of the bushing
+id=10; // Inner diameter of the bushing
 insert_od=13.1; // Outer diameter of the bushing that will fit into the pew
 collar_height=6.3; // Height of the collar that will sit above the insert
 collar_od=16.2; // Outer diameter of the collar
