@@ -1,0 +1,21 @@
+{
+  "id": "kneeler-bushing",
+  "name": "Kneeler Bushing",
+  "category": "Kneeler Replacement Parts",
+  "description": "A hollow cylindrical bushing for church pew kneeler frames. The collared insert design features a wider collar (16.2mm OD) that seats against the outer face of the frame, and a narrower insert (13.1mm OD, 19mm tall) that presses into the frame hole. A 9.5mm bore passes through the center for hardware.",
+  "printSettings": {
+    "bushing": "Polymaker PLA Pro (Black) | 4 Wall Loops | 35% Gyroid Infill"
+  },
+  "assemblyGuide": [
+    "Clean the frame hole, removing any debris or remnants of the old bushing.",
+    "Orient the bushing so the collar faces the outer surface of the frame.",
+    "Press the insert into the frame hole until the collar seats flush against the frame."
+  ],
+  "stlDownloadUrls": [
+    {
+      "label": "Kneeler Bushing",
+      "url": "https://github.com/cesau78/tektonology/raw/main/models/kneeler-replacement-parts/kneeler-bushing/kneeler-bushing.stl"
+    }
+  ],
+  "purchaseLinks": []
+}

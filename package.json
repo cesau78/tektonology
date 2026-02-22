@@ -1,0 +1,7 @@
+{
+  "name": "tektonology",
+  "private": true,
+  "scripts": {
+    "build:stls": "node scripts/build-stls.mjs"
+  }
+}
