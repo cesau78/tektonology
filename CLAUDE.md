@@ -11,7 +11,8 @@ When making decisions — about design, naming, architecture, or implementation 
 ## General
 
 - This is a church/home maintenance asset repo with 3D-printable solutions.
-- Primary languages: OpenSCAD (models), TypeScript/React (web).
+- Primary languages: OpenSCAD (models), TypeScript/React (web)
+- Preferred Langugage: NodeJS
 
 ## JSON
 
