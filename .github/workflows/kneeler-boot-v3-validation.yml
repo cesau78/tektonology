@@ -1,16 +1,16 @@
-name: Kneeler Boot v3 Validation
+name: Kneeler Boot v3 STL Build
 
+# Allow the workflow to push commits back to the repository
+permissions:
+  contents: write
+  
 on:
   push:
     branches: [ "main" ]
     paths:
-      - 'kneeler-boots-v3/**'
+      - 'kneeler-boots-v3/*.scad'
       - '.github/workflows/kneeler-boot-v3-validation.yml'
-  pull_request:
-    branches: [ "main" ]
-    paths:
-      - 'kneeler-boots-v3/**'
-      - '.github/workflows/kneeler-boot-v3-validation.yml'
+
 
 jobs:
   validate-scad:
@@ -35,6 +35,40 @@ jobs:
       - name: Upload STLs
         uses: actions/upload-artifact@v4
         with:
-           name: kneeler-boot3-v3
+           name: kneeler-boot3-v3-stls
            path: |
              kneeler-boot3-v3/*.stl
+
+  commit-stl:
+    name: Commit Generated STL
+    runs-on: ubuntu-latest
+    needs: validate-scad
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Download generated STL artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: kneeler-boot3-v3-stls
+          path: kneeler-boot3-v3-artifacts
+
+      - name: Copy STL into repo
+        run: |
+          mkdir -p kneeler-boot3-v3
+          # move any stl produced into the repo directory (overwrite)
+          mv -f kneeler-boot3-v3-artifacts/*.stl kneeler-boot3-v3/ || true
+
+      - name: Commit and push generated STL
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add kneeler-boot3-v3/*.stl || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update generated STL [skip ci]"
+            git push origin HEAD:${{ github.ref_name }}
+          fi

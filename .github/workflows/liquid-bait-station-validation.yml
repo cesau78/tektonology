@@ -8,12 +8,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'liquid-bait-station/**'
-      - '.github/workflows/liquid-bait-station-validation.yml'
-  pull_request:
-    branches: [ "main" ]
-    paths:
-      - 'liquid-bait-station/**'
+      - 'liquid-bait-station/*.scad'
       - '.github/workflows/liquid-bait-station-validation.yml'
 
 jobs:
