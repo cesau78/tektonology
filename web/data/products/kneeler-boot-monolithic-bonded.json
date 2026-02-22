@@ -1,0 +1,21 @@
+{
+  "id": "kneeler-boot-monolithic-bonded",
+  "name": "Kneeler Boot - Monolithic Bonded",
+  "description": "A single-piece boot that slides over the pew kneeler leg and is secured with adhesive. Simple, rigid, and durable.",
+  "printSettings": {
+    "upperBoot": "Polymaker PLA Pro (Black) | 4 Wall Loops | 35% Gyroid Infill"
+  },
+  "assemblyGuide": [
+    "Clean the kneeler leg end, removing any paint or debris.",
+    "Apply 2-3 drops of Loctite 406 inside the boot cavity.",
+    "Press the boot onto the leg until fully seated.",
+    "Let cure for 60 seconds before use."
+  ],
+  "stlDownloadUrls": [
+    {
+      "label": "Kneeler Boot",
+      "url": "https://github.com/cesau78/tektonology/raw/main/models/kneeler-replacement-parts/kneeler-boot-monolithic-bonded/kneeler-boot-monolithic-bonded.3mf"
+    }
+  ],
+  "purchaseLinks": []
+}

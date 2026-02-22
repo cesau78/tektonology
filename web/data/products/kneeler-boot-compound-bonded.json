@@ -1,0 +1,26 @@
+{
+  "id": "kneeler-boot-compound-bonded",
+  "name": "Kneeler Boot - Compound Bonded",
+  "description": "A two-piece boot system with a rigid PLA upper shell for stability and a soft TPU floor pad for grip. Parts are bonded together with adhesive.",
+  "printSettings": {
+    "upperBoot": "Polymaker PLA Pro (Black) | 4 Wall Loops | 35% Gyroid Infill",
+    "floorPad": "TPU 90A | 4 Wall Loops | 35% Gyroid Infill | Print Speed < 40mm/s"
+  },
+  "assemblyGuide": [
+    "Clean surfaces: remove any stringing from the internal wedge cavity.",
+    "Apply Glue: place 2-3 drops of Loctite 406 inside the PLA upper boot cavity.",
+    "Press-Fit: press the TPU floor pad wedge into the PLA cavity until flush.",
+    "Cure: let sit for 60 seconds before installing on the pew."
+  ],
+  "stlDownloadUrls": [
+    {
+      "label": "Upper Boot (PLA)",
+      "url": "https://github.com/cesau78/tektonology/raw/main/models/kneeler-replacement-parts/kneeler-boot-compound-bonded/kneeler-boot-coupler.stl"
+    },
+    {
+      "label": "Floor Pad (TPU)",
+      "url": "https://github.com/cesau78/tektonology/raw/main/models/kneeler-replacement-parts/kneeler-boot-compound-bonded/kneeler-boot-insert.stl"
+    }
+  ],
+  "purchaseLinks": []
+}

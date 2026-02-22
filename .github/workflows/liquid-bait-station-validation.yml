@@ -8,7 +8,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'liquid-bait-station/*.scad'
+      - 'models/models/liquid-bait-station/*.scad'
       - '.github/workflows/liquid-bait-station-validation.yml'
 
 jobs:
@@ -30,7 +30,7 @@ jobs:
           CROSSSECTION_VIEW: 'false'
         run: |
           # render the model into a known path so the upload step can find it
-          openscad -o liquid-bait-station/liquid-bait-station.stl liquid-bait-station/liquid-bait-station.scad \
+          openscad -o models/liquid-bait-station/liquid-bait-station.stl models/liquid-bait-station/liquid-bait-station.scad \
             -D "preview=$PREVIEW" -D "crosssection_view=$CROSSSECTION_VIEW" \
             -D 'liquid_bait_station();'
 
@@ -39,12 +39,12 @@ jobs:
         with:
           name: liquid-bait-station-stls
           path: |
-            liquid-bait-station/*.stl
+            models/liquid-bait-station/*.stl
 
       - name: Check for generated STLs
         id: check_artifacts
         run: |
-          if ls liquid-bait-station/*.stl 1> /dev/null 2>&1; then
+          if ls models/liquid-bait-station/*.stl 1> /dev/null 2>&1; then
             echo "has_artifact=true" >> $GITHUB_OUTPUT
           else
             echo "has_artifact=false" >> $GITHUB_OUTPUT
@@ -71,13 +71,13 @@ jobs:
         run: |
           mkdir -p liquid-bait-station
           # move any stl produced into the repo directory (overwrite)
-          mv -f liquid-bait-station-artifacts/*.stl liquid-bait-station/ || true
+          mv -f liquid-bait-station-artifacts/*.stl models/liquid-bait-station/ || true
 
       - name: Commit and push generated STL
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add liquid-bait-station/*.stl || true
+          git add models/liquid-bait-station/*.stl || true
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else

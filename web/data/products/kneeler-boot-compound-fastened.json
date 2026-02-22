@@ -1,0 +1,26 @@
+{
+  "id": "kneeler-boot-compound-fastened",
+  "name": "Kneeler Boot - Compound Fastened",
+  "description": "A three-piece boot system with a rigid PLA upper shell, a soft TPU floor pad, and a mechanical fastener to secure the boot to the kneeler leg — no glue required.",
+  "printSettings": {
+    "upperBoot": "Polymaker PLA Pro (Black) | 4 Wall Loops | 35% Gyroid Infill",
+    "floorPad": "TPU 90A | 4 Wall Loops | 35% Gyroid Infill | Print Speed < 40mm/s"
+  },
+  "assemblyGuide": [
+    "Clean surfaces: remove any stringing from the internal wedge cavity.",
+    "Press-Fit: press the TPU floor pad wedge into the PLA cavity until flush.",
+    "Slide the boot assembly onto the kneeler leg.",
+    "Secure with the included fastener — no adhesive needed."
+  ],
+  "stlDownloadUrls": [
+    {
+      "label": "Upper Boot (PLA)",
+      "url": "https://github.com/cesau78/tektonology/raw/main/models/kneeler-replacement-parts/kneeler-boot-compound-fastened/kneeler-boot-coupler.stl"
+    },
+    {
+      "label": "Floor Pad (TPU)",
+      "url": "https://github.com/cesau78/tektonology/raw/main/models/kneeler-replacement-parts/kneeler-boot-compound-fastened/kneeler-boot-insert.stl"
+    }
+  ],
+  "purchaseLinks": []
+}

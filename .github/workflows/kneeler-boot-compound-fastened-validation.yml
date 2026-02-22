@@ -8,7 +8,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'kneeler-boot-compound-fastened/*.scad'
+      - 'models/kneeler-replacement-parts/kneeler-boot-compound-fastened/*.scad'
       - '.github/workflows/kneeler-boot-compound-fastened-validation.yml'
 
 
@@ -26,12 +26,12 @@ jobs:
 
       - name: Verify Coupler
         run: |
-          openscad -o kneeler-boot-coupler.stl kneeler-boot-compound-fastened/kneeler-boot-coupler.scad \
+          openscad -o kneeler-boot-coupler.stl models/kneeler-replacement-parts/kneeler-boot-compound-fastened/kneeler-boot-coupler.scad \
           -D 'upper_boot_pla();'
 
       - name: Verify Kneeler Boot Insert
         run: |
-          openscad -o kneeler-boot-insert.stl kneeler-boot-compound-fastened/kneeler-boot-insert.scad \
+          openscad -o kneeler-boot-insert.stl models/kneeler-replacement-parts/kneeler-boot-compound-fastened/kneeler-boot-insert.scad \
           -D 'floor_pad_tpu();'
 
       - name: Upload STLs
@@ -39,12 +39,12 @@ jobs:
         with:
            name: kneeler-boot-compound-fastened-stls
            path: |
-             kneeler-boot-compound-fastened/*.stl
+             models/kneeler-replacement-parts/kneeler-boot-compound-fastened/*.stl
 
       - name: Check for generated STLs
         id: check_artifacts
         run: |
-          if ls kneeler-boot-compound-fastened/*.stl 1> /dev/null 2>&1; then
+          if ls models/kneeler-replacement-parts/kneeler-boot-compound-fastened/*.stl 1> /dev/null 2>&1; then
             echo "has_artifact=true" >> $GITHUB_OUTPUT
           else
             echo "has_artifact=false" >> $GITHUB_OUTPUT
@@ -72,13 +72,13 @@ jobs:
         run: |
           mkdir -p kneeler-boot-compound-fastened
           # move any stl produced into the repo directory (overwrite)
-          mv -f kneeler-boot-compound-fastened-artifacts/*.stl kneeler-boot-compound-fastened/ || true
+          mv -f kneeler-boot-compound-fastened-artifacts/*.stl models/kneeler-replacement-parts/kneeler-boot-compound-fastened/ || true
 
       - name: Commit and push generated STL
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add kneeler-boot-compound-fastened/*.stl || true
+          git add models/kneeler-replacement-parts/kneeler-boot-compound-fastened/*.stl || true
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
