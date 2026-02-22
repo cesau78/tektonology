@@ -13,7 +13,7 @@ torus_max_in = 3.0; // Max torus diameter (inches)
 
 core_dia = 30;
 base_height = 40;
-reservoir_id = 24; //24 = standard plastic bottle od
+reservoir_id = 25; //24 = standard plastic bottle od
 tube_od = 10;
 tube_id = 6;
 
