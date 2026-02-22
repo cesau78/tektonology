@@ -4,6 +4,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Product, Batch } from "@/data/types";
 
+function camelToLabel(key: string): string {
+  return key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
+}
+
 function getProduct(id: string): Product | null {
   try {
     return JSON.parse(readFileSync(join(process.cwd(), "data", "products", `${id}.json`), "utf-8")) as Product;
@@ -84,7 +88,7 @@ export default async function BatchPage({
           <dl className="space-y-3">
             {Object.entries(product.printSettings).map(([label, value]) => (
               <div key={label}>
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</dt>
+                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">{camelToLabel(label)}</dt>
                 <dd className="text-gray-800 text-sm mt-0.5">{value}</dd>
               </div>
             ))}

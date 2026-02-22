@@ -4,7 +4,7 @@
   "category": "Pest Control",
   "description": "A parametric liquid bait station designed for pest control. Accepts a standard plastic bottle as a reservoir and features a torus-style entry point.",
   "printSettings": {
-    "Body": "PLA or PETG | 4 Wall Loops | 35% Gyroid Infill"
+    "body": "PLA or PETG | 4 Wall Loops | 35% Gyroid Infill"
   },
   "assemblyGuide": [
     "Print the bait station body.",
