@@ -27,3 +27,5 @@ module kneeler_bushing() {
             cylinder(h=total_height + 2, d=id); // Inner (slightly taller to ensure clean cut)
     }
 }
+
+kneeler_bushing();
