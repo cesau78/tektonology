@@ -10,7 +10,7 @@ collar_od=16; // Outer diameter of the collar
 total_height = insert_height + collar_height;
 
 difference() {
-    // First Cylinder: OD=16, ID=11, H=5
+    //combine 2 cylinders to create the main shape of the bushing with a collar on top
     union()  {
         cylinder(h=collar_height, d=collar_od); // Collar
         translate([0, 0, collar_height]) {
@@ -18,6 +18,7 @@ difference() {
         }
     }
 
+    //remove the inner material to create the hollow bushing
      translate([0, 0, -1]) // Subtract a slightly taller inner cylinder to create the hollow bushing
         cylinder(h=total_height + 2, d=id); // Inner (slightly taller to ensure clean cut)
 }
