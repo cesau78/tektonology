@@ -1,5 +1,13 @@
 # Tektonology — Project Conventions
 
+## Imperatives
+
+When making decisions — about design, naming, architecture, or implementation — apply these in order:
+
+1. **Reduce Suffering** — prefer solutions that remove friction, eliminate toil, and avoid creating problems for people downstream.
+2. **Increase Prosperity** — prefer solutions that create lasting value, are reusable, and support the project's mission.
+3. **Increase Understanding** — prefer solutions that are clear, well-named, and easy to reason about over clever or opaque ones.
+
 ## General
 
 - This is a church/home maintenance asset repo with 3D-printable solutions.
