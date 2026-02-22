@@ -1,7 +1,7 @@
 ![Build Status](https://github.com/cesau78/tektonology/actions/workflows/openscad_check.yml/badge.svg)
 
-# Kneeler Boots V3 (Hybrid Design)
-This folder contains the Tektonology V2 modular boot system. It uses a rigid upper shell for stability and a soft lower pad for grip.
+# Kneeler Boot - Compound Fastened
+This folder contains the Tektonology compound fastened boot system. It uses a rigid upper shell for stability and a soft lower pad for grip, assembled with mechanical fasteners.
 
 ### Print Settings (Bambu A1)
 * **Upper Boot:** Polymaker PLA Pro (Black) | 4 Wall Loops | 35% Gyroid Infill.
