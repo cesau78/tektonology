@@ -1,11 +1,11 @@
 // Smoothness of the cylinders
 $fn = 64; 
 
-id=9; // Inner diameter of the bushing
-insert_od=13; // Outer diameter of the bushing that will fit into the pew
+id=9.5; // Inner diameter of the bushing
+insert_od=13.1; // Outer diameter of the bushing that will fit into the pew
 insert_height=19; // Height of the bushing that will fit into the pew
-collar_height=5; // Height of the collar that will sit above the insert
-collar_od=16; // Outer diameter of the collar
+collar_height=6.3; // Height of the collar that will sit above the insert
+collar_od=16.2; // Outer diameter of the collar
 
 total_height = insert_height + collar_height;
 
