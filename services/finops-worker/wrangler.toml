@@ -1,8 +1,0 @@
-name = "tektonology-finops"
-main = "src/index.ts"
-compatibility_date = "2026-02-22"
-
-# Secrets (set via `wrangler secret put`, never stored here):
-#   API_KEY        — bearer token the bambu-listener sends
-#   ATLAS_API_KEY  — MongoDB Atlas Data API key
-#   ATLAS_APP_ID   — MongoDB Atlas Data API app ID

@@ -1,23 +1,31 @@
 import "dotenv/config";
 import mqtt from "mqtt";
 import readline from "readline";
+import { MongoClient } from "mongodb";
 
 const {
   PRINTER_IP,
   PRINTER_SERIAL,
   PRINTER_ACCESS_CODE,
   ACTIVE_SPOOL_ID,
-  WORKER_URL,
-  API_KEY,
+  MONGODB_URI,
+  DB_NAME = "tektonology",
 } = process.env;
 
-const REQUIRED = ["PRINTER_IP", "PRINTER_SERIAL", "PRINTER_ACCESS_CODE", "ACTIVE_SPOOL_ID", "WORKER_URL", "API_KEY"];
+const REQUIRED = ["PRINTER_IP", "PRINTER_SERIAL", "PRINTER_ACCESS_CODE", "ACTIVE_SPOOL_ID", "MONGODB_URI"];
 for (const key of REQUIRED) {
   if (!process.env[key]) throw new Error(`Missing env var: ${key}`);
 }
 
-const REPORT_TOPIC = `device/${PRINTER_SERIAL}/report`;
+// --- MongoDB ---
+const mongo = new MongoClient(MONGODB_URI);
+await mongo.connect();
+const db = mongo.db(DB_NAME);
+const printJobs = db.collection("print_jobs");
+console.log(`Connected to MongoDB (${DB_NAME})`);
 
+// --- MQTT ---
+const REPORT_TOPIC = `device/${PRINTER_SERIAL}/report`;
 let lastState = null;
 let currentJob = null;
 
@@ -25,11 +33,11 @@ const client = mqtt.connect(`mqtts://${PRINTER_IP}:8883`, {
   username: "bblp",
   password: PRINTER_ACCESS_CODE,
   rejectUnauthorized: false, // Bambu uses a self-signed cert — expected
-  clientId: `bambu-listener-${Date.now()}`,
+  clientId: `printing-agent-${Date.now()}`,
 });
 
 client.on("connect", () => {
-  console.log(`Connected to Bambu A1 at ${PRINTER_IP}`);
+  console.log(`Connected to printer at ${PRINTER_IP}`);
   client.subscribe(REPORT_TOPIC, (err) => {
     if (err) console.error("Subscribe error:", err);
     else console.log(`Subscribed to ${REPORT_TOPIC}`);
@@ -71,7 +79,7 @@ client.on("message", async (_topic, payload) => {
       usageG = await promptGrams(project);
     }
 
-    await logUsage({ project, usageG, loggedAt });
+    await logJob({ project, usageG, loggedAt });
     currentJob = null;
   }
 
@@ -89,7 +97,6 @@ client.on("close", () => console.log("MQTT connection closed"));
  * Bambu firmware versions report this differently; we check known field names.
  */
 function extractGrams(print) {
-  // Known field names seen across firmware versions (expand as discovered)
   const candidates = ["filament_used_g", "mc_print_filament_g", "filament_g"];
   for (const field of candidates) {
     const val = print[field];
@@ -113,35 +120,24 @@ function promptGrams(project) {
 }
 
 /**
- * POST the completed job to the Cloudflare Worker.
+ * Write the raw print job to MongoDB.
+ * bookkeeping-agent will pick it up and enrich it with cost + journal entries.
  */
-async function logUsage({ project, usageG, loggedAt }) {
-  const body = {
+async function logJob({ project, usageG, loggedAt }) {
+  const doc = {
     project,
     spoolId: parseInt(ACTIVE_SPOOL_ID, 10),
     usageG,
     loggedAt,
+    processed: false,
   };
 
-  console.log("Logging usage:", body);
+  console.log("Writing print job:", doc);
 
   try {
-    const res = await fetch(`${WORKER_URL}/api/usage`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${API_KEY}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (res.ok) {
-      console.log("Logged successfully.");
-    } else {
-      const text = await res.text();
-      console.error(`Worker error ${res.status}:`, text);
-    }
+    const result = await printJobs.insertOne(doc);
+    console.log(`Print job recorded (id: ${result.insertedId})`);
   } catch (err) {
-    console.error("Failed to reach Worker:", err.message);
+    console.error("Failed to write print job:", err.message);
   }
 }

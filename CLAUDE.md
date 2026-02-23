@@ -26,9 +26,9 @@ When making decisions — about design, naming, architecture, or implementation 
   kneeler-replacement-parts/   # Pew kneeler boots and bushings
   liquid-bait-station/         # Pest control
 db-models/                     # Shared MongoDB document interfaces (TypeScript)
-services/                      # Backend services
-  bambu-listener/              # MQTT daemon — auto-logs Bambu A1 print jobs
-  finops-worker/               # Cloudflare Worker — auth proxy to MongoDB Atlas
+services/                      # Backend services (agents)
+  printing-agent/              # MQTT daemon — detects print completion, writes raw print_jobs
+  accounting-agent/            # Polls unprocessed print_jobs, updates spools + journal_entries
 web/                           # Next.js static site (tectonology.com)
   app/                         # Next.js App Router pages
   data/
