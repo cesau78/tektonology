@@ -22,9 +22,13 @@ When making decisions — about design, naming, architecture, or implementation 
 ## Directory Structure
 
 ```
-models/
+3d-models/                     # OpenSCAD source and generated STL files
   kneeler-replacement-parts/   # Pew kneeler boots and bushings
   liquid-bait-station/         # Pest control
+db-models/                     # Shared MongoDB document interfaces (TypeScript)
+services/                      # Backend services
+  bambu-listener/              # MQTT daemon — auto-logs Bambu A1 print jobs
+  finops-worker/               # Cloudflare Worker — auth proxy to MongoDB Atlas
 web/                           # Next.js static site (tectonology.com)
   app/                         # Next.js App Router pages
   data/

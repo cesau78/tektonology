@@ -1,3 +1,5 @@
+import type { Spool, PrintJobRequest } from "../../../db-models/index.js";
+
 export interface Env {
   API_KEY: string;
   ATLAS_API_KEY: string;
@@ -61,12 +63,7 @@ async function getSpools(env: Env): Promise<Response> {
 }
 
 async function postUsage(request: Request, env: Env): Promise<Response> {
-  const body = await request.json() as {
-    project: string;
-    spoolId: number;
-    usageG: number;
-    loggedAt: string;
-  };
+  const body = await request.json() as PrintJobRequest;
 
   const { project, spoolId, usageG, loggedAt } = body;
   if (!project || !spoolId || !usageG || !loggedAt) {
@@ -85,7 +82,7 @@ async function postUsage(request: Request, env: Env): Promise<Response> {
     }),
   });
 
-  const spoolData = await spoolRes.json() as { document: { cost: number; weightG: number } | null };
+  const spoolData = await spoolRes.json() as { document: Spool | null };
   if (!spoolData.document) {
     return new Response(`Spool ${spoolId} not found`, { status: 404 });
   }

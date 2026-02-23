@@ -32,6 +32,6 @@ function build(openscad, scad) {
 const openscad = findOpenSCAD();
 
 console.log("==> kneeler-bushing");
-build(openscad, resolve("models/kneeler-replacement-parts/kneeler-bushing/kneeler-bushing.scad"));
+build(openscad, resolve("3d-models/kneeler-replacement-parts/kneeler-bushing/kneeler-bushing.scad"));
 
 console.log("Done.");
