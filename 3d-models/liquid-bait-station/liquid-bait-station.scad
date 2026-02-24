@@ -2,7 +2,7 @@
 
 //Performance Settings
 preview = true; //set preview=true for faster rendering with lower detail, or false for full detail.
-crosssection_view = false; // Set to true to cut the model along a plane and show only one side
+crosssection_view = true; // Set to true to cut the model along a plane and show only one side
 crosssection_axis = "x"; // axis: 'x', 'y', or 'z'
 crosssection_pos = 5; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
 
@@ -30,7 +30,7 @@ thread_turns = 6;
 
 // Geometry Calculations
 // Number of arms and derived angular offsets
-arms = 6; // number of radial arms/ports
+arms = 3; // number of radial arms/ports
 arm_step = 360 / arms;
 strut_offset = arm_step / 2; // halfway between arms
 entrance_offset = strut_offset - 10; // entrance offset (e.g., 15 deg for 6 arms)
