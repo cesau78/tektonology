@@ -2,7 +2,7 @@
 
 //Performance Settings
 preview = true; //set preview=true for faster rendering with lower detail, or false for full detail.
-crosssection_view = true; // Set to true to cut the model along a plane and show only one side
+crosssection_view = false; // Set to true to cut the model along a plane and show only one side
 crosssection_axis = "x"; // axis: 'x', 'y', or 'z'
 crosssection_pos = 5; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
 
@@ -11,7 +11,7 @@ $fn = preview ?  32 : 64;
 wall = 2;
 torus_max_in = 3.0; // Max torus diameter (inches)
 
-core_dia = 30;
+core_dia = 32;
 base_height = 40;
 reservoir_id = 25; //24 = standard plastic bottle od
 tube_od = 10;
