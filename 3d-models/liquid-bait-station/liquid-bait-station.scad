@@ -25,7 +25,7 @@ size = 0; //compact: 0, stndard: 10, large: 20
 
 // Standardized PCO 1881 Thread Profile
 thread_pitch = 3; 
-thread_depth = 1; // Slightly deeper for better grip
+thread_depth = 1.5; // Radial depth of thread groove
 thread_turns = 6;
 
 // Geometry Calculations
@@ -65,65 +65,27 @@ lower_z = (tube_od / 2); // slightly higher to keep off the bottom plate
 // 4) union backstops into the result
 // 5) subtract/redraw entrance holes last
 module liquid_bait_station() {
-    // Build each major piece with its local cutouts, then union them, add backstops,
-    // and finally subtract the entrance holes so they're redrawn last.
+    // Flat union/difference: each solid and cutout module is called exactly once.
+    // (A∪B)−C = (A−C)∪(B−C), so nested per-piece differences are not needed.
     difference() {
         union() {
-         
-            // central tower with its cutouts
-            difference() {
-                central_tower_solid();
-                central_tower_cutouts();
-            }
-
-            // tube arms (each module handles its own repeating arms)
-            difference() {
-                tube_arm_solid();
-                tube_arm_cutouts();
-                upper_torus_cutouts();
-                central_tower_cutouts();
-                
-            }
-            
-            // upper torus
-            difference() {
-                upper_torus_solid();
-                upper_torus_cutouts();
-                tube_arm_cutouts();
-            }
-            // union backstops into the body so they exist before entrance holes
-            difference() {
-                upper_backstops_solid();
-                upper_backstops_cutouts();
-            }
-
-            // connecting struts
-            difference() {
-                connecting_struts_solid();
-                connecting_struts_cutouts();
-                upper_torus_cutouts();
-                lower_torus_cutouts();
-            }
-            // lower torus
-            difference() {
-                lower_torus_solid();
-                lower_torus_cutouts();
-                connecting_struts_cutouts();
-            }
-
-            // union backstops into the body so they exist before entrance holes
-            difference() {
-                lower_backstops_solid();
-                lower_backstops_cutouts();
-            }
-            
+            central_tower_solid();
+            tube_arm_solid();
+            upper_torus_solid();
+            upper_backstops_solid();
+            connecting_struts_solid();
+            lower_torus_solid();
+            lower_backstops_solid();
         }
-
-        // subtract the entrance holes last
+        central_tower_cutouts();
+        tube_arm_cutouts();
+        upper_torus_cutouts();
+        upper_backstops_cutouts();
+        connecting_struts_cutouts();
+        lower_torus_cutouts();
+        lower_backstops_cutouts();
         entrance_holes();
-
     }
-    
 }
 
 
@@ -148,14 +110,17 @@ module central_tower_cutouts() {
     translate([0, 0, 15])
         cylinder(h=base_height + 1, d=reservoir_id);
 
-        // Internal Threads: right-hand helix to match standard male plastic bottle threads
-        for (i = [0 : 5 : 360 * thread_turns]) {
-            rotate([0, 0, i])
-            translate([reservoir_id/2, 0, base_height - 1.5 - (thread_turns * thread_pitch) + ((i/360) * thread_pitch)]) {
-                rotate([45, 0, 0])
-                    cube([thread_depth * 2, 1.5, 1.5], center=true);
-            }
-        }
+        // Internal Threads: right-hand helix as a single linear_extrude+twist
+        // (replaces 433 individual CSG cube subtractions with one operation)
+        translate([0, 0, base_height - 1.5 - (thread_turns * thread_pitch)])
+            linear_extrude(
+                height = thread_turns * thread_pitch,
+                twist  = thread_turns * 360,
+                slices = thread_turns * 16
+            )
+                translate([reservoir_id / 2, 0])
+                    rotate(45)
+                    square([thread_depth * 2, 2.0], center=true);
 
         // Port Holes for the Arms
         for (a = [0 : arm_step : 359]) {
