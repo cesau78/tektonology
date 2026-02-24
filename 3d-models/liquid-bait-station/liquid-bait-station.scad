@@ -1,10 +1,10 @@
 // Liquid Bait Station OpenSCAD Model
 
 //Performance Settings
-preview = false; //set preview=true for faster rendering with lower detail, or false for full detail.
-crosssection_view = false; // Set to true to cut the model along a plane and show only one side
+preview = true; //set preview=true for faster rendering with lower detail, or false for full detail.
+crosssection_view = true; // Set to true to cut the model along a plane and show only one side
 crosssection_axis = "x"; // axis: 'x', 'y', or 'z'
-crosssection_pos = 5; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
+crosssection_pos = 0; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
 
 $fn = preview ?  32 : 64;
 
@@ -21,12 +21,13 @@ tube_id = 6;
 port_height = wall + (tube_id / 2);
 
 
-size = 0; //compact: 0, stndard: 10, large: 20
-
 // Standardized PCO 1881 Thread Profile
-thread_pitch = 3; 
-thread_depth = 1.5; // Radial depth of thread groove
-thread_turns = 6;
+thread_pitch       = 3;
+thread_depth       = 1.5;  // Radial depth of thread groove (mm into wall)
+thread_turns       = 3;
+thread_groove_w    = thread_pitch * 0.6;  // Axial groove width (leaves 40% as wall between turns)
+thread_step        = 10;                  // Degrees per loop step (10° = ~109 ops vs 433 at 5°)
+thread_offset = 0.2; // mm to shift thread up for proper overlap with lead-in cut
 
 // Geometry Calculations
 // Number of arms and derived angular offsets
@@ -106,21 +107,31 @@ module central_tower_cutouts() {
         translate([0, 0, wall])
             cylinder(h=base_height, d=reservoir_id);
 
-    // Bottle Neck (cut)
-    translate([0, 0, 15])
-        cylinder(h=base_height + 1, d=reservoir_id);
+        // Bottle Neck (cut)
+        translate([0, 0, 15])
+            cylinder(h=base_height + 1, d=reservoir_id);
+            //cylinder(h=2, d=reservoir_id + 1);
 
-        // Internal Threads: right-hand helix as a single linear_extrude+twist
-        // (replaces 433 individual CSG cube subtractions with one operation)
-        translate([0, 0, base_height - 1.5 - (thread_turns * thread_pitch)])
-            linear_extrude(
-                height = thread_turns * thread_pitch,
-                twist  = thread_turns * 360,
-                slices = thread_turns * 16
-            )
-                translate([reservoir_id / 2, 0])
-                    rotate(45)
-                    square([thread_depth * 2, 2.0], center=true);
+        // Thread lead-in: wider bore at top so bottle thread can drop into position.
+        // d = reservoir_id + thread_depth, h = 1; thread zone shifted up 0.5mm (h/2) for overlap.
+        translate([0, 0, base_height - 1])
+            cylinder(h=2, d=reservoir_id + (thread_depth  * 2));
+
+        // Internal Threads: contiguous right-hand helix via hull() between consecutive steps.
+        // hull() fills the tangential gap between steps, eliminating disconnected squares.
+        // z-offset raised by 0.5mm (lead-in h/2) so top of thread overlaps lead-in cutout.
+        
+        for (i = [0 : thread_step : 360 * thread_turns - thread_step])
+            hull() {
+                rotate([0, 0, i])
+                translate([reservoir_id / 2, 0,
+                    base_height - thread_offset - (thread_turns * thread_pitch) + ((i / 360) * thread_pitch)])
+                    cube([thread_depth * 2, 1.0, thread_groove_w], center=true);
+                rotate([0, 0, i + thread_step])
+                translate([reservoir_id / 2, 0,
+                    base_height - thread_offset - (thread_turns * thread_pitch) + (((i + thread_step) / 360) * thread_pitch)])
+                    cube([thread_depth * 2, 1.0, thread_groove_w], center=true);
+            }
 
         // Port Holes for the Arms
         for (a = [0 : arm_step : 359]) {
