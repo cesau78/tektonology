@@ -1,8 +1,8 @@
 // Liquid Bait Station OpenSCAD Model
 
 //Performance Settings
-preview = true; //set preview=true for faster rendering with lower detail, or false for full detail.
-crosssection_view = true; // Set to true to cut the model along a plane and show only one side
+preview = false; //set preview=true for faster rendering with lower detail, or false for full detail.
+crosssection_view = false; // Set to true to cut the model along a plane and show only one side
 crosssection_axis = "x"; // axis: 'x', 'y', or 'z'
 crosssection_pos = 0; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
 
@@ -113,9 +113,8 @@ module central_tower_cutouts() {
             //cylinder(h=2, d=reservoir_id + 1);
 
         // Thread lead-in: wider bore at top so bottle thread can drop into position.
-        // d = reservoir_id + thread_depth, h = 1; thread zone shifted up 0.5mm (h/2) for overlap.
         translate([0, 0, base_height - 1])
-            cylinder(h=2, d=reservoir_id + (thread_depth  * 2));
+            cylinder(h=2, d=reservoir_id + (thread_depth * 2));
 
         // Internal Threads: contiguous right-hand helix via hull() between consecutive steps.
         // hull() fills the tangential gap between steps, eliminating disconnected squares.
