@@ -21,13 +21,21 @@ tube_id = 6;
 port_height = wall + (tube_id / 2);
 
 
-// Standardized PCO 1881 Thread Profile
-thread_pitch       = 3;
-thread_depth       = 1.5;  // Radial depth of thread groove (mm into wall)
-thread_turns       = 3;
-thread_groove_w    = thread_pitch * 0.6;  // Axial groove width (leaves 40% as wall between turns)
-thread_step        = 10;                  // Degrees per loop step (10° = ~109 ops vs 433 at 5°)
+// PCO 1881 Thread Profile (28mm CSD finish)
+// Ref: ISBT drawing 3784253-21, 650° travel, 2.7mm pitch
+thread_pitch       = 2.7;                 // mm per revolution (PCO 1881 standard)
+thread_depth       = 1.15;                // Radial depth of thread groove (mm into wall)
+thread_turns       = 1.81;                // 650° / 360° ≈ 1.81 turns
+thread_groove_w    = thread_pitch * 0.6;  // Axial groove width (~1.62mm, leaves 40% land)
+thread_step        = 10;                  // Degrees per loop step
 thread_offset = 0.2; // mm to shift thread up for proper overlap with lead-in cut
+
+// O-Ring Groove (AS568-118 style radial seal)
+oring_cs         = 2.62;           // O-ring cross-section diameter (mm)
+oring_groove_d   = oring_cs * 0.7; // groove depth into bore wall (~1.83mm)
+oring_groove_w   = oring_cs * 1.1; // groove axial width (~2.88mm)
+// Position: just above thread start, inside the lead-in zone
+oring_z = base_height - (thread_turns * thread_pitch) - oring_groove_w;
 
 // Geometry Calculations
 // Number of arms and derived angular offsets
@@ -115,6 +123,12 @@ module central_tower_cutouts() {
         // Thread lead-in: wider bore at top so bottle thread can drop into position.
         translate([0, 0, base_height - 1])
             cylinder(h=2, d=reservoir_id + (thread_depth * 2));
+
+        // O-Ring Groove: annular channel cut into the bore wall for radial seal
+        translate([0, 0, oring_z])
+            rotate_extrude()
+                translate([reservoir_id / 2, 0])
+                    square([oring_groove_d, oring_groove_w]);
 
         // Internal Threads: contiguous right-hand helix via hull() between consecutive steps.
         // hull() fills the tangential gap between steps, eliminating disconnected squares.
