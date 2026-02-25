@@ -19,7 +19,8 @@ tube_id = 6;
 
 
 port_height = wall + (tube_id / 2);
-
+clearance = 0.2;           // general fit clearance for mating cuts (mm)
+inner_extension = 5;       // how far tube arms extend into the tower (mm)
 
 // PCO 1881 Thread Profile (28mm CSD finish)
 // Ref: ISBT drawing 3784253-21, 650° travel, 2.7mm pitch
@@ -32,10 +33,9 @@ thread_offset = 0.2; // mm to shift thread up for proper overlap with lead-in cu
 
 // O-Ring Groove (AS568-118 style radial seal)
 oring_cs         = 2.62;           // O-ring cross-section diameter (mm)
-oring_groove_d   = oring_cs * 0.7; // groove depth into bore wall (~1.83mm)
 oring_groove_w   = oring_cs * 1.1; // groove axial width (~2.88mm)
-// Position: just above thread start, inside the lead-in zone
-oring_z = base_height - (thread_turns * thread_pitch) - oring_groove_w;
+// Position: below thread start with 1mm safety gap
+oring_z = base_height - (thread_turns * thread_pitch) - oring_groove_w - 1;
 
 // Geometry Calculations
 // Number of arms and derived angular offsets
@@ -46,15 +46,16 @@ entrance_offset = strut_offset - 10; // entrance offset (e.g., 15 deg for 6 arms
 lower_backstop_offset = entrance_offset + 6; // between entrance and nearest strut
 upper_backstop_offset = 6; // small tuned offset for backstops
 
-// Upper torus height pinned independently of reservoir height
-upper_z = 37; // was: wall + 40 - (tube_od / 2) — kept at original position
+// Upper torus center height — pinned so torus stays in place when reservoir height changes
+upper_z = 37;
 
 // Compute arm_length so that the slanted arm reaches the torus center at upper_z
 torus_dia = torus_max_in * 25.4; // convert inches to mm (4 in = 101.6 mm)
 // horizontal distance from tower outer to torus centerline
 horizontal_run = (torus_dia / 2) - (core_dia / 2) + (tube_od / 2);
 // vertical distance from the port up to the torus centerline
-vertical_run = upper_z - port_height - (tube_od) - 1.2;
+arm_landing_offset = 1.2;  // vertical clearance where arm meets torus
+vertical_run = upper_z - port_height - (tube_od) - arm_landing_offset;
 
 // compute tilt angle so the arm points from the port up to the torus centerline
 tilt_angle = atan(vertical_run / horizontal_run);
@@ -67,15 +68,11 @@ tip_r = (core_dia / 2) + (arm_length * cos(tilt_angle));
 
 lower_z = (tube_od / 2) + 3; // raised 3mm so torus clears build plate
 
-// Top-level staged assembly following your requested order:
-// 1) build all solids (union)
-// 2) define backstops (spheres) but do not subtract them
-// 3) apply all inner cutouts (difference)
-// 4) union backstops into the result
-// 5) subtract/redraw entrance holes last
+// Assembly: two-stage CSG to protect backstop plugs from torus cutouts.
+// Stage 1: union all solids, subtract all cutouts (torus rotate_extrude hollows the ring).
+// Stage 2: union backstop plugs (solid spheres that block flow), then re-cut
+//          entrance holes, strut channels, and arm channels through them.
 module liquid_bait_station() {
-    // Backstop plugs are unioned AFTER the main difference so the torus
-    // cutouts (full 360° rotate_extrude) don't hollow them out.
     union() {
         difference() {
             union() {
@@ -107,10 +104,6 @@ module liquid_bait_station() {
 }
 
 
-module central_tower() {
-    // Deprecated: kept for compatibility; use central_tower_solid() and central_tower_cutouts()
-}
-
 module central_tower_solid() {
     render_if_needed() {
         // Outer Tower Body
@@ -119,12 +112,8 @@ module central_tower_solid() {
 }
 
 module central_tower_cutouts() {
-    // Reservoir Well (cut from outer tower)
+    // Reservoir Well (cut from outer tower, extends past top for clean boolean)
     translate([0, 0, wall])
-        cylinder(h=base_height, d=reservoir_id);
-
-    // Bottle Neck (cut)
-    translate([0, 0, 15])
         cylinder(h=base_height + 1, d=reservoir_id);
 
     // Thread lead-in: wider bore at top so bottle thread can drop into position.
@@ -163,26 +152,23 @@ module central_tower_cutouts() {
 
 module tube_arm_solid() {
     render_if_needed() {
-        // Move to the tower face and tilt up (outer cylinder only)
-        inner_extension = 5; // how much the arm extends into the tower
         for (a = [0 : arm_step : 359]) rotate([0,0,a]) {
             translate([0, 0, port_height + 12.5])
                 rotate([0, 90 - tilt_angle, 0])
             translate([core_dia / 2 - inner_extension, 0, 0])
-                cylinder(h=arm_length+(tube_od)+1, d=tube_od); // REMOVE -10 - testing
+                cylinder(h=arm_length + tube_od + 1, d=tube_od);
         }
     }
 }
 
 module tube_arm_cutouts() {
     render_if_needed() {
-        // Internal path (The Straw Hole) - cut
-        inner_extension = 5; // how much the arm extends into the tower
+        // Internal path (The Straw Hole)
         for (a = [0 : arm_step : 359]) rotate([0,0,a]) {
             translate([0.5, 0, port_height + 13])
                 rotate([0, 90 - tilt_angle, 0])
             translate([core_dia / 2 - inner_extension, 0, 0])
-                translate([0, 0, -5]) 
+                translate([0, 0, -5])
                     cylinder(h=arm_length + (tube_od * 1.5) + 3, d=tube_id);
         }
     }
@@ -222,7 +208,7 @@ module upper_torus_cutouts() {
             rotate([0, 0, a])
             translate([tip_r, 0, upper_z]) 
                 rotate([180, 0, 0]) 
-                    cylinder(h=tube_od/2 + 1, d=tube_id + 0.2);
+                    cylinder(h=tube_od/2 + 1, d=tube_id + clearance);
         }
     }
 }
@@ -267,7 +253,7 @@ module lower_torus_cutouts() {
         // Holes for vertical connectors (cut)
         for (a = [strut_offset : arm_step : 359]) {
             rotate([0, 0, a]) translate([tip_r, 0, lower_z]) // Start at center of tube
-                cylinder(h=tube_od, d=tube_id + 0.2); // Cut upwards only
+                cylinder(h=tube_od, d=tube_id + clearance); // Cut upwards only
         }
     }
 }
@@ -280,7 +266,7 @@ module upper_backstop_plugs() {
         for (a = [upper_backstop_offset : arm_step : 359]) {
             rotate([0, 0, a])
             translate([tip_r, 0, upper_z])
-                sphere(d=tube_od + 0.4);
+                sphere(d=tube_od);
         }
     }
 }
@@ -291,7 +277,7 @@ module lower_backstop_plugs() {
         for (a = [lower_backstop_offset : arm_step : 359]) {
             rotate([0, 0, a])
             translate([tip_r, 0, lower_z])
-                sphere(d=tube_od + 0.4);
+                sphere(d=tube_od);
         }
     }
 }
@@ -305,7 +291,7 @@ module entrance_holes() {
         rotate([0, 0, a])
         translate([entrance_r, 0, lower_z])
         rotate([0, 90, 0]) // Rotate so cylinder points radially
-            cylinder(h=hole_depth, d=tube_id + 0.2); // default center=false so cylinder starts at translate
+            cylinder(h=hole_depth, d=tube_id + clearance);
     }
 }
 // Optionally render a cross-section (half) view so you can inspect internals
