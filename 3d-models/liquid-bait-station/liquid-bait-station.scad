@@ -3,8 +3,8 @@
 //Performance Settings
 preview = true; //set preview=true for faster rendering with lower detail, or false for full detail.
 crosssection_view = true; // Set to true to cut the model along a plane and show only one side
-crosssection_axis = "x"; // axis: 'x', 'y', or 'z'
-crosssection_pos = 0; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
+crosssection_axis = "y"; // axis: 'x', 'y', or 'z'
+crosssection_pos = 36; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
 
 $fn = preview ?  32 : 64;
 
@@ -43,7 +43,7 @@ arms = 3; // number of radial arms/ports
 arm_step = 360 / arms;
 strut_offset = arm_step / 2; // halfway between arms
 entrance_offset = strut_offset - 10; // entrance offset (e.g., 15 deg for 6 arms)
-lower_backstop_offset = entrance_offset + 3; // small tuned offset for backstops
+lower_backstop_offset = entrance_offset + 6; // between entrance and nearest strut
 upper_backstop_offset = 6; // small tuned offset for backstops
 
 // Upper torus height pinned independently of reservoir height
@@ -65,7 +65,7 @@ arm_length = (horizontal_run / cos(tilt_angle));
 // radial tip radius (horizontal projection) - should equal torus center radius
 tip_r = (core_dia / 2) + (arm_length * cos(tilt_angle));
 
-lower_z = (tube_od / 2); // slightly higher to keep off the bottom plate
+lower_z = (tube_od / 2) + 3; // raised 3mm so torus clears build plate
 
 // Top-level staged assembly following your requested order:
 // 1) build all solids (union)
@@ -74,26 +74,35 @@ lower_z = (tube_od / 2); // slightly higher to keep off the bottom plate
 // 4) union backstops into the result
 // 5) subtract/redraw entrance holes last
 module liquid_bait_station() {
-    // Flat union/difference: each solid and cutout module is called exactly once.
-    // (A∪B)−C = (A−C)∪(B−C), so nested per-piece differences are not needed.
-    difference() {
-        union() {
-            central_tower_solid();
-            tube_arm_solid();
-            upper_torus_solid();
-            upper_backstops_solid();
-            connecting_struts_solid();
-            lower_torus_solid();
-            lower_backstops_solid();
+    // Backstop plugs are unioned AFTER the main difference so the torus
+    // cutouts (full 360° rotate_extrude) don't hollow them out.
+    union() {
+        difference() {
+            union() {
+                central_tower_solid();
+                tube_arm_solid();
+                upper_torus_solid();
+                connecting_struts_solid();
+                lower_torus_solid();
+            }
+            central_tower_cutouts();
+            tube_arm_cutouts();
+            upper_torus_cutouts();
+            connecting_struts_cutouts();
+            lower_torus_cutouts();
+            entrance_holes();
         }
-        central_tower_cutouts();
-        tube_arm_cutouts();
-        upper_torus_cutouts();
-        upper_backstops_cutouts();
-        connecting_struts_cutouts();
-        lower_torus_cutouts();
-        lower_backstops_cutouts();
-        entrance_holes();
+        // Solid plugs added after difference — these block the torus channel
+        difference() {
+            union() {
+                upper_backstop_plugs();
+                lower_backstop_plugs();
+            }
+            // Re-cut channels through the plugs
+            entrance_holes();
+            connecting_struts_cutouts();
+            tube_arm_cutouts();
+        }
     }
 }
 
@@ -178,7 +187,7 @@ module tube_arm_cutouts() {
                 rotate([0, 90 - tilt_angle, 0])
             translate([core_dia / 2 - inner_extension, 0, 0])
                 translate([0, 0, -5]) 
-                    cylinder(h=arm_length + (tube_od * 1.5) , d=tube_id);
+                    cylinder(h=arm_length + (tube_od * 1.5) + 3, d=tube_id);
         }
     }
 }
@@ -226,9 +235,9 @@ module connecting_struts_solid() {
     render_if_needed() {
         for (a = [strut_offset : arm_step : 359]) { // Offset by half-step to be halfway between arms
             rotate([0, 0, a])
-            translate([tip_r, 0, lower_z])
-                // Main vertical strut body
-                cylinder(h = upper_z - lower_z, d = tube_od);
+            translate([tip_r, 0, 0])
+                // Main vertical strut body — extends from base to upper torus
+                cylinder(h = upper_z, d = tube_od);
         }
     }
 }
@@ -239,8 +248,8 @@ module connecting_struts_cutouts() {
             rotate([0, 0, a])
             translate([tip_r, 0, lower_z])
                 // Internal path (The Hole) - cut
-                translate([0, 0, -1])
-                    cylinder(h = (upper_z - lower_z) + 2, d = tube_id);
+                translate([0, 0, -6])
+                    cylinder(h = (upper_z - lower_z) + 5, d = tube_id);
         }
     }
 }
@@ -267,43 +276,26 @@ module lower_torus_cutouts() {
     }
 }
 
-module upper_backstops_solid() {
+// Backstop plugs: solid spheres that fill the torus channel to block flow.
+// These are unioned AFTER the main difference so rotate_extrude cutouts
+// don't hollow them out.
+module upper_backstop_plugs() {
     render_if_needed() {
-        // Spheres placed inside the lower torus as backstops
         for (a = [upper_backstop_offset : arm_step : 359]) {
             rotate([0, 0, a])
             translate([tip_r, 0, upper_z])
-                sphere(d=tube_id + 2);
+                sphere(d=tube_od);
         }
     }
 }
-module upper_backstops_cutouts() {
+
+module lower_backstop_plugs() {
     render_if_needed() {
-        // Spheres placed inside the lower torus as backstops
-        for (a = [2 : arm_step : 359]) {
-            rotate([0, 0, a])
-            translate([tip_r, 0, upper_z])
-                sphere(d=tube_id);
-        }
-    }
-}
-module lower_backstops_solid() {
-    render_if_needed() {
-        // Spheres placed inside the lower torus as backstops
+        // One plug per entrance, between the entrance and the nearest strut
         for (a = [lower_backstop_offset : arm_step : 359]) {
             rotate([0, 0, a])
             translate([tip_r, 0, lower_z])
-                sphere(d=tube_id + 2);
-        }
-    }
-}
-module lower_backstops_cutouts() {
-    render_if_needed() {
-        // Spheres placed inside the lower torus as backstops
-        for (a = [entrance_offset : arm_step : 359]) {
-            rotate([0, 0, a])
-            translate([tip_r, 0, lower_z])
-                sphere(d=tube_id);
+                sphere(d=tube_od);
         }
     }
 }
@@ -312,7 +304,7 @@ module entrance_holes() {
     // Entrance holes are subtracted last to 'redraw' the openings
     // place the hole centers on the inner face of the torus so they only open to the inside
     entrance_r = tip_r - (tube_od / 2) - 0.5; // slightly inset to sit on inner surface
-    hole_depth = (tube_od / 2) ; // how far the cutting cylinder penetrates inward
+    hole_depth = (tube_od / 2) + 2; // how far the cutting cylinder penetrates inward
     for (a = [entrance_offset : arm_step : 359]) {
         rotate([0, 0, a])
         translate([entrance_r, 0, lower_z])
