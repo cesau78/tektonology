@@ -131,11 +131,12 @@ module central_tower_cutouts() {
     translate([0, 0, base_height - 1])
         cylinder(h=2, d=reservoir_id + (thread_depth * 2));
 
-    // O-Ring Groove: annular channel cut into the bore wall for radial seal
-    translate([0, 0, oring_z])
+    // O-Ring Groove: semicircular channel cut into the bore wall for radial seal
+    // Circle centered on the bore wall so half protrudes into the bore cavity
+    translate([0, 0, oring_z + oring_groove_w / 2])
         rotate_extrude()
             translate([reservoir_id / 2, 0])
-                square([oring_groove_d, oring_groove_w]);
+                circle(d=oring_groove_w);
 
     // Internal Threads: contiguous right-hand helix via hull() between consecutive steps.
     // hull() fills the tangential gap between steps, eliminating disconnected squares.

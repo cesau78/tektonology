@@ -23,16 +23,20 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Verify Coupler
+      - name: Render Liquid Bait Station
         # Ensure preview and cross-section overrides are applied so CI renders full model
         env:
           PREVIEW: 'false'
           CROSSSECTION_VIEW: 'false'
         run: |
-          # render the model into a known path so the upload step can find it
           openscad -o 3d-models/liquid-bait-station/liquid-bait-station.stl 3d-models/liquid-bait-station/liquid-bait-station.scad \
             -D "preview=$PREVIEW" -D "crosssection_view=$CROSSSECTION_VIEW" \
             -D 'liquid_bait_station();'
+
+      - name: Render O-Ring
+        run: |
+          openscad -o 3d-models/liquid-bait-station/oring.stl 3d-models/liquid-bait-station/oring.scad \
+            -D "preview=false"
 
       - name: Upload STLs
         uses: actions/upload-artifact@v4
