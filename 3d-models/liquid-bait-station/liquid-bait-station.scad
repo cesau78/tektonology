@@ -119,49 +119,44 @@ module central_tower_solid() {
 }
 
 module central_tower_cutouts() {
-    render_if_needed() {
-        // Reservoir Well (cut from outer tower)
-        translate([0, 0, wall])
-            cylinder(h=base_height, d=reservoir_id);
+    // Reservoir Well (cut from outer tower)
+    translate([0, 0, wall])
+        cylinder(h=base_height, d=reservoir_id);
 
-        // Bottle Neck (cut)
-        translate([0, 0, 15])
-            cylinder(h=base_height + 1, d=reservoir_id);
-            //cylinder(h=2, d=reservoir_id + 1);
+    // Bottle Neck (cut)
+    translate([0, 0, 15])
+        cylinder(h=base_height + 1, d=reservoir_id);
 
-        // Thread lead-in: wider bore at top so bottle thread can drop into position.
-        translate([0, 0, base_height - 1])
-            cylinder(h=2, d=reservoir_id + (thread_depth * 2));
+    // Thread lead-in: wider bore at top so bottle thread can drop into position.
+    translate([0, 0, base_height - 1])
+        cylinder(h=2, d=reservoir_id + (thread_depth * 2));
 
-        // O-Ring Groove: annular channel cut into the bore wall for radial seal
-        translate([0, 0, oring_z])
-            rotate_extrude()
-                translate([reservoir_id / 2, 0])
-                    square([oring_groove_d, oring_groove_w]);
+    // O-Ring Groove: annular channel cut into the bore wall for radial seal
+    translate([0, 0, oring_z])
+        rotate_extrude()
+            translate([reservoir_id / 2, 0])
+                square([oring_groove_d, oring_groove_w]);
 
-        // Internal Threads: contiguous right-hand helix via hull() between consecutive steps.
-        // hull() fills the tangential gap between steps, eliminating disconnected squares.
-        // z-offset raised by 0.5mm (lead-in h/2) so top of thread overlaps lead-in cutout.
-        
-        for (i = [0 : thread_step : 360 * thread_turns - thread_step])
-            hull() {
-                rotate([0, 0, i])
-                translate([reservoir_id / 2, 0,
-                    base_height - thread_offset - (thread_turns * thread_pitch) + ((i / 360) * thread_pitch)])
-                    cube([thread_depth * 2, 1.0, thread_groove_w], center=true);
-                rotate([0, 0, i + thread_step])
-                translate([reservoir_id / 2, 0,
-                    base_height - thread_offset - (thread_turns * thread_pitch) + (((i + thread_step) / 360) * thread_pitch)])
-                    cube([thread_depth * 2, 1.0, thread_groove_w], center=true);
-            }
-
-        // Port Holes for the Arms
-        for (a = [0 : arm_step : 359]) {
-                rotate([0, 0, a])
-                translate([0, 0, port_height]) 
-                    rotate([0, 90 - tilt_angle, 0]) 
-                        cylinder(h=20, d=tube_id);
+    // Internal Threads: contiguous right-hand helix via hull() between consecutive steps.
+    // hull() fills the tangential gap between steps, eliminating disconnected squares.
+    for (i = [0 : thread_step : 360 * thread_turns - thread_step])
+        hull() {
+            rotate([0, 0, i])
+            translate([reservoir_id / 2, 0,
+                base_height - thread_offset - (thread_turns * thread_pitch) + ((i / 360) * thread_pitch)])
+                cube([thread_depth * 2, 1.0, thread_groove_w], center=true);
+            rotate([0, 0, i + thread_step])
+            translate([reservoir_id / 2, 0,
+                base_height - thread_offset - (thread_turns * thread_pitch) + (((i + thread_step) / 360) * thread_pitch)])
+                cube([thread_depth * 2, 1.0, thread_groove_w], center=true);
         }
+
+    // Port Holes for the Arms
+    for (a = [0 : arm_step : 359]) {
+            rotate([0, 0, a])
+            translate([0, 0, port_height])
+                rotate([0, 90 - tilt_angle, 0])
+                    cylinder(h=20, d=tube_id);
     }
 }
 
