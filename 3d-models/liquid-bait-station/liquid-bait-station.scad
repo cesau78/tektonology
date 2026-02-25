@@ -279,7 +279,7 @@ module upper_backstop_plugs() {
         for (a = [upper_backstop_offset : arm_step : 359]) {
             rotate([0, 0, a])
             translate([tip_r, 0, upper_z])
-                sphere(d=tube_od);
+                sphere(d=tube_od + 0.4);
         }
     }
 }
@@ -290,7 +290,7 @@ module lower_backstop_plugs() {
         for (a = [lower_backstop_offset : arm_step : 359]) {
             rotate([0, 0, a])
             translate([tip_r, 0, lower_z])
-                sphere(d=tube_od);
+                sphere(d=tube_od + 0.4);
         }
     }
 }
