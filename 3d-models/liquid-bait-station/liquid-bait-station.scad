@@ -1,8 +1,8 @@
 // Liquid Bait Station OpenSCAD Model
 
 //Performance Settings
-preview = false; //set preview=true for faster rendering with lower detail, or false for full detail.
-crosssection_view = false; // Set to true to cut the model along a plane and show only one side
+preview = true; //set preview=true for faster rendering with lower detail, or false for full detail.
+crosssection_view = true; // Set to true to cut the model along a plane and show only one side
 crosssection_axis = "x"; // axis: 'x', 'y', or 'z'
 crosssection_pos = 0; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
 
@@ -12,7 +12,7 @@ wall = 2;
 torus_max_in = 3.0; // Max torus diameter (inches)
 
 core_dia = 32;
-base_height = 40;
+base_height = 30;
 reservoir_id = 25; //24 = standard plastic bottle od
 tube_od = 10;
 tube_id = 6;
@@ -46,8 +46,8 @@ entrance_offset = strut_offset - 10; // entrance offset (e.g., 15 deg for 6 arms
 lower_backstop_offset = entrance_offset + 3; // small tuned offset for backstops
 upper_backstop_offset = 6; // small tuned offset for backstops
 
-// Desired top of torus aligns with top of reservoir: top = wall + base_height
-upper_z = wall + base_height - (tube_od / 2); // center height of torus ring so top aligns
+// Upper torus height pinned independently of reservoir height
+upper_z = 37; // was: wall + 40 - (tube_od / 2) — kept at original position
 
 // Compute arm_length so that the slanted arm reaches the torus center at upper_z
 torus_dia = torus_max_in * 25.4; // convert inches to mm (4 in = 101.6 mm)
