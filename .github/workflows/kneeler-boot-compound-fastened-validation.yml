@@ -24,15 +24,23 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Verify Coupler
+      - name: Render Slipper
         run: |
-          openscad -o kneeler-boot-coupler.stl 3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened/kneeler-boot-coupler.scad \
-          -D 'upper_boot_pla();'
+          openscad -o 3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened/kneeler-boot-slipper.stl \
+            3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened/kneeler-boot-coupler.scad \
+            -D 'piece="slipper"' -D 'preview=false' -D 'crosssection_view=false'
 
-      - name: Verify Kneeler Boot Insert
+      - name: Render Cap
         run: |
-          openscad -o kneeler-boot-insert.stl 3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened/kneeler-boot-insert.scad \
-          -D 'floor_pad_tpu();'
+          openscad -o 3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened/kneeler-boot-cap.stl \
+            3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened/kneeler-boot-coupler.scad \
+            -D 'piece="cap"' -D 'preview=false' -D 'crosssection_view=false'
+
+      - name: Render Insert
+        run: |
+          openscad -o 3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened/kneeler-boot-insert.stl \
+            3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened/kneeler-boot-insert.scad \
+            -D 'preview=false' -D 'crosssection_view=false'
 
       - name: Upload STLs
         uses: actions/upload-artifact@v4
