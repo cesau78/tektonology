@@ -8,14 +8,14 @@ top_target_depth = 2;    // 1/8 inch
 bottom_target_depth = 6.35; // 1/4 inch
 total_h = top_target_depth + bottom_target_depth + wall;
 r = 2.0;
-$fn = 64; 
+$fn = preview ?  32 : 64;
 
 // Lip parameters: a ring that sits at the top interior and comes in by lip_inset (mm)
 enable_top_lip = true;
 lip_inset = 1; // how much narrower than the top socket (mm)
 lip_thickness = 2; // vertical thickness of the lip (mm)
 
-module kneeler_boot_coupler() {
+module main() {
     // We'll subtract the internal sockets from the outer shell, then union a lip
     // so the lip remains as built-in material.
     module inner_cuts() {
@@ -57,6 +57,14 @@ module kneeler_boot_coupler() {
             // cutout to make it a ring; this is the opening of the top socket reduced by lip_inset
             translate([0, 0, 0])
                 cube([inner_x, inner_y, lip_thickness + 2], center=true);
+
+            // Underside relief: rounded block matching the inner_cuts top socket footprint
+            // Minkowski sphere mirrors the lip's bevel for a complementary curve
+            translate([0, 0, -(lip_thickness / 2) - 1])
+                minkowski() {
+                    cube([leg_l - 2, leg_w - 2, 0.01], center=true);
+                    sphere(r=1.0);
+                }
         }
     }
 
@@ -81,4 +89,23 @@ module kneeler_boot_coupler() {
     }
 }
 
-kneeler_boot_coupler();
+// Optionally render a cross-section (half) view so you can inspect internals
+if (!crosssection_view) {
+    main();
+} else {
+    // Intersect the model with a very large half-space cube to show only one side
+    intersection() {
+        main();
+        half_space = leg_l; // large extent to fully cover the model
+        // keep the positive side of the chosen axis starting at crosssection_pos
+        if (crosssection_axis == "x")
+            translate([crosssection_pos, -half_space, -half_space])
+                cube([half_space*2, half_space*2, half_space*2]);
+        if (crosssection_axis == "y")
+            translate([-half_space, crosssection_pos, -half_space])
+                cube([half_space*2, half_space*2, half_space*2]);
+        if (crosssection_axis == "z")
+            translate([-half_space, -half_space, crosssection_pos])
+                cube([half_space*2, half_space*2, half_space*2]);
+    }
+}

@@ -5,12 +5,12 @@ socket_depth = 6.5; //depth of the socket to slip into
 core_protrusion = 2; //core extension beyond the socket
 
 tightness = 0.1; // Adjust this: 0.0 for snug, 0.2 for very tight
-$fn = 64;
+$fn = preview ?  32 : 64;
 
 ribs = 7; 
 radius = socket_depth / 2; // Radius of semi-cylinders
 
-module kneeler_boot_insert() {
+module main() {
     core_depth = socket_depth + core_protrusion; //thickness of main body
     insert_l = leg_l + tightness;
     insert_w = leg_w + tightness;
@@ -44,4 +44,23 @@ module kneeler_boot_insert() {
     }
 }
 
-kneeler_boot_insert();
+// Optionally render a cross-section (half) view so you can inspect internals
+if (!crosssection_view) {
+    main();
+} else {
+    // Intersect the model with a very large half-space cube to show only one side
+    intersection() {
+        main();
+        half_space = leg_l; // large extent to fully cover the model
+        // keep the positive side of the chosen axis starting at crosssection_pos
+        if (crosssection_axis == "x")
+            translate([crosssection_pos, -half_space, -half_space])
+                cube([half_space*2, half_space*2, half_space*2]);
+        if (crosssection_axis == "y")
+            translate([-half_space, crosssection_pos, -half_space])
+                cube([half_space*2, half_space*2, half_space*2]);
+        if (crosssection_axis == "z")
+            translate([-half_space, -half_space, crosssection_pos])
+                cube([half_space*2, half_space*2, half_space*2]);
+    }
+}
