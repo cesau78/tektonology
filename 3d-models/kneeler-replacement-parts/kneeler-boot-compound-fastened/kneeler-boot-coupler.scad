@@ -32,6 +32,12 @@ lip_thickness = 2;
 cap_thickness = 8; // along X axis
 split_x = (leg_l / 2) + wall - r - cap_thickness;
 
+// --- Derived ---
+outer_extent = (leg_l / 2) + wall; // half-length of outer shell after minkowski
+// Lip ring inner opening dimensions (used for lip splitting)
+lip_inner_x = leg_l - 2 - (2 * lip_inset);
+lip_inner_y = leg_w - 2 - (2 * lip_inset);
+
 // --- M3x30 Socket Head Cap Screw Hardware ---
 bolt_dia        = 3.0;
 bolt_clearance  = 0.4;
@@ -47,21 +53,22 @@ head_height     = 3.0;   // M3 socket head height
 // bolt shaft starts at outer_extent - head_height, tip = start - bolt_length
 nut_x = (outer_extent - head_height) - bolt_length + (nut_thickness / 2) + 0.5;
 
-// Bolt positions: horizontally spaced in the side walls, centered vertically
-bolt_wall_y = (leg_w / 2) + (wall / 2);
-bolt_positions = [[0, bolt_wall_y], [0, -bolt_wall_y]]; // [z, y] pairs
+// Bolt position: single screw centered in Y, bottom of hole at z=0
+bolt_z = (bolt_dia + bolt_clearance) / 2; // bottom of bolt hole aligns to z=0
+bolt_positions = [[bolt_z, 0]]; // [z, y] — centered
+
+// --- Guide Dowels ---
+dowel_dia       = 2;
+dowel_depth     = 4;
+dowel_clearance = 0.15;
+dowel_y         = (leg_w / 2) / 2; // halfway from center to cap edge
+dowel_positions = [dowel_y, -dowel_y]; // flanking the bolt
 
 // --- Alignment Tongue ---
 tongue_width     = 10;   // along Y
 tongue_height    = 6;    // along Z
 tongue_depth     = 1.5;  // protrusion along X
 tongue_clearance = 0.15;
-
-// --- Derived ---
-outer_extent = (leg_l / 2) + wall; // half-length of outer shell after minkowski
-// Lip ring inner opening dimensions (used for lip splitting)
-lip_inner_x = leg_l - 2 - (2 * lip_inset);
-lip_inner_y = leg_w - 2 - (2 * lip_inset);
 
 // =====================================================================
 // COUPLER SHELL — outer shell + sockets, WITHOUT the top lip
@@ -78,6 +85,20 @@ module coupler_shell() {
         // BOTTOM SOCKET (TPU Plug) — flat walls
         translate([0, 0, -(total_h / 2) + (bottom_target_depth / 2) - 0.1])
             cube([leg_l, leg_w, bottom_target_depth + 0.2], center=true);
+
+        // BOTTOM SOCKET SLIDE GROOVE — rounded, wider than socket for slide-in rail
+        // 1/4 socket depth, extends groove_overhang beyond socket on each side
+        groove_h = bottom_target_depth / 4;
+        // Top of groove aligns to top of bottom socket
+        translate([0, 0, -(total_h / 2) + bottom_target_depth - (groove_h / 2) - 1])
+            minkowski() {
+                cube([
+                    leg_l + (groove_overhang * 2) - 2,
+                    leg_w + (groove_overhang * 2) - 2,
+                    groove_h
+                ], center=true);
+                sphere(r=1.0);
+            }
     }
 
     difference() {
@@ -97,24 +118,32 @@ module coupler_shell() {
 // TOP LIP — standalone module (full rectangular ring)
 // =====================================================================
 module top_lip() {
-    lip_z = ((total_h) - (r * 2)) - (lip_thickness) - 0.1;
+    lip_r = 1.0; // Minkowski rounding radius for lip
+    // Positioned so flat bottom overlaps shell top by lip_r for bonded fit
+    lip_z = (total_h / 2) - lip_r + (lip_thickness / 2);
+    cut_z = lip_z - (lip_thickness / 2); // flat bottom plane
     outer_x = leg_l + wall;
     outer_y = leg_w + wall;
 
-    translate([0, 0, lip_z])
-    difference() {
-        minkowski() {
-            cube([outer_x, outer_y, lip_thickness], center=true);
-            sphere(r=1.0);
-        }
-        // Ring cutout
-        cube([lip_inner_x, lip_inner_y, lip_thickness + 2], center=true);
-        // Underside relief
-        translate([0, 0, -(lip_thickness / 2) - 1])
+    intersection() {
+        translate([0, 0, lip_z])
+        difference() {
             minkowski() {
-                cube([leg_l - 2, leg_w - 2, 0.01], center=true);
-                sphere(r=1.0);
+                cube([outer_x, outer_y, lip_thickness], center=true);
+                sphere(r=lip_r);
             }
+            // Ring cutout
+            cube([lip_inner_x, lip_inner_y, lip_thickness + 2], center=true);
+            // Underside relief
+            translate([0, 0, -(lip_thickness / 2) - 1])
+                minkowski() {
+                    cube([leg_l - 2, leg_w - 2, 0.01], center=true);
+                    sphere(r=lip_r);
+                }
+        }
+        // Remove bottom Minkowski rounding for flat bonded fit to slipper
+        translate([-big, -big, cut_z])
+            cube([big * 2, big * 2, big * 2]);
     }
 }
 
@@ -169,13 +198,13 @@ module hex_nut_pocket(z_pos, y_pos) {
             cylinder(h=pocket_depth, r=nut_r, $fn=6);
 }
 
-// Hex nut slide-in slot — open toward +Z so the nut drops in from above.
+// Hex nut slide-in slot — straight down from nut pocket through bottom of shell.
 module hex_nut_slot(z_pos, y_pos) {
     slot_width = nut_af + nut_clearance;
     pocket_depth = nut_thickness + 0.2;
 
-    translate([nut_x - pocket_depth / 2, y_pos - slot_width / 2, z_pos])
-        cube([pocket_depth, slot_width, (total_h / 2) - z_pos + 1]);
+    translate([nut_x - pocket_depth / 2, y_pos - slot_width / 2, -(total_h / 2) - 0.1])
+        cube([pocket_depth, slot_width, z_pos + (total_h / 2) + 0.1]);
 }
 
 // Bolt channel through the slipper — connects the split face to the nut pocket.
@@ -225,6 +254,27 @@ module alignment_groove() {
 }
 
 // =====================================================================
+// GUIDE DOWELS — cap posts + slipper receiving holes
+// =====================================================================
+
+// Dowel posts protruding from cap split face toward slipper
+module dowel_posts() {
+    for (dy = dowel_positions)
+        translate([split_x - dowel_depth, dy, bolt_z])
+            rotate([0, 90, 0])
+                cylinder(h=dowel_depth, d=dowel_dia);
+}
+
+// Matching holes in slipper to receive the dowel posts
+module dowel_holes() {
+    hole_d = dowel_dia + (dowel_clearance * 2);
+    for (dy = dowel_positions)
+        translate([split_x - dowel_depth - 0.1, dy, bolt_z])
+            rotate([0, 90, 0])
+                cylinder(h=dowel_depth + 0.1, d=hole_d);
+}
+
+// =====================================================================
 // HALF-SPACE helpers
 // =====================================================================
 
@@ -238,6 +288,22 @@ module cap_half_space() {
         cube([big, big * 2, big * 2]);
 }
 
+// Side-wall Y bands (material outside the socket footprint)
+module side_bands() {
+    // +Y band
+    translate([-big, leg_w / 2, -big])
+        cube([big * 2, big, big * 2]);
+    // -Y band
+    translate([-big, -big - leg_w / 2, -big])
+        cube([big * 2, big, big * 2]);
+}
+
+// Center Y band (material inside the socket footprint)
+module center_band() {
+    translate([-big, -leg_w / 2, -big])
+        cube([big * 2, leg_w, big * 2]);
+}
+
 // =====================================================================
 // FINAL PIECES
 // =====================================================================
@@ -245,34 +311,47 @@ module cap_half_space() {
 module slipper() {
     difference() {
         union() {
+            // Slipper half of the shell
             intersection() {
                 coupler_shell();
                 slipper_half_space();
             }
+            // Side walls extend full length over the cap zone
+            intersection() {
+                coupler_shell();
+                cap_half_space();
+                side_bands();
+            }
             if (enable_top_lip) slipper_lip();
-            alignment_tongue();
+            //alignment_tongue();
         }
-        // Hex nut pockets, slide-in slots, and bolt channels in side walls
+        // Hex nut pockets, slide-in slots, and bolt channels
         for (pos = bolt_positions) {
             hex_nut_pocket(pos[0], pos[1]);
             hex_nut_slot(pos[0], pos[1]);
             bolt_channel(pos[0], pos[1]);
         }
+        // Guide dowel receiving holes
+        dowel_holes();
     }
 }
 
 module cap() {
     difference() {
         union() {
+            // Cap keeps only the center band (sides belong to slipper)
             intersection() {
                 coupler_shell();
                 cap_half_space();
+                center_band();
             }
             if (enable_top_lip) cap_lip();
+            // Guide dowel posts
+            dowel_posts();
         }
         for (pos = bolt_positions)
             bolt_hole(pos[0], pos[1]);
-        alignment_groove();
+        //alignment_groove();
     }
 }
 
@@ -286,7 +365,7 @@ module render_piece() {
         cap();
     else { // assembly — show both with a small gap
         slipper();
-        translate([6, 0, 0]) cap(); // 6mm exploded gap for visibility
+        translate([16, 0, 0]) cap(); // 16mm exploded gap for visibility
     }
 }
 
