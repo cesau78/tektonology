@@ -15,7 +15,7 @@ crosssection_axis = "x"; // axis: 'x', 'y', or 'z'
 crosssection_pos = 0.5; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
 
 // --- Shell Geometry ---
-wall = 8.0; // thicker walls to house M3 hardware in the side walls
+wall = 9.0; // thicker walls to house M3 hardware in the side walls
 floor_thickness = 3.0; // thickness of the shell floor under the bottom socket
 top_target_depth = 2;
 bottom_target_depth = 6.35;
@@ -42,13 +42,13 @@ lip_inner_y = leg_w - 2 - (2 * lip_inset);
 // --- M3x30 Socket Head Cap Screw Hardware ---
 bolt_dia        = 3.0;
 bolt_clearance  = 0.1;
-bolt_length     = 30;    // M3x30 — shaft length under head (very common size)
+bolt_length     = 20;    // M3x20 — shaft length under head (very common size)
 nut_af          = 5.5;   // hex nut across-flats
 nut_clearance   = 0.2;
 nut_thickness   = 2.4;
-head_dia        = 5.5;   // M3 socket head cap screw head diameter
-head_clearance  = 0.1;
-head_height     = 3.0;   // M3 socket head height
+head_dia        = 6.0;   // M3 socket head cap screw head diameter
+head_clearance  = 0.0;
+head_height     = 3.5;   // M3 socket head height
 
 // Nut X position: derived so bolt tip fully engages the nut with 0.5mm margin
 // bolt shaft starts at outer_extent - head_height, tip = start - bolt_length

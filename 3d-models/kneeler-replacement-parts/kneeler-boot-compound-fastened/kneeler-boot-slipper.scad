@@ -100,6 +100,9 @@ module slipper() {
                 cube([leg_l / 2, leg_w - 2, top_target_depth], center=true);
                 sphere(r=1.0);
             }
+        //compliment lip from the cap
+        if (enable_top_lip) translate([28, 0, total_h - wall + 2.8])
+            cube([wall - head_height + 1, cap_width, lip_height], center=true);
     }
 }
 
