@@ -271,7 +271,7 @@ module dowel_holes() {
     for (dy = dowel_positions)
         translate([split_x - dowel_depth - 0.1, dy, bolt_z])
             rotate([0, 90, 0])
-                cylinder(h=dowel_depth + 0.1, d=hole_d);
+                cylinder(h=dowel_depth + 0.2, d=hole_d);
 }
 
 // =====================================================================
@@ -365,7 +365,7 @@ module render_piece() {
         cap();
     else { // assembly — show both with a small gap
         slipper();
-        translate([16, 0, 0]) cap(); // 16mm exploded gap for visibility
+        translate([64, 0, 0]) cap(); // 16mm exploded gap for visibility
     }
 }
 
