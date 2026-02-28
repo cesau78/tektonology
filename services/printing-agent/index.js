@@ -2,7 +2,7 @@ import "dotenv/config";
 import mqtt from "mqtt";
 import readline from "readline";
 import { MongoClient } from "mongodb";
-import { createQueue, QUEUE_NAMES } from "../queue/index.js";
+import { createQueue, QUEUE_NAMES } from "../agent-bus/index.js";
 import { extractGrams, logJob } from "./print-job.js";
 
 const {

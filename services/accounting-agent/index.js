@@ -17,7 +17,7 @@
 
 import "dotenv/config";
 import { MongoClient } from "mongodb";
-import { createWorker, QUEUE_NAMES } from "../queue/index.js";
+import { createWorker, QUEUE_NAMES } from "../agent-bus/index.js";
 import { processJob, drainBacklog } from "./bookkeeping.js";
 
 const {
