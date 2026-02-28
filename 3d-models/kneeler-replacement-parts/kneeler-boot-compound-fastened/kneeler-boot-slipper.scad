@@ -93,6 +93,13 @@ module slipper() {
         cap_side_boss_holes();
         // Re-cut top socket through lip
         if (enable_top_lip) top_socket_cut();
+
+        //offset entrance slide holes for the leg to slide into
+        translate([leg_l / 2, 0, (total_h / 2) - (top_target_depth / 2) + 0.1])
+            minkowski() {
+                cube([leg_l / 2, leg_w - 2, top_target_depth], center=true);
+                sphere(r=1.0);
+            }
     }
 }
 
