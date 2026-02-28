@@ -47,7 +47,7 @@ nut_af          = 5.5;   // hex nut across-flats
 nut_clearance   = 0.2;
 nut_thickness   = 2.4;
 head_dia        = 5.5;   // M3 socket head cap screw head diameter
-head_clearance  = 0.0;
+head_clearance  = 0.1;
 head_height     = 3.0;   // M3 socket head height
 
 // Nut X position: derived so bolt tip fully engages the nut with 0.5mm margin
