@@ -27,6 +27,7 @@ $fn = preview ? 32 : 64;
 enable_top_lip = true;
 lip_inset = 1;
 lip_thickness = 3;
+lip_height = 1;  // Z thickness of cap lip relief cut in slipper
 
 // --- Two-Piece Split ---
 cap_thickness = 8; // along X axis
