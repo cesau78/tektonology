@@ -204,13 +204,17 @@ module hex_nut_pocket(z_pos, y_pos) {
             cylinder(h=pocket_depth, r=nut_r, $fn=6);
 }
 
-// Hex nut slide-in slot — straight down from nut pocket through bottom of shell.
+// Hex nut slide-in slot — 45° toward center from nut pocket through shell.
 module hex_nut_slot(z_pos, y_pos) {
     slot_width = nut_af + nut_clearance;
     pocket_depth = nut_thickness + 0.2;
+    slot_h = total_h; // generous length to exit the shell
+    angle = (y_pos > 0) ? -45 : 45; // tilt toward Y=0
 
-    translate([nut_x - pocket_depth / 2, y_pos - slot_width / 2, -(total_h / 2) - 0.1])
-        cube([pocket_depth, slot_width, z_pos + (total_h / 2) + 0.1]);
+    translate([nut_x, y_pos, z_pos])
+        rotate([angle, 0, 0])
+            translate([-pocket_depth / 2, -slot_width / 2, -slot_h])
+                cube([pocket_depth, slot_width, slot_h]);
 }
 
 // Bolt channel through the slipper — connects the split face to the nut pocket.
