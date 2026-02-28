@@ -2,9 +2,12 @@
   "name": "accounting-agent",
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "node --test bookkeeping.test.js",
+    "test:coverage": "node --test --experimental-test-coverage bookkeeping.test.js"
   },
   "dependencies": {
+    "bullmq": "^5",
     "dotenv": "^16",
     "mongodb": "^6"
   }

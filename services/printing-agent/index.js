@@ -2,6 +2,8 @@ import "dotenv/config";
 import mqtt from "mqtt";
 import readline from "readline";
 import { MongoClient } from "mongodb";
+import { createQueue, QUEUE_NAMES } from "../queue/index.js";
+import { extractGrams, logJob } from "./print-job.js";
 
 const {
   PRINTER_IP,
@@ -23,6 +25,10 @@ await mongo.connect();
 const db = mongo.db(DB_NAME);
 const printJobs = db.collection("print_jobs");
 console.log(`Connected to MongoDB (${DB_NAME})`);
+
+// --- BullMQ ---
+const printJobQueue = createQueue(QUEUE_NAMES.PRINT_JOB_COMPLETED);
+console.log("Queue ready: print-job-completed");
 
 // --- MQTT ---
 const REPORT_TOPIC = `device/${PRINTER_SERIAL}/report`;
@@ -79,7 +85,13 @@ client.on("message", async (_topic, payload) => {
       usageG = await promptGrams(project);
     }
 
-    await logJob({ project, usageG, loggedAt });
+    try {
+      const id = await logJob({ project, usageG, loggedAt, activeSpoolId: ACTIVE_SPOOL_ID, printJobs, printJobQueue });
+      console.log(`Print job recorded (id: ${id})`);
+      console.log("Queued print-job-completed event");
+    } catch (err) {
+      console.error("Failed to write print job:", err.message);
+    }
     currentJob = null;
   }
 
@@ -93,20 +105,6 @@ client.on("error", (err) => console.error("MQTT error:", err));
 client.on("close", () => console.log("MQTT connection closed"));
 
 /**
- * Attempt to extract grams from the print payload.
- * Bambu firmware versions report this differently; we check known field names.
- */
-function extractGrams(print) {
-  const candidates = ["filament_used_g", "mc_print_filament_g", "filament_g"];
-  for (const field of candidates) {
-    const val = print[field];
-    if (typeof val === "number" && val > 0) return val;
-    if (typeof val === "string" && parseFloat(val) > 0) return parseFloat(val);
-  }
-  return null;
-}
-
-/**
  * Fallback: ask the user to enter grams at the terminal.
  */
 function promptGrams(project) {
@@ -117,27 +115,4 @@ function promptGrams(project) {
       resolve(parseFloat(answer) || 0);
     });
   });
-}
-
-/**
- * Write the raw print job to MongoDB.
- * bookkeeping-agent will pick it up and enrich it with cost + journal entries.
- */
-async function logJob({ project, usageG, loggedAt }) {
-  const doc = {
-    project,
-    spoolId: parseInt(ACTIVE_SPOOL_ID, 10),
-    usageG,
-    loggedAt,
-    processed: false,
-  };
-
-  console.log("Writing print job:", doc);
-
-  try {
-    const result = await printJobs.insertOne(doc);
-    console.log(`Print job recorded (id: ${result.insertedId})`);
-  } catch (err) {
-    console.error("Failed to write print job:", err.message);
-  }
 }
