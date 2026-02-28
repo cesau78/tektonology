@@ -65,6 +65,11 @@ dowel_clearance = 0.15;
 dowel_y         = (leg_w / 2) / 2; // halfway from center to cap edge
 dowel_positions = [dowel_y, -dowel_y]; // flanking the bolt
 
+// --- Cap Side Bosses ---
+boss_dia    = head_dia;    // matches cap screw head diameter
+boss_height = head_height; // adjust with screw availability
+boss_x      = (split_x + outer_extent) / 2; // centered in cap along X
+
 // --- Alignment Tongue ---
 tongue_width     = 10;   // along Y
 tongue_height    = 6;    // along Z
@@ -306,6 +311,17 @@ module center_band() {
 }
 
 // =====================================================================
+// CAP SIDE BOSSES — half-cylinders on each Y edge of the cap
+// =====================================================================
+module cap_side_bosses() {
+    boss_len = outer_extent - split_x; // full cap depth along X
+    for (side = [1, -1])
+        translate([split_x + boss_len / 2, side * cap_width / 2, bolt_z])
+            rotate([0, 90, 0])
+                cylinder(h=boss_len, d=boss_dia, center=true);
+}
+
+// =====================================================================
 // FINAL PIECES
 // =====================================================================
 
@@ -350,6 +366,8 @@ module cap() {
             if (enable_top_lip) cap_lip();
             // Guide dowel posts
             dowel_posts();
+            // Side bosses — half-cylinders at cap Y edges
+            cap_side_bosses();
         }
         for (pos = bolt_positions)
             bolt_hole(pos[0], pos[1]);
