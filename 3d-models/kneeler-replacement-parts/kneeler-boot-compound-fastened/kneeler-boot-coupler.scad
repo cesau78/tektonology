@@ -41,22 +41,22 @@ lip_inner_y = leg_w - 2 - (2 * lip_inset);
 
 // --- M3x30 Socket Head Cap Screw Hardware ---
 bolt_dia        = 3.0;
-bolt_clearance  = 0.4;
+bolt_clearance  = 0.1;
 bolt_length     = 30;    // M3x30 — shaft length under head (very common size)
 nut_af          = 5.5;   // hex nut across-flats
-nut_clearance   = 0.3;
+nut_clearance   = 0.2;
 nut_thickness   = 2.4;
 head_dia        = 5.5;   // M3 socket head cap screw head diameter
-head_clearance  = 0.3;
+head_clearance  = 0.0;
 head_height     = 3.0;   // M3 socket head height
 
 // Nut X position: derived so bolt tip fully engages the nut with 0.5mm margin
 // bolt shaft starts at outer_extent - head_height, tip = start - bolt_length
 nut_x = (outer_extent - head_height) - bolt_length + (nut_thickness / 2) + 0.5;
 
-// Bolt position: single screw centered in Y, bottom of hole at z=0
-bolt_z = (bolt_dia + bolt_clearance) / 2; // bottom of bolt hole aligns to z=0
-bolt_positions = [[bolt_z, 0]]; // [z, y] — centered
+// Bolt position: two screws aligned with cap side bosses (Y = ±cap_width/2)
+bolt_z = bolt_dia / 2; // bottom of bolt hole aligns to z=0
+bolt_positions = [[bolt_z, cap_width / 2], [bolt_z, -cap_width / 2]];
 
 // --- Guide Dowels ---
 dowel_dia       = 2;
@@ -238,7 +238,7 @@ module bolt_hole(z_pos, y_pos) {
     // Socket head recess on the outer face (+X end)
     translate([outer_extent - head_height + 0.1, y_pos, z_pos])
         rotate([0, 90, 0])
-            cylinder(h=head_height + 1, d=head_pocket_dia);
+            cylinder(h=head_height + 1, d=head_pocket_dia + 0.1);
 }
 
 // =====================================================================
