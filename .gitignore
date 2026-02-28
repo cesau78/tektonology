@@ -1,3 +1,4 @@
 .claude/settings.local.json
 ai-collab/
 services/**/.env
+3d-models/tools/
