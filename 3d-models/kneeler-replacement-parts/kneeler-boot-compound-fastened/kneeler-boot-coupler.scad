@@ -27,7 +27,7 @@ $fn = preview ? 32 : 64;
 // --- Lip Parameters ---
 enable_top_lip = true;
 lip_inset = 1;
-lip_thickness = 2;
+lip_thickness = 3;
 
 // --- Two-Piece Split ---
 cap_thickness = 8; // along X axis
@@ -112,6 +112,17 @@ module coupler_shell() {
         }
         inner_cuts();
     }
+}
+
+// =====================================================================
+// TOP SOCKET CUT — reusable for re-cutting after lip is added
+// =====================================================================
+module top_socket_cut() {
+    translate([0, 0, (total_h / 2) - (top_target_depth / 2) + 0.1])
+        minkowski() {
+            cube([leg_l - 2, leg_w - 2, top_target_depth], center=true);
+            sphere(r=1.0);
+        }
 }
 
 // =====================================================================
@@ -336,6 +347,8 @@ module slipper() {
         }
         // Boss cutouts in slipper side walls
         cap_side_boss_holes();
+        // Re-cut top socket through lip
+        if (enable_top_lip) top_socket_cut();
     }
 }
 
@@ -355,6 +368,8 @@ module cap() {
         }
         for (pos = bolt_positions)
             bolt_hole(pos[0], pos[1]);
+        // Re-cut top socket through lip
+        if (enable_top_lip) top_socket_cut();
         //alignment_groove();
     }
 }
@@ -382,7 +397,7 @@ module debug_nuts() {
                 rotate([0, 90, 0])
                     cylinder(h=nut_thickness, r=nut_r, $fn=6, center=true);
 }
-debug_nuts();
+//debug_nuts();
 
 // Cross-section support
 if (!crosssection_view) {
