@@ -66,9 +66,9 @@ dowel_y         = (leg_w / 2) / 2; // halfway from center to cap edge
 dowel_positions = [dowel_y, -dowel_y]; // flanking the bolt
 
 // --- Cap Side Bosses ---
-boss_dia    = head_dia;    // matches cap screw head diameter
-boss_height = head_height; // adjust with screw availability
-boss_x      = (split_x + outer_extent) / 2; // centered in cap along X
+boss_dia       = head_dia;    // matches cap screw head diameter
+boss_height    = head_height; // adjust with screw availability
+boss_clearance = 0.3;
 
 // --- Alignment Tongue ---
 tongue_width     = 10;   // along Y
@@ -321,6 +321,15 @@ module cap_side_bosses() {
                 cylinder(h=boss_len, d=boss_dia, center=true);
 }
 
+// Matching cutouts in slipper side walls for the bosses
+module cap_side_boss_holes() {
+    boss_len = outer_extent - split_x;
+    for (side = [1, -1])
+        translate([split_x + boss_len / 2, side * cap_width / 2, bolt_z])
+            rotate([0, 90, 0])
+                cylinder(h=boss_len + 0.2, d=boss_dia + (boss_clearance * 2), center=true);
+}
+
 // =====================================================================
 // FINAL PIECES
 // =====================================================================
@@ -350,6 +359,8 @@ module slipper() {
         }
         // Guide dowel receiving holes
         dowel_holes();
+        // Boss cutouts in slipper side walls
+        cap_side_boss_holes();
     }
 }
 
