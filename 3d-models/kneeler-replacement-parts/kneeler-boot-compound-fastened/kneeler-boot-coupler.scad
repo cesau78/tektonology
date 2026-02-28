@@ -58,12 +58,11 @@ nut_x = (outer_extent - head_height) - bolt_length + (nut_thickness / 2) + 0.5;
 bolt_z = bolt_dia / 2; // bottom of bolt hole aligns to z=0
 bolt_positions = [[bolt_z, cap_width / 2], [bolt_z, -cap_width / 2]];
 
-// --- Guide Dowels ---
+// --- Guide Dowel ---
 dowel_dia       = 2;
 dowel_depth     = 4;
 dowel_clearance = 0.15;
-dowel_y         = (leg_w / 2) / 2; // halfway from center to cap edge
-dowel_positions = [dowel_y, -dowel_y]; // flanking the bolt
+dowel_positions = [0]; // single centered dowel
 
 // --- Cap Side Bosses ---
 boss_dia       = head_dia;    // matches cap screw head diameter
@@ -264,22 +263,22 @@ module alignment_groove() {
 }
 
 // =====================================================================
-// GUIDE DOWELS — cap posts + slipper receiving holes
+// GUIDE DOWELS — slipper posts + cap receiving holes
 // =====================================================================
 
-// Dowel posts protruding from cap split face toward slipper
+// Dowel posts protruding from slipper split face toward cap
 module dowel_posts() {
     for (dy = dowel_positions)
-        translate([split_x - dowel_depth, dy, bolt_z])
+        translate([split_x, dy, bolt_z])
             rotate([0, 90, 0])
                 cylinder(h=dowel_depth, d=dowel_dia);
 }
 
-// Matching holes in slipper to receive the dowel posts
+// Matching holes in cap to receive the dowel posts
 module dowel_holes() {
     hole_d = dowel_dia + (dowel_clearance * 2);
     for (dy = dowel_positions)
-        translate([split_x - dowel_depth - 0.1, dy, bolt_z])
+        translate([split_x - 0.1, dy, bolt_z])
             rotate([0, 90, 0])
                 cylinder(h=dowel_depth + 0.2, d=hole_d);
 }
@@ -354,6 +353,8 @@ module slipper() {
             }
             if (enable_top_lip) slipper_lip();
             //alignment_tongue();
+            // Guide dowel posts
+            dowel_posts();
         }
         // Hex nut pockets, slide-in slots, and bolt channels
         for (pos = bolt_positions) {
@@ -361,8 +362,6 @@ module slipper() {
             hex_nut_slot(pos[0], pos[1]);
             bolt_channel(pos[0], pos[1]);
         }
-        // Guide dowel receiving holes
-        dowel_holes();
         // Boss cutouts in slipper side walls
         cap_side_boss_holes();
     }
@@ -379,13 +378,13 @@ module cap() {
                     cube([big * 2, cap_width, big * 2]);
             }
             if (enable_top_lip) cap_lip();
-            // Guide dowel posts
-            dowel_posts();
             // Side bosses — half-cylinders at cap Y edges
             cap_side_bosses();
         }
         for (pos = bolt_positions)
             bolt_hole(pos[0], pos[1]);
+        // Guide dowel receiving holes
+        dowel_holes();
         //alignment_groove();
     }
 }
