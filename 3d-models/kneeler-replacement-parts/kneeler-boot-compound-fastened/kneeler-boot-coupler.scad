@@ -17,9 +17,10 @@ piece = "assembly"; // "slipper", "cap", or "assembly"
 
 // --- Shell Geometry ---
 wall = 8.0; // thicker walls to house M3 hardware in the side walls
+floor_thickness = 4.0; // thickness of the shell floor under the bottom socket
 top_target_depth = 2;
 bottom_target_depth = 6.35;
-total_h = top_target_depth + bottom_target_depth + wall;
+total_h = top_target_depth + bottom_target_depth + floor_thickness;
 r = 2.0;
 $fn = preview ? 32 : 64;
 
@@ -34,7 +35,7 @@ split_x = (leg_l / 2) + wall - r - cap_thickness;
 
 // --- Derived ---
 outer_extent = (leg_l / 2) + wall; // half-length of outer shell after minkowski
-cap_width = leg_w + (groove_overhang * 2); // cap Y width matches bottom groove (including minkowski)
+cap_width = leg_w + (groove_overhang * 2) + 4; // cap Y width matches bottom groove (including minkowski)
 // Lip ring inner opening dimensions (used for lip splitting)
 lip_inner_x = leg_l - 2 - (2 * lip_inset);
 lip_inner_y = leg_w - 2 - (2 * lip_inset);
@@ -57,12 +58,6 @@ nut_x = (outer_extent - head_height) - bolt_length + (nut_thickness / 2) + 0.5;
 // Bolt position: two screws aligned with cap side bosses (Y = ±cap_width/2)
 bolt_z = bolt_dia / 2; // bottom of bolt hole aligns to z=0
 bolt_positions = [[bolt_z, cap_width / 2], [bolt_z, -cap_width / 2]];
-
-// --- Guide Dowel ---
-dowel_dia       = 2;
-dowel_depth     = 4;
-dowel_clearance = 0.15;
-dowel_positions = [0]; // single centered dowel
 
 // --- Cap Side Bosses ---
 boss_dia       = head_dia;    // matches cap screw head diameter
@@ -263,27 +258,6 @@ module alignment_groove() {
 }
 
 // =====================================================================
-// GUIDE DOWELS — slipper posts + cap receiving holes
-// =====================================================================
-
-// Dowel posts protruding from slipper split face toward cap
-module dowel_posts() {
-    for (dy = dowel_positions)
-        translate([split_x, dy, bolt_z])
-            rotate([0, 90, 0])
-                cylinder(h=dowel_depth, d=dowel_dia);
-}
-
-// Matching holes in cap to receive the dowel posts
-module dowel_holes() {
-    hole_d = dowel_dia + (dowel_clearance * 2);
-    for (dy = dowel_positions)
-        translate([split_x - 0.1, dy, bolt_z])
-            rotate([0, 90, 0])
-                cylinder(h=dowel_depth + 0.2, d=hole_d);
-}
-
-// =====================================================================
 // HALF-SPACE helpers
 // =====================================================================
 
@@ -353,8 +327,6 @@ module slipper() {
             }
             if (enable_top_lip) slipper_lip();
             //alignment_tongue();
-            // Guide dowel posts
-            dowel_posts();
         }
         // Hex nut pockets, slide-in slots, and bolt channels
         for (pos = bolt_positions) {
@@ -383,8 +355,6 @@ module cap() {
         }
         for (pos = bolt_positions)
             bolt_hole(pos[0], pos[1]);
-        // Guide dowel receiving holes
-        dowel_holes();
         //alignment_groove();
     }
 }
