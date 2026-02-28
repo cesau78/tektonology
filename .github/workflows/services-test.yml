@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [agent-bus, printing-agent, accounting-agent]
+        service: [agent-bus, printing-agent, accounting-agent, print-proxy]
     steps:
       - name: Checkout
         uses: actions/checkout@v4

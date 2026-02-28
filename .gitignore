@@ -2,4 +2,5 @@
 ai-collab/
 node_modules/
 services/**/.env
+services/**/certs/
 3d-models/tools/
