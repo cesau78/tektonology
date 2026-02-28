@@ -34,6 +34,7 @@ split_x = (leg_l / 2) + wall - r - cap_thickness;
 
 // --- Derived ---
 outer_extent = (leg_l / 2) + wall; // half-length of outer shell after minkowski
+cap_width = leg_w + (groove_overhang * 2); // cap Y width matches bottom groove (including minkowski)
 // Lip ring inner opening dimensions (used for lip splitting)
 lip_inner_x = leg_l - 2 - (2 * lip_inset);
 lip_inner_y = leg_w - 2 - (2 * lip_inset);
@@ -288,13 +289,13 @@ module cap_half_space() {
         cube([big, big * 2, big * 2]);
 }
 
-// Side-wall Y bands (material outside the socket footprint)
+// Side-wall Y bands (material outside the cap width)
 module side_bands() {
     // +Y band
-    translate([-big, leg_w / 2, -big])
+    translate([-big, cap_width / 2, -big])
         cube([big * 2, big, big * 2]);
     // -Y band
-    translate([-big, -big - leg_w / 2, -big])
+    translate([-big, -big - cap_width / 2, -big])
         cube([big * 2, big, big * 2]);
 }
 
@@ -339,11 +340,12 @@ module slipper() {
 module cap() {
     difference() {
         union() {
-            // Cap keeps only the center band (sides belong to slipper)
+            // Cap width matches the bottom groove (wider than slipper center band)
             intersection() {
                 coupler_shell();
                 cap_half_space();
-                center_band();
+                translate([-big, -cap_width / 2, -big])
+                    cube([big * 2, cap_width, big * 2]);
             }
             if (enable_top_lip) cap_lip();
             // Guide dowel posts
