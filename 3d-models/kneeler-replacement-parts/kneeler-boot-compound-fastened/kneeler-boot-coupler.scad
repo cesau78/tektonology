@@ -17,7 +17,7 @@ piece = "assembly"; // "slipper", "cap", or "assembly"
 
 // --- Shell Geometry ---
 wall = 8.0; // thicker walls to house M3 hardware in the side walls
-floor_thickness = 4.0; // thickness of the shell floor under the bottom socket
+floor_thickness = 3.0; // thickness of the shell floor under the bottom socket
 top_target_depth = 2;
 bottom_target_depth = 6.35;
 total_h = top_target_depth + bottom_target_depth + floor_thickness;
@@ -56,7 +56,7 @@ head_height     = 3.0;   // M3 socket head height
 nut_x = (outer_extent - head_height) - bolt_length + (nut_thickness / 2) + 0.5;
 
 // Bolt position: two screws aligned with cap side bosses (Y = ±cap_width/2)
-bolt_z = bolt_dia / 2; // bottom of bolt hole aligns to z=0
+bolt_z = (bolt_dia / 2) + 0.5; // bottom of bolt hole 0.5mm above z=0
 bolt_positions = [[bolt_z, cap_width / 2], [bolt_z, -cap_width / 2]];
 
 // --- Cap Side Bosses ---
@@ -203,7 +203,7 @@ module hex_nut_slot(z_pos, y_pos) {
     slot_width = nut_af + nut_clearance;
     pocket_depth = nut_thickness + 0.2;
     slot_h = total_h; // generous length to exit the shell
-    angle = (y_pos > 0) ? -45 : 45; // tilt toward Y=0
+    angle = (y_pos > 0) ? -60 : 60; // tilt toward Y=0
 
     translate([nut_x, y_pos, z_pos])
         rotate([angle, 0, 0])
@@ -372,6 +372,17 @@ module render_piece() {
         translate([64, 0, 0]) cap(); // 16mm exploded gap for visibility
     }
 }
+
+// Debug: visualize hex nuts in their pockets
+module debug_nuts() {
+    nut_r = nut_af / 2 / cos(30);
+    color("red", 0.7)
+        for (pos = bolt_positions)
+            translate([nut_x, pos[1], pos[0]])
+                rotate([0, 90, 0])
+                    cylinder(h=nut_thickness, r=nut_r, $fn=6, center=true);
+}
+debug_nuts();
 
 // Cross-section support
 if (!crosssection_view) {
