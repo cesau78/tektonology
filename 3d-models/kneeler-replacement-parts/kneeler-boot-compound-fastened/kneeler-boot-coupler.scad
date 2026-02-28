@@ -10,5 +10,5 @@ use <kneeler-boot-cap.scad>
 
 crosssection(leg_l) {
     slipper();
-    translate([0, 0, 0]) cap(); // exploded gap for visibility
+    translate([10, 0, 0]) cap(); // exploded gap for visibility
 }

@@ -47,6 +47,18 @@ module alignment_groove() {
         cube([td + 0.1, tw, th]);
 }
 
+// Complementary lip piece — fills the entrance slide cut from the slipper
+module entrance_lip_fill() {
+    intersection() {
+        slipper_lip();
+        translate([leg_l / 2, 0, (total_h / 2) - (top_target_depth / 2) + 0.1])
+            minkowski() {
+                cube([leg_l / 2, leg_w - 2, top_target_depth], center=true);
+                sphere(r=1.0);
+            }
+    }
+}
+
 // =====================================================================
 // CAP PIECE
 // =====================================================================
@@ -62,6 +74,8 @@ module cap() {
                     cube([big * 2, cap_width, big * 2]);
             }
             if (enable_top_lip) cap_lip();
+            // Lip piece that was cut from slipper entrance
+            if (enable_top_lip) entrance_lip_fill();
             // Side bosses — half-cylinders at cap Y edges
             cap_side_bosses();
         }
