@@ -13,13 +13,13 @@ radius = socket_depth / 2; // Radius of semi-cylinders
 // --- Slide-in Flange (matches coupler's bottom groove) ---
 flange_clearance = 0.2;  // clearance for smooth slide fit
 flange_depth = socket_depth / 4;  // matches coupler's groove_h (1/4 socket depth)
-flange_l = leg_l + (groove_overhang * 2) - flange_clearance;
-flange_w = leg_w + (groove_overhang * 2) - flange_clearance;
+flange_l = sole_plate_l + (groove_overhang * 2) - flange_clearance;
+flange_w = sole_plate_w + (groove_overhang * 2) - flange_clearance;
 
 module main() {
     core_depth = socket_depth + core_protrusion; //thickness of main body
-    insert_l = leg_l + tightness;
-    insert_w = leg_w + tightness;
+    insert_l = sole_plate_l + tightness;
+    insert_w = sole_plate_w + tightness;
 
 
     // This calculates rib width so the total set fits exactly
@@ -62,7 +62,7 @@ if (!crosssection_view) {
     // Intersect the model with a very large half-space cube to show only one side
     intersection() {
         main();
-        half_space = leg_l; // large extent to fully cover the model
+        half_space = sole_plate_l; // large extent to fully cover the model
         // keep the positive side of the chosen axis starting at crosssection_pos
         if (crosssection_axis == "x")
             translate([crosssection_pos, -half_space, -half_space])

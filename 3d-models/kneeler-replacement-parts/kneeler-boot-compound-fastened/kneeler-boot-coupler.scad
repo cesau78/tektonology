@@ -8,7 +8,7 @@ use <kneeler-boot-slipper.scad>
 use <kneeler-boot-cap.scad>
 
 
-crosssection(leg_l) {
+crosssection(sole_plate_l) {
     slipper();
     translate([10, 0, 0]) cap(); // exploded gap for visibility
 }

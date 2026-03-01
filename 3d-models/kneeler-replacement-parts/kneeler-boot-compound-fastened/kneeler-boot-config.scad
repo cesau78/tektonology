@@ -1,10 +1,14 @@
 // --- TEKTONOLOGY KNEELER BOOT CONFIG ---
 // Shared parameters and modules for the 2-piece coupler (slipper + cap)
 
-// --- Leg Dimensions ---
+// --- Sole Plate Dimensions ---
+sole_plate_l = 54;
+sole_plate_w = 18.5;
+sole_plate_h = 3.5;
+
+// --- Leg Dimensions (for socket fit) ---
+leg_w = 16.5;
 leg_l = 52;
-leg_w = 19;
-top_target_depth = 3;
 
 // --- Bottom Slide Groove (shared between coupler + insert) ---
 groove_overhang = 2;      // groove extends this far beyond socket per side
@@ -20,7 +24,7 @@ wall = 9.0; // thicker walls to house M3 hardware in the side walls
 floor_thickness = 3.0; // thickness of the shell floor under the bottom socket
 
 bottom_target_depth = 6.35;
-total_h = top_target_depth + bottom_target_depth + floor_thickness;
+total_h = sole_plate_h + bottom_target_depth + floor_thickness;
 r = 2.0;
 $fn = preview ? 32 : 64;
 
@@ -32,14 +36,14 @@ lip_height = 1;  // Z thickness of cap lip relief cut in slipper
 
 // --- Two-Piece Split ---
 cap_thickness = 8; // along X axis
-split_x = (leg_l / 2) + wall - r - cap_thickness;
+split_x = (sole_plate_l / 2) + wall - r - cap_thickness;
 
 // --- Derived ---
-outer_extent = (leg_l / 2) + wall; // half-length of outer shell after minkowski
-cap_width = leg_w + (groove_overhang * 2) + 4; // cap Y width matches bottom groove (including minkowski)
+outer_extent = (sole_plate_l / 2) + wall; // half-length of outer shell after minkowski
+cap_width = sole_plate_w + (groove_overhang * 2) + 4; // cap Y width matches bottom groove (including minkowski)
 // Lip ring inner opening dimensions (used for lip splitting)
-lip_inner_x = leg_l - 2 - (2 * lip_inset);
-lip_inner_y = leg_w - 2 - (2 * lip_inset);
+lip_inner_x = sole_plate_l - 2 - (2 * lip_inset);
+lip_inner_y = sole_plate_w - 2 - (2 * lip_inset);
 
 // --- M3x30 Socket Head Cap Screw Hardware ---
 bolt_dia        = 3.0;
@@ -80,15 +84,15 @@ big = 200;
 module coupler_shell() {
     module inner_cuts() {
         // TOP SOCKET (Metal Leg) — beveled/rounded walls
-        translate([0, 0, (total_h / 2) - (top_target_depth / 2) + 0.1])
+        translate([0, 0, (total_h / 2) - (sole_plate_h / 2) + 0.1])
             minkowski() {
-                cube([leg_l - 2, leg_w - 2, top_target_depth], center=true);
+                cube([sole_plate_l - 2, sole_plate_w - 2, sole_plate_h], center=true);
                 sphere(r=1.0);
             }
 
         // BOTTOM SOCKET (TPU Plug) — flat walls
         translate([0, 0, -(total_h / 2) + (bottom_target_depth / 2) - 0.1])
-            cube([leg_l, leg_w, bottom_target_depth + 0.2], center=true);
+            cube([sole_plate_l, sole_plate_w, bottom_target_depth + 0.2], center=true);
 
         // BOTTOM SOCKET SLIDE GROOVE — rounded perimeter, wider than socket for slide-in rail
         // 1/4 socket depth, top aligned to top of bottom socket
@@ -96,8 +100,8 @@ module coupler_shell() {
         translate([0, 0, -(total_h / 2) + bottom_target_depth - (groove_h / 2) - 1])
             minkowski() {
                 cube([
-                    leg_l + (groove_overhang * 2) - 2,
-                    leg_w + (groove_overhang * 2) - 2,
+                    sole_plate_l + (groove_overhang * 2) - 2,
+                    sole_plate_w + (groove_overhang * 2) - 2,
                     groove_h
                 ], center=true);
                 sphere(r=1.0);
@@ -107,8 +111,8 @@ module coupler_shell() {
     difference() {
         minkowski() {
             cube([
-                leg_l + (wall * 2) - (r * 2),
-                leg_w + (wall * 2) - (r * 2),
+                sole_plate_l + (wall * 2) - (r * 2),
+                sole_plate_w + (wall * 2) - (r * 2),
                 total_h - (r * 2)
             ], center=true);
             sphere(r=r);
@@ -121,9 +125,9 @@ module coupler_shell() {
 // TOP SOCKET CUT — reusable for re-cutting after lip is added
 // =====================================================================
 module top_socket_cut() {
-    translate([0, 0, (total_h / 2) - (top_target_depth / 2) + 0.1])
+    translate([0, 0, (total_h / 2) - (sole_plate_h / 2) + 0.1])
         minkowski() {
-            cube([leg_l - 2, leg_w - 2, top_target_depth], center=true);
+            cube([sole_plate_l - 2, sole_plate_w - 2, sole_plate_h], center=true);
             sphere(r=1.0);
         }
 }
@@ -136,8 +140,8 @@ module top_lip() {
     // Positioned so flat bottom overlaps shell top by lip_r for bonded fit
     lip_z = (total_h / 2) - lip_r + (lip_thickness / 2);
     cut_z = lip_z - (lip_thickness / 2); // flat bottom plane
-    outer_x = leg_l + wall;
-    outer_y = leg_w + wall;
+    outer_x = sole_plate_l + wall;
+    outer_y = sole_plate_w + wall;
 
     intersection() {
         translate([0, 0, lip_z])
@@ -151,7 +155,7 @@ module top_lip() {
             // Underside relief
             translate([0, 0, -(lip_thickness / 2) - 1])
                 minkowski() {
-                    cube([leg_l - 2, leg_w - 2, 0.01], center=true);
+                    cube([sole_plate_l - 2, sole_plate_w - 2, 0.01], center=true);
                     sphere(r=lip_r);
                 }
         }
@@ -215,8 +219,8 @@ module side_bands() {
 
 // Center Y band (material inside the socket footprint)
 module center_band() {
-    translate([-big, -leg_w / 2, -big])
-        cube([big * 2, leg_w, big * 2]);
+    translate([-big, -sole_plate_w / 2, -big])
+        cube([big * 2, sole_plate_w, big * 2]);
 }
 
 // =====================================================================

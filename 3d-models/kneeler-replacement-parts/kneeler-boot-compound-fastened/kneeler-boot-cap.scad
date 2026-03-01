@@ -51,9 +51,9 @@ module alignment_groove() {
 module entrance_lip_fill() {
     intersection() {
         slipper_lip();
-        translate([leg_l / 2, 0, (total_h / 2) - (top_target_depth / 2) + 0.1])
+        translate([sole_plate_l / 2, 0, (total_h / 2) - (sole_plate_h / 2) + 0.1])
             minkowski() {
-                cube([leg_l / 2, leg_w - 2, top_target_depth], center=true);
+                cube([sole_plate_l / 2, sole_plate_w - 2, sole_plate_h], center=true);
                 sphere(r=1.0);
             }
         // Clip to cap's X bounds so nothing extends beyond the shell
@@ -95,4 +95,4 @@ module cap() {
 // =====================================================================
 //debug_nuts();
 
-crosssection(leg_l) cap();
+crosssection(sole_plate_l) cap();

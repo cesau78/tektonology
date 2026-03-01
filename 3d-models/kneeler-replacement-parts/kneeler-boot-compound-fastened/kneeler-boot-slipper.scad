@@ -95,9 +95,9 @@ module slipper() {
         if (enable_top_lip) top_socket_cut();
 
         //offset entrance slide holes for the leg to slide into
-        translate([leg_l / 2, 0, (total_h / 2) - (top_target_depth / 2) + 0.1])
+        translate([sole_plate_l / 2, 0, (total_h / 2) - (sole_plate_h / 2) + 0.1])
             minkowski() {
-                cube([leg_l / 2, leg_w - 2, top_target_depth], center=true);
+                cube([sole_plate_l / 2, sole_plate_w - 2, sole_plate_h], center=true);
                 sphere(r=1.0);
             }
         // Relief cut so the cap lip nests flush into the slipper
@@ -105,7 +105,7 @@ module slipper() {
         relief_cut_z = (total_h / 2) - (lip_height / 2);
         // X span matches the +X lip ring: inner edge to outer edge (lip_r = 1.0 in top_lip)
         relief_inner_x = lip_inner_x / 2 + 1.0;
-        relief_outer_x = (leg_l + wall) / 2 + 1.0;
+        relief_outer_x = (sole_plate_l + wall) / 2 + 1.0;
         relief_cut_x = (relief_inner_x + relief_outer_x) / 2;
         relief_cut_w = relief_outer_x - relief_inner_x;
         if (enable_top_lip) translate([relief_cut_x, 0, relief_cut_z])
@@ -118,4 +118,4 @@ module slipper() {
 // =====================================================================
 //debug_nuts();
 
-crosssection(leg_l) slipper();
+crosssection(sole_plate_l) slipper();
