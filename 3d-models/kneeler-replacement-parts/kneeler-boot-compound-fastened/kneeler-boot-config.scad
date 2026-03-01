@@ -88,7 +88,7 @@ module coupler_shell() {
         // TOP SOCKET (Metal Leg) — beveled/rounded walls
         translate([0, 0, (total_h / 2) - (sole_plate_h / 2) + 0.1])
             minkowski() {
-                cube([sole_plate_l - 2, sole_plate_w - 2, sole_plate_h], center=true);
+                cube([leg_l, leg_w, sole_plate_h], center=true);
                 sphere(r=1.0);
             }
 
@@ -129,7 +129,7 @@ module coupler_shell() {
 module top_socket_cut() {
     translate([0, 0, (total_h / 2) - (sole_plate_h / 2) + 0.1])
         minkowski() {
-            cube([sole_plate_l - 2, sole_plate_w - 2, sole_plate_h], center=true);
+            cube([leg_l, leg_w, sole_plate_h], center=true);
             sphere(r=1.0);
         }
 }
@@ -157,7 +157,7 @@ module top_lip() {
             // Underside relief
             translate([0, 0, -(lip_thickness / 2) - 1])
                 minkowski() {
-                    cube([sole_plate_l - 2, sole_plate_w - 2, 0.01], center=true);
+                    cube([leg_l, leg_w, 0.01], center=true);
                     sphere(r=lip_r);
                 }
         }

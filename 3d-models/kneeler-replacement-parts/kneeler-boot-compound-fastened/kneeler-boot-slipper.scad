@@ -97,7 +97,7 @@ module slipper() {
         //offset entrance slide holes for the leg to slide into
         translate([sole_plate_l / 2, 0, (total_h / 2) - (sole_plate_h / 2) + 0.1])
             minkowski() {
-                cube([sole_plate_l / 2, sole_plate_w - 2, sole_plate_h], center=true);
+                cube([sole_plate_l / 2, leg_w, sole_plate_h], center=true);
                 sphere(r=1.0);
             }
         // Relief cut so the cap lip nests flush into the slipper

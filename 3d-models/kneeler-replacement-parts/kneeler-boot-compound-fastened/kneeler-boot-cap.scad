@@ -53,7 +53,7 @@ module entrance_lip_fill() {
         slipper_lip();
         translate([sole_plate_l / 2, 0, (total_h / 2) - (sole_plate_h / 2) + 0.1])
             minkowski() {
-                cube([sole_plate_l / 2, sole_plate_w - 2, sole_plate_h], center=true);
+                cube([sole_plate_l / 2, leg_w, sole_plate_h], center=true);
                 sphere(r=1.0);
             }
         // Clip to cap's X bounds so nothing extends beyond the shell
