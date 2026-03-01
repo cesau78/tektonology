@@ -2,13 +2,13 @@
 // Shared parameters and modules for the 2-piece coupler (slipper + cap)
 
 // --- Sole Plate Dimensions ---
-sole_plate_l = 54;
+sole_plate_l = 53;
 sole_plate_w = 18.5;
 sole_plate_h = 3.5;
 
 // --- Leg Dimensions (for socket fit) ---
 leg_w = 16.5;
-leg_l = 52;
+leg_l = 51;
 
 // --- Bottom Slide Groove (shared between coupler + insert) ---
 groove_overhang = 2;      // groove extends this far beyond socket per side
