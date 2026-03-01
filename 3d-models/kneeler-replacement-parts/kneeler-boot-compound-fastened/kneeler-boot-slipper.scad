@@ -106,10 +106,10 @@ module slipper() {
         // X span matches the +X lip ring: inner edge to outer edge (lip_r = 1.0 in top_lip)
         relief_inner_x = lip_inner_x / 2 + 1.0;
         relief_outer_x = (sole_plate_l + wall) / 2 + 1.0;
-        relief_cut_x = (relief_inner_x + relief_outer_x) / 2;
+        relief_cut_x = (relief_inner_x + relief_outer_x) / 2 ;
         relief_cut_w = relief_outer_x - relief_inner_x;
         if (enable_top_lip) translate([relief_cut_x, 0, relief_cut_z])
-            cube([relief_cut_w, cap_width, lip_height], center=true);
+            cube([relief_cut_w+2, cap_width, lip_height + tolerance], center=true);
     }
 }
 
