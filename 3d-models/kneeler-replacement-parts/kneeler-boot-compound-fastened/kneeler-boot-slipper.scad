@@ -103,8 +103,13 @@ module slipper() {
         // Relief cut so the cap lip nests flush into the slipper
         // Top of this cut aligns with the top of the coupler_shell
         relief_cut_z = (total_h / 2) - (lip_height / 2);
-        if (enable_top_lip) translate([28, 0, relief_cut_z])
-            cube([wall - head_height + 1, cap_width, lip_height], center=true);
+        // X span matches the +X lip ring: inner edge to outer edge (lip_r = 1.0 in top_lip)
+        relief_inner_x = lip_inner_x / 2 + 1.0;
+        relief_outer_x = (leg_l + wall) / 2 + 1.0;
+        relief_cut_x = (relief_inner_x + relief_outer_x) / 2;
+        relief_cut_w = relief_outer_x - relief_inner_x;
+        if (enable_top_lip) translate([relief_cut_x, 0, relief_cut_z])
+            cube([relief_cut_w, cap_width, lip_height], center=true);
     }
 }
 
