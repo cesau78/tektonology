@@ -4,7 +4,7 @@ include <kneeler-boot-config.scad>
 socket_depth = 5; //depth of the socket to slip into
 core_protrusion = 2; //core extension beyond the socket
 
-tightness = 0.1; // Adjust this: 0.0 for snug, 0.2 for very tight
+tightness = tolerance; // Adjust this: 0.0 for snug, 0.2 for very tight
 $fn = preview ?  32 : 64;
 
 ribs = 10;

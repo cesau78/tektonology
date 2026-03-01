@@ -95,7 +95,7 @@ module slipper() {
         if (enable_top_lip) top_socket_cut();
 
         //offset entrance slide holes for the leg to slide into
-        translate([sole_plate_l / 2, 0, (total_h / 2) - (sole_plate_h / 2) + 0.1])
+        translate([sole_plate_l / 2, 0, (total_h / 2) - (sole_plate_h / 2) + tolerance])
             minkowski() {
                 cube([sole_plate_l / 2, leg_w, sole_plate_h], center=true);
                 sphere(r=1.0);

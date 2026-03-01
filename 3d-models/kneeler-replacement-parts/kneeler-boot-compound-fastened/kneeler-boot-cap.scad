@@ -43,15 +43,15 @@ module alignment_groove() {
     th = tongue_height + (tongue_clearance * 2);
     td = tongue_depth + tongue_clearance;
 
-    translate([split_x - 0.1, -tw / 2, -th / 2])
-        cube([td + 0.1, tw, th]);
+    translate([split_x - tolerance, -tw / 2, -th / 2])
+        cube([td + tolerance, tw, th]);
 }
 
 // Complementary lip piece — fills the entrance slide cut from the slipper
 module entrance_lip_fill() {
     intersection() {
         slipper_lip();
-        translate([sole_plate_l / 2, 0, (total_h / 2) - (sole_plate_h / 2) + 0.1])
+        translate([sole_plate_l / 2, 0, (total_h / 2) - (sole_plate_h / 2) + tolerance])
             minkowski() {
                 cube([sole_plate_l / 2, leg_w, sole_plate_h], center=true);
                 sphere(r=1.0);

@@ -75,7 +75,7 @@ boss_clearance = head_clearance; // clearance for screw head fit (0 for snug fit
 tongue_width     = 10;   // along Y
 tongue_height    = 6;    // along Z
 tongue_depth     = 1.5;  // protrusion along X
-tongue_clearance = 0.15;
+tongue_clearance = tolerance;
 
 // --- Big constant for half-space clipping ---
 big = 200;
@@ -86,14 +86,14 @@ big = 200;
 module coupler_shell() {
     module inner_cuts() {
         // TOP SOCKET (Metal Leg) — beveled/rounded walls
-        translate([0, 0, (total_h / 2) - (sole_plate_h / 2) + 0.1])
+        translate([0, 0, (total_h / 2) - (sole_plate_h / 2) + tolerance])
             minkowski() {
                 cube([leg_l, leg_w, sole_plate_h], center=true);
                 sphere(r=1.0);
             }
 
         // BOTTOM SOCKET (TPU Plug) — flat walls
-        translate([0, 0, -(total_h / 2) + (bottom_target_depth / 2) - 0.1])
+        translate([0, 0, -(total_h / 2) + (bottom_target_depth / 2) - tolerance])
             cube([sole_plate_l, sole_plate_w, bottom_target_depth + 0.2], center=true);
 
         // BOTTOM SOCKET SLIDE GROOVE — rounded perimeter, wider than socket for slide-in rail
@@ -127,9 +127,9 @@ module coupler_shell() {
 // TOP SOCKET CUT — reusable for re-cutting after lip is added
 // =====================================================================
 module top_socket_cut() {
-    translate([0, 0, (total_h / 2) - (sole_plate_h / 2) + 0.1])
+    translate([0, 0, (total_h / 2) - (sole_plate_h / 2) + tolerance])
         minkowski() {
-            cube([leg_l, leg_w, sole_plate_h], center=true);
+            cube([leg_l + tolerance, leg_w + tolerance, sole_plate_h + tolerance], center=true);
             sphere(r=1.0);
         }
 }
