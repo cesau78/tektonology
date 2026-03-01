@@ -1,0 +1,242 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" font-family="Georgia, serif" font-size="11">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#555"/>
+    </marker>
+    <style>
+      .lane-label { font-size: 13px; font-weight: bold; fill: #4a0e4e; }
+      .activity { fill: #f9f5ff; stroke: #4a0e4e; stroke-width: 1.5; rx: 6; }
+      .activity-text { fill: #1a1a1a; text-anchor: middle; font-size: 10px; }
+      .gateway { fill: #fff8e1; stroke: #c59000; stroke-width: 1.5; }
+      .gateway-text { fill: #7a5c00; text-anchor: middle; font-size: 9px; }
+      .event-start { fill: #c8e6c9; stroke: #388e3c; stroke-width: 2; }
+      .event-end { fill: #ffcdd2; stroke: #c62828; stroke-width: 3; }
+      .flow { stroke: #555; stroke-width: 1.2; fill: none; marker-end: url(#arrow); }
+      .lane-bg-0 { fill: #faf5ff; }
+      .lane-bg-1 { fill: #f5f0ff; }
+      .lane-bg-2 { fill: #f0ebff; }
+      .lane-bg-3 { fill: #ebe5ff; }
+      .lane-border { stroke: #ccc; stroke-width: 1; fill: none; }
+      .title { font-size: 16px; font-weight: bold; fill: #4a0e4e; text-anchor: middle; }
+      .subtitle { font-size: 11px; fill: #888; text-anchor: middle; font-style: italic; }
+    </style>
+  </defs>
+
+  <!-- Title -->
+  <text x="600" y="28" class="title">Order of Mass — Ordinary Form (Roman Rite)</text>
+  <text x="600" y="44" class="subtitle">BPMN Process Overview</text>
+
+  <!-- Swim Lane Backgrounds -->
+  <rect x="0" y="55" width="1200" height="160" class="lane-bg-0"/>
+  <rect x="0" y="215" width="1200" height="185" class="lane-bg-1"/>
+  <rect x="0" y="400" width="1200" height="210" class="lane-bg-2"/>
+  <rect x="0" y="610" width="1200" height="110" class="lane-bg-3"/>
+
+  <!-- Swim Lane Borders -->
+  <rect x="0" y="55" width="1200" height="160" class="lane-border"/>
+  <rect x="0" y="215" width="1200" height="185" class="lane-border"/>
+  <rect x="0" y="400" width="1200" height="210" class="lane-border"/>
+  <rect x="0" y="610" width="1200" height="110" class="lane-border"/>
+
+  <!-- Lane Labels (rotated, left side) -->
+  <text x="12" y="135" class="lane-label" transform="rotate(-90,12,135)">I. Introductory Rites</text>
+  <text x="12" y="310" class="lane-label" transform="rotate(-90,12,310)">II. Liturgy of the Word</text>
+  <text x="12" y="508" class="lane-label" transform="rotate(-90,12,508)">III. Liturgy of the Eucharist</text>
+  <text x="12" y="665" class="lane-label" transform="rotate(-90,12,665)">IV. Concluding Rites</text>
+
+  <!-- ===== LANE 1: INTRODUCTORY RITES ===== -->
+
+  <!-- Start Event -->
+  <circle cx="60" cy="135" r="14" class="event-start"/>
+  <text x="60" y="165" class="activity-text" font-size="8">Entrance</text>
+
+  <!-- Greeting -->
+  <rect x="100" y="115" width="100" height="40" class="activity"/>
+  <text x="150" y="138" class="activity-text">Greeting</text>
+
+  <!-- Penitential Act -->
+  <rect x="225" y="115" width="100" height="40" class="activity"/>
+  <text x="275" y="133" class="activity-text">Penitential</text>
+  <text x="275" y="145" class="activity-text">Act</text>
+
+  <!-- Kyrie -->
+  <rect x="350" y="115" width="90" height="40" class="activity"/>
+  <text x="395" y="138" class="activity-text">Kyrie</text>
+
+  <!-- Gateway: Lent/Advent? -->
+  <rect x="475" y="115" width="40" height="40" class="gateway" transform="rotate(45,495,135)"/>
+  <text x="495" y="103" class="gateway-text">Lent or</text>
+  <text x="495" y="113" class="gateway-text">Advent?</text>
+
+  <!-- Gloria (conditional) -->
+  <rect x="565" y="80" width="90" height="35" class="activity"/>
+  <text x="610" y="101" class="activity-text">Gloria</text>
+  <text x="610" y="72" class="gateway-text" fill="#388e3c">No</text>
+
+  <!-- Skip Gloria label -->
+  <text x="545" y="180" class="gateway-text" fill="#c62828">Yes → skip</text>
+
+  <!-- Collect -->
+  <rect x="690" y="115" width="90" height="40" class="activity"/>
+  <text x="735" y="138" class="activity-text">Collect</text>
+
+  <!-- Flows Lane 1 -->
+  <path d="M74,135 L100,135" class="flow"/>
+  <path d="M200,135 L225,135" class="flow"/>
+  <path d="M325,135 L350,135" class="flow"/>
+  <path d="M440,135 L462,135" class="flow"/>
+  <path d="M528,118 L565,97" class="flow"/>
+  <path d="M655,97 L690,125" class="flow"/>
+  <path d="M528,152 L690,152" class="flow" stroke-dasharray="4,3"/>
+  <path d="M780,135 L800,135" class="flow"/>
+
+  <!-- Arrow down to Lane 2 -->
+  <path d="M800,135 L820,135 L820,260 L60,260" class="flow"/>
+
+  <!-- ===== LANE 2: LITURGY OF THE WORD ===== -->
+
+  <!-- First Reading -->
+  <rect x="60" y="240" width="95" height="40" class="activity"/>
+  <text x="107" y="258" class="activity-text">First</text>
+  <text x="107" y="270" class="activity-text">Reading</text>
+
+  <!-- Responsorial Psalm -->
+  <rect x="180" y="240" width="95" height="40" class="activity"/>
+  <text x="227" y="258" class="activity-text">Responsorial</text>
+  <text x="227" y="270" class="activity-text">Psalm</text>
+
+  <!-- Second Reading -->
+  <rect x="300" y="240" width="95" height="40" class="activity"/>
+  <text x="347" y="258" class="activity-text">Second</text>
+  <text x="347" y="270" class="activity-text">Reading</text>
+
+  <!-- Gateway: Lent? (Alleluia) -->
+  <rect x="422" y="240" width="36" height="36" class="gateway" transform="rotate(45,440,258)"/>
+  <text x="440" y="232" class="gateway-text">Lent?</text>
+
+  <!-- Gospel Acclamation -->
+  <rect x="495" y="240" width="95" height="40" class="activity"/>
+  <text x="542" y="253" class="activity-text">Gospel</text>
+  <text x="542" y="265" class="activity-text">Acclamation</text>
+  <text x="542" y="234" class="gateway-text" fill="#c62828" font-size="8">Lent: no Alleluia</text>
+
+  <!-- Gospel -->
+  <rect x="615" y="240" width="85" height="40" class="activity"/>
+  <text x="657" y="263" class="activity-text">Gospel</text>
+
+  <!-- Homily -->
+  <rect x="725" y="240" width="85" height="40" class="activity"/>
+  <text x="767" y="263" class="activity-text">Homily</text>
+
+  <!-- Creed -->
+  <rect x="835" y="240" width="85" height="40" class="activity"/>
+  <text x="877" y="258" class="activity-text">Nicene</text>
+  <text x="877" y="270" class="activity-text">Creed</text>
+
+  <!-- Universal Prayer -->
+  <rect x="945" y="240" width="95" height="40" class="activity"/>
+  <text x="992" y="258" class="activity-text">Universal</text>
+  <text x="992" y="270" class="activity-text">Prayer</text>
+
+  <!-- Flows Lane 2 -->
+  <path d="M155,260 L180,260" class="flow"/>
+  <path d="M275,260 L300,260" class="flow"/>
+  <path d="M395,260 L410,260" class="flow"/>
+  <path d="M470,258 L495,258" class="flow"/>
+  <path d="M590,260 L615,260" class="flow"/>
+  <path d="M700,260 L725,260" class="flow"/>
+  <path d="M810,260 L835,260" class="flow"/>
+  <path d="M920,260 L945,260" class="flow"/>
+
+  <!-- Arrow down to Lane 3 -->
+  <path d="M1040,260 L1060,260 L1060,470 L60,470" class="flow"/>
+
+  <!-- ===== LANE 3: LITURGY OF THE EUCHARIST ===== -->
+
+  <!-- Preparation -->
+  <rect x="60" y="450" width="100" height="40" class="activity"/>
+  <text x="110" y="468" class="activity-text">Preparation</text>
+  <text x="110" y="480" class="activity-text">of Gifts</text>
+
+  <!-- Preface -->
+  <rect x="185" y="450" width="90" height="40" class="activity"/>
+  <text x="230" y="468" class="activity-text">Preface</text>
+  <text x="230" y="480" class="activity-text">Dialogue</text>
+
+  <!-- Sanctus -->
+  <rect x="300" y="450" width="90" height="40" class="activity"/>
+  <text x="345" y="473" class="activity-text">Sanctus</text>
+
+  <!-- Eucharistic Prayer -->
+  <rect x="415" y="450" width="105" height="40" class="activity"/>
+  <text x="467" y="468" class="activity-text">Eucharistic</text>
+  <text x="467" y="480" class="activity-text">Prayer</text>
+
+  <!-- Memorial Acclamation -->
+  <rect x="545" y="450" width="105" height="40" class="activity"/>
+  <text x="597" y="468" class="activity-text">Memorial</text>
+  <text x="597" y="480" class="activity-text">Acclamation</text>
+
+  <!-- Lord's Prayer -->
+  <rect x="675" y="450" width="100" height="40" class="activity"/>
+  <text x="725" y="468" class="activity-text">Lord's</text>
+  <text x="725" y="480" class="activity-text">Prayer</text>
+
+  <!-- Sign of Peace -->
+  <rect x="800" y="450" width="95" height="40" class="activity"/>
+  <text x="847" y="468" class="activity-text">Sign of</text>
+  <text x="847" y="480" class="activity-text">Peace</text>
+
+  <!-- Lamb of God -->
+  <rect x="920" y="450" width="90" height="40" class="activity"/>
+  <text x="965" y="468" class="activity-text">Lamb</text>
+  <text x="965" y="480" class="activity-text">of God</text>
+
+  <!-- Communion -->
+  <rect x="1035" y="450" width="95" height="40" class="activity"/>
+  <text x="1082" y="473" class="activity-text">Communion</text>
+
+  <!-- Flows Lane 3 -->
+  <path d="M160,470 L185,470" class="flow"/>
+  <path d="M275,470 L300,470" class="flow"/>
+  <path d="M390,470 L415,470" class="flow"/>
+  <path d="M520,470 L545,470" class="flow"/>
+  <path d="M650,470 L675,470" class="flow"/>
+  <path d="M775,470 L800,470" class="flow"/>
+  <path d="M895,470 L920,470" class="flow"/>
+  <path d="M1010,470 L1035,470" class="flow"/>
+
+  <!-- Arrow down to Lane 4 -->
+  <path d="M1130,470 L1150,470 L1150,660 L60,660" class="flow"/>
+
+  <!-- ===== LANE 4: CONCLUDING RITES ===== -->
+
+  <!-- Blessing -->
+  <rect x="60" y="640" width="90" height="40" class="activity"/>
+  <text x="105" y="663" class="activity-text">Blessing</text>
+
+  <!-- Dismissal -->
+  <rect x="180" y="640" width="90" height="40" class="activity"/>
+  <text x="225" y="663" class="activity-text">Dismissal</text>
+
+  <!-- End Event -->
+  <circle cx="310" cy="660" r="14" class="event-end"/>
+
+  <!-- Flows Lane 4 -->
+  <path d="M150,660 L180,660" class="flow"/>
+  <path d="M270,660 L296,660" class="flow"/>
+
+  <!-- Legend -->
+  <rect x="900" y="630" width="280" height="82" fill="white" stroke="#ccc" rx="4"/>
+  <text x="910" y="648" font-size="10" font-weight="bold" fill="#333">Legend</text>
+  <circle cx="920" cy="663" r="7" class="event-start"/>
+  <text x="932" y="667" font-size="9" fill="#555">Start</text>
+  <circle cx="975" cy="663" r="7" class="event-end"/>
+  <text x="987" y="667" font-size="9" fill="#555">End</text>
+  <rect x="1020" y="656" width="40" height="14" class="activity"/>
+  <text x="1065" y="667" font-size="9" fill="#555">Activity</text>
+  <rect x="910" y="680" width="14" height="14" class="gateway" transform="rotate(45,917,687)"/>
+  <text x="935" y="691" font-size="9" fill="#555">Decision Gateway</text>
+  <line x1="1020" y1="687" x2="1060" y2="687" stroke="#555" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+  <text x="1065" y="691" font-size="9" fill="#555">Conditional skip</text>
+</svg>
