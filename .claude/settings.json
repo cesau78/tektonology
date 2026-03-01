@@ -1,16 +1,19 @@
 {
   "permissions": {
-    "deny": [
-      "Read(**/.env)",
-      "Edit(**/.env)",
-      "Write(**/.env)"
-    ],
     "allow": [
       "WebFetch(domain:shrey-misra.medium.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(openssl req -x509 -newkey rsa:2048 -keyout /c/Users/chuck/source/tektonology/services/print-proxy/certs/server.key -out /c/Users/chuck/source/tektonology/services/print-proxy/certs/server.crt -days 3650 -nodes -subj \"/CN=localhost\")",
       "Bash(MSYS_NO_PATHCONV=1 openssl req -x509 -newkey rsa:2048 -keyout /c/Users/chuck/source/tektonology/services/print-proxy/certs/server.key -out /c/Users/chuck/source/tektonology/services/print-proxy/certs/server.crt -days 3650 -nodes -subj \"/CN=localhost\")",
-      "Bash(MSYS_NO_PATHCONV=1 openssl req -x509 -newkey rsa:2048 -keyout server.key -out server.crt -days 3650 -nodes -subj \"/CN=localhost\")"
+      "Bash(MSYS_NO_PATHCONV=1 openssl req -x509 -newkey rsa:2048 -keyout server.key -out server.crt -days 3650 -nodes -subj \"/CN=localhost\")",
+      "Read(//c/Users/chuck/source/tektonology/$APPDATA/BambuStudio/**)",
+      "Read(//c/Users/chuck/AppData/Roaming/BambuStudio/**)",
+      "Bash(python -c \":*)"
+    ],
+    "deny": [
+      "Read(**/.env)",
+      "Edit(**/.env)",
+      "Write(**/.env)"
     ]
   }
 }
