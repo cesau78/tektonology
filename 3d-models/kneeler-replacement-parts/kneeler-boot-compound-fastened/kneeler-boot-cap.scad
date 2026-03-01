@@ -20,9 +20,9 @@ module bolt_hole(z_pos, y_pos) {
             cylinder(h=outer_extent - split_x + 2, d=hole_dia);
 
     // Socket head recess on the outer face (+X end)
-    translate([outer_extent - head_height + 0.1, y_pos, z_pos])
+    translate([outer_extent - head_height + tolerance, y_pos, z_pos])
         rotate([0, 90, 0])
-            cylinder(h=head_height + 1, d=head_pocket_dia);
+            cylinder(h=head_height + 1, d=head_pocket_dia+tolerance);
 }
 
 // Cap side bosses — half-cylinders on each Y edge of the cap
@@ -74,7 +74,7 @@ module cap() {
                 coupler_shell();
                 cap_half_space();
                 translate([-big, -cap_width / 2, -big])
-                    cube([big * 2, cap_width, big * 2]);
+                    cube([big * 2, cap_width - (2 * tolerance), big * 2]);
             }
             if (enable_top_lip) cap_lip();
             // Lip piece that was cut from slipper entrance
