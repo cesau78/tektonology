@@ -101,7 +101,9 @@ module slipper() {
                 sphere(r=1.0);
             }
         // Relief cut so the cap lip nests flush into the slipper
-        if (enable_top_lip) translate([28, 0, total_h - wall + 2.8])
+        // Top of this cut aligns with the top of the coupler_shell
+        relief_cut_z = (total_h / 2) - (lip_height / 2);
+        if (enable_top_lip) translate([28, 0, relief_cut_z])
             cube([wall - head_height + 1, cap_width, lip_height], center=true);
     }
 }
