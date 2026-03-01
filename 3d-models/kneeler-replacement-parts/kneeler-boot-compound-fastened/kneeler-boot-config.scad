@@ -1,6 +1,8 @@
 // --- TEKTONOLOGY KNEELER BOOT CONFIG ---
 // Shared parameters and modules for the 2-piece coupler (slipper + cap)
 
+tolerance = 0.1; // general tolerance for fit adjustments (mm)
+
 // --- Sole Plate Dimensions ---
 sole_plate_l = 53;
 sole_plate_w = 18.5;
@@ -42,16 +44,16 @@ split_x = (sole_plate_l / 2) + wall - r - cap_thickness;
 outer_extent = (sole_plate_l / 2) + wall; // half-length of outer shell after minkowski
 cap_width = sole_plate_w + (groove_overhang * 2) + 4; // cap Y width matches bottom groove (including minkowski)
 // Lip ring inner opening dimensions (used for lip splitting)
-lip_inner_x = sole_plate_l - 2 - (2 * lip_inset);
-lip_inner_y = sole_plate_w - 2 - (2 * lip_inset);
+lip_inner_x = leg_l + tolerance;
+lip_inner_y = leg_w + tolerance; // add some clearance around the leg for easy fit and print tolerance
 
 // --- M3x30 Socket Head Cap Screw Hardware ---
 bolt_dia        = 3.0;
-bolt_clearance  = 0.1;
+bolt_clearance  = tolerance; // clearance for bolt holes (0 for snug fit, increase if needed for print tolerance)
 bolt_length     = 20;    // M3x20 — shaft length under head (very common size)
 nut_af          = 5.5;   // hex nut across-flats
-nut_clearance   = 0.2;
-nut_thickness   = 2.4;
+nut_clearance   = tolerance * 10; // clearance for nut pockets
+nut_thickness   = 0.5;
 head_dia        = 6.0;   // M3 socket head cap screw head diameter
 head_clearance  = 0.0;
 head_height     = 3.5;   // M3 socket head height
