@@ -23,7 +23,7 @@ export function isStartPrintCommand(payload) {
  * real printer.  Studio→Printer messages pass through onIntercept before
  * being forwarded.  Printer→Studio reports are injected back into Aedes.
  */
-export function createProxy({ port, certPath, keyPath, accessCode, printerSerial, printerIp, printerPort = 8883, onMessage, onIntercept }) {
+export function createProxy({ port, listenHost, certPath, keyPath, accessCode, printerSerial, printerIp, printerPort = 8883, onMessage, onIntercept }) {
   const log = onMessage ?? defaultLog;
   const intercept = onIntercept ?? (() => Promise.resolve(true));
 
@@ -142,8 +142,9 @@ export function createProxy({ port, certPath, keyPath, accessCode, printerSerial
   return {
     start() {
       return new Promise((resolve) => {
-        server.listen(port, () => {
-          console.log(`print-proxy listening on mqtts://localhost:${port}`);
+        server.listen(port, listenHost ?? "0.0.0.0", () => {
+          const host = listenHost ?? "localhost";
+          console.log(`print-proxy listening on mqtts://${host}:${port}`);
           startCertWatcher();
           resolve();
         });

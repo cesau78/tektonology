@@ -1,12 +1,17 @@
 import "../shared/env.js";
+import { fileURLToPath } from "url";
+import path from "path";
 import readline from "readline";
 import { createProxy, isStartPrintCommand } from "./proxy.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const {
   PRINTER_SERIAL,
   PRINTER_ACCESS_CODE,
   PRINTER_IP,
   PROXY_PORT = "8883",
+  PROXY_HOST,
 } = process.env;
 
 const REQUIRED = ["PRINTER_SERIAL", "PRINTER_ACCESS_CODE", "PRINTER_IP"];
@@ -26,8 +31,9 @@ function promptApprove(jobName) {
 
 const proxy = createProxy({
   port: parseInt(PROXY_PORT, 10),
-  certPath: new URL("./certs/server.crt", import.meta.url).pathname,
-  keyPath: new URL("./certs/server.key", import.meta.url).pathname,
+  listenHost: PROXY_HOST,
+  certPath: path.join(__dirname, "certs", "server.crt"),
+  keyPath: path.join(__dirname, "certs", "server.key"),
   accessCode: PRINTER_ACCESS_CODE,
   printerSerial: PRINTER_SERIAL,
   printerIp: PRINTER_IP,
