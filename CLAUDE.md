@@ -25,7 +25,9 @@ When making decisions — about design, naming, architecture, or implementation 
 3d-models/                     # OpenSCAD source and generated STL files
   kneeler-replacement-parts/   # Pew kneeler boots and bushings
   liquid-bait-station/         # Pest control
-db-models/                     # Shared MongoDB document interfaces (TypeScript)
+mongo-db/                      # MongoDB — models and local data
+  data/                        # Local MongoDB bind mount (gitignored)
+  *.ts                         # Shared document interfaces (TypeScript)
 services/                      # Backend services (agents)
   printing-agent/              # MQTT daemon — detects print completion, writes raw print_jobs
   accounting-agent/            # Polls unprocessed print_jobs, updates spools + journal_entries

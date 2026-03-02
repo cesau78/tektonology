@@ -11,7 +11,8 @@
       "Bash(python -c \":*)",
       "WebFetch(domain:us.store.bambulab.com)",
       "WebFetch(domain:www.matter3d.com)",
-      "WebFetch(domain:www.amazon.com)"
+      "WebFetch(domain:www.amazon.com)",
+      "Bash(npm test:coverage)"
     ],
     "deny": [
       "Read(**/.env)",
