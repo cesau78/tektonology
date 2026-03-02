@@ -55,7 +55,7 @@ nut_af          = 5.5;   // hex nut across-flats
 nut_clearance   = tolerance * 3; // clearance for nut pockets
 nut_thickness   = 0.5;
 head_dia        = 6.0;   // M3 socket head cap screw head diameter
-head_clearance  = 0.0;
+head_clearance  = tolerance;
 head_height     = 3.5;   // M3 socket head height
 
 // Nut X position: derived so bolt tip fully engages the nut with 0.5mm margin
@@ -69,7 +69,7 @@ bolt_positions = [[bolt_z, cap_width / 2], [bolt_z, -cap_width / 2]];
 // --- Cap Side Bosses ---
 boss_dia       = head_dia;    // matches cap screw head diameter
 boss_height    = head_height; // adjust with screw availability
-boss_clearance = head_clearance; // clearance for screw head fit (0 for snug fit, increase if needed for print tolerance)
+boss_clearance = tolerance; // clearance per side between cap boss and slipper socket
 
 // --- Alignment Tongue ---
 tongue_width     = 10;   // along Y
