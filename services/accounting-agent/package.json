@@ -8,7 +8,6 @@
   },
   "dependencies": {
     "bullmq": "^5",
-    "dotenv": "^16",
     "mongodb": "^6"
   }
 }

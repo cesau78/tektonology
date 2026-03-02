@@ -1,6 +1,7 @@
 .claude/settings.local.json
 ai-collab/
 node_modules/
+.env
 services/**/.env
 services/**/certs/
 3d-models/tools/

@@ -1,15 +1,35 @@
 import fs from "fs";
+import path from "path";
 import tls from "tls";
 import Aedes from "aedes";
+import mqtt from "mqtt";
+
+const noop = () => {};
+const PRINT_COMMANDS = new Set(["project_file", "gcode_file", "print_3mf"]);
+
+/**
+ * Returns true if the parsed payload is a print-start command.
+ */
+export function isStartPrintCommand(payload) {
+  if (typeof payload !== "object" || payload === null) return false;
+  return PRINT_COMMANDS.has(payload?.print?.command);
+}
 
 /**
  * Create an MQTTS proxy that accepts Bambu Studio connections,
- * logs all MQTT traffic, and (future) relays to the real printer.
+ * logs all MQTT traffic, and optionally relays to the real printer.
+ *
+ * When printerIp is provided, an upstream MQTT client connects to the
+ * real printer.  Studio→Printer messages pass through onIntercept before
+ * being forwarded.  Printer→Studio reports are injected back into Aedes.
  */
-export function createProxy({ port, certPath, keyPath, accessCode, printerSerial, onMessage }) {
+export function createProxy({ port, certPath, keyPath, accessCode, printerSerial, printerIp, printerPort = 8883, onMessage, onIntercept }) {
   const log = onMessage ?? defaultLog;
+  const intercept = onIntercept ?? (() => Promise.resolve(true));
 
   const aedes = new Aedes();
+  const requestTopic = `device/${printerSerial}/request`;
+  const reportTopic = `device/${printerSerial}/report`;
 
   // Authenticate — Bambu Studio connects as bblp:<access_code>
   aedes.authenticate = (_client, username, password, callback) => {
@@ -23,13 +43,36 @@ export function createProxy({ port, certPath, keyPath, accessCode, printerSerial
     }
   };
 
-  // Log all published messages
-  aedes.on("publish", (packet, _client) => {
-    // Skip internal aedes system topics ($SYS)
-    if (packet.topic.startsWith("$SYS")) return;
+  // --- Upstream connection to the real printer ---
+  let upstreamClient = null;
 
-    const requestTopic = `device/${printerSerial}/request`;
-    const reportTopic = `device/${printerSerial}/report`;
+  if (printerIp) {
+    upstreamClient = mqtt.connect(`mqtts://${printerIp}:${printerPort}`, {
+      username: "bblp",
+      password: accessCode,
+      rejectUnauthorized: false,
+      clientId: `print-proxy-upstream-${Date.now()}`,
+    });
+
+    upstreamClient.on("connect", () => {
+      console.log(`[proxy] upstream connected to printer at ${printerIp}`);
+      upstreamClient.subscribe(reportTopic, (err) => {
+        if (err) console.error("[proxy] upstream subscribe error:", err);
+      });
+    });
+
+    // Inject printer reports back into Aedes for Studio clients
+    upstreamClient.on("message", (_topic, payload) => {
+      aedes.publish({ topic: reportTopic, payload, qos: 0, retain: false }, noop);
+    });
+
+    upstreamClient.on("error", (err) => console.error("[proxy] upstream error:", err));
+    upstreamClient.on("close", () => console.log("[proxy] upstream connection closed"));
+  }
+
+  // --- Log and relay published messages ---
+  aedes.on("publish", async (packet, _client) => {
+    if (packet.topic.startsWith("$SYS")) return;
 
     let direction;
     if (packet.topic === requestTopic) {
@@ -48,6 +91,17 @@ export function createProxy({ port, certPath, keyPath, accessCode, printerSerial
     }
 
     log({ direction, topic: packet.topic, payload });
+
+    // Only relay Studio→Printer messages
+    if (direction !== "STUDIO → PRINTER") return;
+
+    const allowed = await intercept({ topic: packet.topic, payload });
+
+    if (allowed && upstreamClient?.connected) {
+      upstreamClient.publish(packet.topic, packet.payload, { qos: packet.qos ?? 0 });
+    } else if (!allowed) {
+      console.log("[proxy] job BLOCKED — not forwarded to printer");
+    }
   });
 
   const tlsOptions = {
@@ -57,24 +111,63 @@ export function createProxy({ port, certPath, keyPath, accessCode, printerSerial
 
   const server = tls.createServer(tlsOptions, aedes.handle);
 
+  // --- Watch cert files for hot-reload ---
+  let certWatcher = null;
+  let reloadTimer = null;
+  const certDir = path.dirname(certPath);
+
+  function reloadCerts() {
+    try {
+      const key = fs.readFileSync(keyPath);
+      const cert = fs.readFileSync(certPath);
+      server.setSecureContext({ key, cert });
+      console.log("[proxy] TLS certs reloaded");
+    } catch (err) {
+      console.error("[proxy] cert reload failed:", err.message);
+    }
+  }
+
+  function startCertWatcher() {
+    try {
+      certWatcher = fs.watch(certDir, (_event, filename) => {
+        if (filename !== path.basename(certPath) && filename !== path.basename(keyPath)) return;
+        clearTimeout(reloadTimer);
+        reloadTimer = setTimeout(reloadCerts, 500);
+      });
+    } catch {
+      // cert dir may not exist yet in tests — watcher is optional
+    }
+  }
+
   return {
     start() {
       return new Promise((resolve) => {
         server.listen(port, () => {
           console.log(`print-proxy listening on mqtts://localhost:${port}`);
+          startCertWatcher();
           resolve();
         });
       });
     },
     stop() {
+      clearTimeout(reloadTimer);
+      if (certWatcher) certWatcher.close();
       return new Promise((resolve) => {
         aedes.close(() => {
-          server.close(() => resolve());
+          server.close(() => {
+            if (upstreamClient) {
+              upstreamClient.end(true, () => resolve());
+            } else {
+              resolve();
+            }
+          });
         });
       });
     },
     aedes,
     server,
+    upstreamClient,
+    reloadCerts,
   };
 }
 

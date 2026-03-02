@@ -12,7 +12,12 @@
       "WebFetch(domain:us.store.bambulab.com)",
       "WebFetch(domain:www.matter3d.com)",
       "WebFetch(domain:www.amazon.com)",
-      "Bash(npm test:coverage)"
+      "Bash(npm test:coverage)",
+      "Bash(docker exec tektonology-mongo-1 mongosh --eval \"db.runCommand\\({ ping: 1 }\\)\" --quiet)",
+      "Bash(node sniff.js)",
+      "Bash(node rotate-certs.js)",
+      "Bash(node -e \"import ''../shared/env.js''\")",
+      "Bash(test -f c:/Users/chuck/source/tektonology/package.json)"
     ],
     "deny": [
       "Read(**/.env)",

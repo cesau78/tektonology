@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "../shared/env.js";
 import mqtt from "mqtt";
 import readline from "readline";
 import { MongoClient } from "mongodb";
