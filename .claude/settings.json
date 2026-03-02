@@ -26,7 +26,9 @@
       "Bash(test -f c:/Users/chuck/source/tektonology/services/print-proxy/README.md)",
       "Bash(netsh interface portproxy show all)",
       "Bash(openssl s_client -connect 192.168.20.69:8883 -verify_return_error)",
-      "Bash(node -e \"const tls = require\\(''tls''\\); const c = tls.connect\\(8883, ''192.168.20.69'', {rejectUnauthorized:false}, \\(\\) => {console.log\\(''TLS connected to 192.168.20.69:8883''\\); c.end\\(\\)}\\); c.on\\(''error'', e => console.error\\(''error:'', e.message\\)\\)\")"
+      "Bash(node -e \"const tls = require\\(''tls''\\); const c = tls.connect\\(8883, ''192.168.20.69'', {rejectUnauthorized:false}, \\(\\) => {console.log\\(''TLS connected to 192.168.20.69:8883''\\); c.end\\(\\)}\\); c.on\\(''error'', e => console.error\\(''error:'', e.message\\)\\)\")",
+      "Bash(node -e \":*)",
+      "Bash(node seed-sample.js)"
     ],
     "deny": [
       "Read(**/.env)",

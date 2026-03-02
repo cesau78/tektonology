@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "aedes": "^0.51",
+    "mongodb": "^6",
     "mqtt": "^5"
   }
 }
