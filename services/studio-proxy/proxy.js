@@ -16,78 +16,74 @@ export function isStartPrintCommand(payload) {
 }
 
 /**
- * Create an MQTTS proxy that accepts Bambu Studio connections,
- * logs all MQTT traffic, and optionally relays to the real printer.
+ * Create an MQTTS proxy that accepts Bambu Studio connections and relays
+ * them to the Bambu cloud MQTT server.
  *
- * When printerIp is provided, an upstream MQTT client connects to the
- * real printer.  Studio→Printer messages pass through onIntercept before
- * being forwarded.  Printer→Studio reports are injected back into Aedes.
+ * Auth is pass-through: the proxy accepts whatever credentials Studio sends
+ * and uses them to connect upstream to the real cloud server.
  */
-export function createProxy({ port, listenHost, certPath, keyPath, accessCode, printerSerial, printerIp, printerPort = 8883, onMessage, onIntercept }) {
+export function createStudioProxy({ port, listenHost, certPath, keyPath, upstreamHost, upstreamPort = 8883, onMessage, onIntercept }) {
   const log = onMessage ?? defaultLog;
   const intercept = onIntercept ?? (() => Promise.resolve(true));
 
   const aedes = new Aedes();
-  const requestTopic = `device/${printerSerial}/request`;
-  const reportTopic = `device/${printerSerial}/report`;
 
-  // Authenticate — Bambu Studio connects as bblp:<access_code>
-  aedes.authenticate = (_client, username, password, callback) => {
-    const valid = username === "bblp" && String(password) === accessCode;
-    if (valid) {
-      callback(null, true);
-    } else {
-      const err = new Error("Bad credentials");
-      err.returnCode = 4; // CONNACK bad username/password
-      callback(err, false);
-    }
-  };
-
-  // --- Upstream connection to the real printer ---
+  // Store credentials from the first client that connects
+  let storedCredentials = null;
   let upstreamClient = null;
 
-  if (printerIp) {
-    upstreamClient = mqtt.connect(`mqtts://${printerIp}:${printerPort}`, {
-      username: "bblp",
-      password: accessCode,
+  // Accept any credentials — store them for upstream connection
+  aedes.authenticate = (_client, username, password, callback) => {
+    storedCredentials = { username, password: String(password) };
+    callback(null, true);
+  };
+
+  function connectUpstream() {
+    if (upstreamClient || !upstreamHost || !storedCredentials) return;
+
+    upstreamClient = mqtt.connect(`mqtts://${upstreamHost}:${upstreamPort}`, {
+      username: storedCredentials.username,
+      password: storedCredentials.password,
       rejectUnauthorized: false,
-      clientId: `print-proxy-upstream-${Date.now()}`,
+      clientId: `studio-proxy-upstream-${Date.now()}`,
     });
 
     upstreamClient.on("connect", () => {
-      console.log(`[proxy] upstream connected to printer at ${printerIp}`);
-      upstreamClient.subscribe(reportTopic, (err) => {
-        if (err) console.error("[proxy] upstream subscribe error:", err);
+      console.log(`[studio-proxy] upstream connected to ${upstreamHost}`);
+      // Subscribe to all topics so we relay everything back
+      upstreamClient.subscribe("#", (err) => {
+        if (err) console.error("[studio-proxy] upstream subscribe error:", err);
       });
     });
 
-    // Inject printer reports back into Aedes for Studio clients
-    upstreamClient.on("message", (_topic, payload) => {
-      aedes.publish({ topic: reportTopic, payload, qos: 0, retain: false }, noop);
+    // Inject cloud responses back into Aedes for Studio clients
+    upstreamClient.on("message", (topic, payload) => {
+      aedes.publish({ topic, payload, qos: 0, retain: false }, noop);
     });
 
     upstreamClient.on("error", (err) => {
       if (err.code === 5) {
-        console.error("[proxy] upstream auth failed — check PRINTER_ACCESS_CODE");
+        console.error("[studio-proxy] upstream auth failed — check credentials");
       } else {
-        console.error(`[proxy] upstream error: ${err.message}`);
+        console.error(`[studio-proxy] upstream error: ${err.message}`);
       }
     });
-    upstreamClient.on("close", () => console.log("[proxy] upstream connection closed"));
+
+    upstreamClient.on("close", () => console.log("[studio-proxy] upstream connection closed"));
   }
+
+  // Connect upstream when the first client arrives with credentials
+  aedes.on("client", () => {
+    connectUpstream();
+  });
 
   // --- Log and relay published messages ---
   aedes.on("publish", async (packet, _client) => {
     if (packet.topic.startsWith("$SYS")) return;
 
-    let direction;
-    if (packet.topic === requestTopic) {
-      direction = "STUDIO → PRINTER";
-    } else if (packet.topic === reportTopic) {
-      direction = "PRINTER → STUDIO";
-    } else {
-      direction = "UNKNOWN";
-    }
+    // Determine direction: messages from connected Studio clients go upstream,
+    // messages injected by us (from upstream.on('message')) have no _client
+    const direction = _client ? "STUDIO → CLOUD" : "CLOUD → STUDIO";
 
     let payload;
     try {
@@ -98,15 +94,15 @@ export function createProxy({ port, listenHost, certPath, keyPath, accessCode, p
 
     log({ direction, topic: packet.topic, payload });
 
-    // Only relay Studio→Printer messages
-    if (direction !== "STUDIO → PRINTER") return;
+    // Only relay Studio→Cloud messages
+    if (!_client) return;
 
     const allowed = await intercept({ topic: packet.topic, payload });
 
     if (allowed && upstreamClient?.connected) {
       upstreamClient.publish(packet.topic, packet.payload, { qos: packet.qos ?? 0 });
     } else if (!allowed) {
-      console.log("[proxy] job BLOCKED — not forwarded to printer");
+      console.log("[studio-proxy] message BLOCKED — not forwarded to cloud");
     }
   });
 
@@ -127,9 +123,9 @@ export function createProxy({ port, listenHost, certPath, keyPath, accessCode, p
       const key = fs.readFileSync(keyPath);
       const cert = fs.readFileSync(certPath);
       server.setSecureContext({ key, cert });
-      console.log("[proxy] TLS certs reloaded");
+      console.log("[studio-proxy] TLS certs reloaded");
     } catch (err) {
-      console.error("[proxy] cert reload failed:", err.message);
+      console.error("[studio-proxy] cert reload failed:", err.message);
     }
   }
 
@@ -150,7 +146,7 @@ export function createProxy({ port, listenHost, certPath, keyPath, accessCode, p
       return new Promise((resolve) => {
         server.listen(port, listenHost ?? "0.0.0.0", () => {
           const host = listenHost ?? "localhost";
-          console.log(`print-proxy listening on mqtts://${host}:${port}`);
+          console.log(`studio-proxy listening on mqtts://${host}:${port}`);
           startCertWatcher();
           resolve();
         });
@@ -173,7 +169,7 @@ export function createProxy({ port, listenHost, certPath, keyPath, accessCode, p
     },
     aedes,
     server,
-    upstreamClient,
+    get upstreamClient() { return upstreamClient; },
     reloadCerts,
   };
 }

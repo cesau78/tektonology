@@ -4,13 +4,15 @@
   "scripts": {
     "build:stls": "node scripts/build-stls.mjs",
     "start:print-proxy": "node services/print-proxy/index.js",
+    "start:studio-proxy": "node services/studio-proxy/index.js",
     "start:printing-agent": "node services/printing-agent/index.js",
     "start:accounting-agent": "node services/accounting-agent/index.js",
     "test:print-proxy": "node --test services/print-proxy/proxy.test.js",
+    "test:studio-proxy": "node --test services/studio-proxy/proxy.test.js",
     "test:printing-agent": "node --test services/printing-agent/print-job.test.js",
     "test:accounting-agent": "node --test services/accounting-agent/bookkeeping.test.js",
     "test:agent-bus": "node --test services/agent-bus/index.test.js",
-    "test": "npm run test:agent-bus && npm run test:printing-agent && npm run test:accounting-agent && npm run test:print-proxy",
+    "test": "npm run test:agent-bus && npm run test:printing-agent && npm run test:accounting-agent && npm run test:print-proxy && npm run test:studio-proxy",
     "rotate-certs": "node services/print-proxy/rotate-certs.js"
   }
 }

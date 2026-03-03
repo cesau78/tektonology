@@ -32,16 +32,21 @@ PROXY_PORT=8883   # default 8883
 
 Bambu Studio discovers printers via SSDP and connects to their real LAN IP.
 It doesn't support manually entering a proxy address. To route Studio's traffic
-through the proxy, use Windows port forwarding.
+through the proxy, we add the printer's IP as a local alias and use port
+forwarding to redirect traffic to the proxy.
+
+The proxy must listen on a **different port** (e.g. `18883`) so it can still
+reach the real printer on `8883` without looping back to itself. Set
+`PROXY_PORT=18883` in `services/print-proxy/.env`.
 
 **Open an admin terminal** and run:
 
 ```powershell
-# Redirect printer IP:8883 → localhost:8883 (where the proxy listens)
-netsh interface portproxy add v4tov4 listenaddress=<PRINTER_IP> listenport=8883 connectaddress=127.0.0.1 connectport=8883
-
 # Add the printer IP as a local alias so Windows accepts connections to it
 netsh interface ipv4 add address "Ethernet" <PRINTER_IP> 255.255.255.0
+
+# Redirect printer IP:8883 → localhost:18883 (where the proxy listens)
+netsh interface portproxy add v4tov4 listenaddress=<PRINTER_IP> listenport=8883 connectaddress=127.0.0.1 connectport=18883
 ```
 
 Replace `<PRINTER_IP>` with your printer's actual IP (e.g., `192.168.20.69`).
