@@ -85,10 +85,11 @@ module slipper() {
             if (enable_top_lip) slipper_lip();
         }
         // Hex nut pockets, slide-in slots, and bolt channels
-        for (pos = bolt_positions) {
-            hex_nut_pocket(pos[0], pos[1]);
-            hex_nut_slot(pos[0], pos[1]);
-            bolt_channel(pos[0], pos[1]);
+        // Define once for +Y side, mirror for −Y to guarantee symmetry
+        for (m = [0, 1]) mirror([0, m, 0]) {
+            hex_nut_pocket(bolt_z, cap_width / 2);
+            hex_nut_slot(bolt_z, cap_width / 2);
+            bolt_channel(bolt_z, cap_width / 2);
         }
         // Boss cutouts in slipper side walls
         cap_side_boss_holes();
