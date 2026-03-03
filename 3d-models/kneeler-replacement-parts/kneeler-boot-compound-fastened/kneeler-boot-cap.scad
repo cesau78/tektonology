@@ -29,7 +29,7 @@ module bolt_hole(z_pos, y_pos) {
 module cap_side_bosses() {
     boss_len = outer_extent - split_x; // full cap depth along X
     for (side = [1, -1])
-        translate([split_x + boss_len / 2, side * cap_width / 2, bolt_z])
+        translate([split_x + boss_len / 2 - tolerance, side * cap_width / 2, bolt_z])
             rotate([0, 90, 0])
                 cylinder(h=boss_len, d=boss_dia, center=true);
 }
@@ -74,7 +74,7 @@ module cap() {
                 coupler_shell();
                 cap_half_space();
                 translate([-big, -cap_width / 2, -big])
-                    cube([big * 2, cap_width - (2 * tolerance), big * 2]);
+                    cube([big * 2, cap_width - (tolerance), big * 2]);
             }
             if (enable_top_lip) cap_lip();
             // Lip piece that was cut from slipper entrance
