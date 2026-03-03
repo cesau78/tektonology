@@ -57,7 +57,7 @@ module entrance_lip_fill() {
                 sphere(r=1.0);
             }
         // Clip to cap's X bounds so nothing extends beyond the shell
-        translate([split_x, -big, -big])
+        translate([split_x * 1.2, -big, -big])
             cube([outer_extent - split_x, big * 2, big * 2]);
     }
 }
