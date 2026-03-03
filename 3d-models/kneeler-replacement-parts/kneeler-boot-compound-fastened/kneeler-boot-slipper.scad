@@ -12,7 +12,7 @@ include <kneeler-boot-config.scad>
 // Hex nut pocket — centered at nut_x in the slipper body.
 module hex_nut_pocket(z_pos, y_pos) {
     nut_r = (nut_af + nut_clearance) / 2 / cos(30);
-    pocket_depth = nut_thickness + 0.2;
+    pocket_depth = nut_thickness + tolerance * 2;
 
     translate([nut_x - pocket_depth / 2, y_pos, z_pos])
         rotate([0, 90, 0])
@@ -47,8 +47,8 @@ module hex_nut_slot(z_pos, y_pos) {
 // Only called with positive y_pos; mirror() handles the opposite side.
 module hex_nut_slot(z_pos, y_pos) {
     slot_width = nut_af + nut_clearance;
-    pocket_depth = nut_thickness + 0.2;
-    entry_depth = pocket_depth * 20; // flared in X (print axis) for self-supporting walls
+    pocket_depth = nut_thickness + tolerance * 2;
+    entry_depth = pocket_depth + 2 * slot_width * tan(60); // flared in X (print axis) for self-supporting walls
     slot_h = total_h; // generous length to exit the shell
 
     translate([nut_x, y_pos, z_pos])
