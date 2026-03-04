@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MQTT Telemetry Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Printer Telemetry</h1>
+    <div class="range-buttons">
+      <button data-range="1h" class="active">1h</button>
+      <button data-range="6h">6h</button>
+      <button data-range="24h">24h</button>
+      <button data-range="7d">7d</button>
+    </div>
+  </header>
+
+  <div class="status-bar" id="status-bar">
+    <div><span class="label">State:</span><span class="value" id="st-state">--</span></div>
+    <div><span class="label">Job:</span><span class="value" id="st-job">--</span></div>
+    <div><span class="label">Progress:</span><span class="value" id="st-progress">--</span></div>
+    <div><span class="label">Layer:</span><span class="value" id="st-layer">--</span></div>
+    <div><span class="label">Nozzle:</span><span class="value" id="st-nozzle">--</span></div>
+    <div><span class="label">Bed:</span><span class="value" id="st-bed">--</span></div>
+    <div><span class="label">ETA:</span><span class="value" id="st-eta">--</span></div>
+    <div><span class="label">WiFi:</span><span class="value" id="st-wifi">--</span></div>
+  </div>
+
+  <div class="charts">
+    <div class="chart-card">
+      <h2>Temperature</h2>
+      <canvas id="temp-chart"></canvas>
+    </div>
+    <div class="chart-card">
+      <h2>Print Progress</h2>
+      <canvas id="progress-chart"></canvas>
+    </div>
+    <div class="chart-card">
+      <h2>Fan Speeds</h2>
+      <canvas id="fan-chart"></canvas>
+    </div>
+    <div class="chart-card">
+      <h2>Speed &amp; WiFi</h2>
+      <canvas id="misc-chart"></canvas>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>
