@@ -73,8 +73,8 @@ module cap() {
             intersection() {
                 coupler_shell();
                 cap_half_space();
-                translate([-big, -cap_width / 2, -big])
-                    cube([big * 2, cap_width - (tolerance), big * 2]);
+                translate([-big, -(cap_width / 2) + tolerance, -big])
+                    cube([big * 2, cap_width - (tolerance * 2), big * 2]);
             }
             if (enable_top_lip) cap_lip();
             // Lip piece that was cut from slipper entrance
