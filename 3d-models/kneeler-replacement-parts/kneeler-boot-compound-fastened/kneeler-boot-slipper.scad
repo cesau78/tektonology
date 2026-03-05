@@ -20,23 +20,26 @@ module hex_nut_pocket(z_pos, y_pos) {
 }
 
 // Hex nut slide-in slot — 45° toward center from nut pocket through shell.
-// 30° flared entrance on both sides to guide nut insertion.
+// 30° flared entrance on X axis widens toward shell exit.
 module hex_nut_slot(z_pos, y_pos) {
     slot_width = nut_af + nut_clearance;
     pocket_depth = nut_thickness + 0.2;
-    slot_h = total_h; // generous length to exit the shell
-    angle = (y_pos > 0) ? -45 : 45; // tilt toward Y=0
+    slot_h = total_h;
+    angle = (y_pos > 0) ? -45 : 45;
 
-    // Approximate distance along slot to shell exit
-    exit_d = (z_pos + total_h / 2) / cos(45);
+    // Full-length 30° taper on X: narrow at pocket, wide at exit
+    flare_extra = slot_h * tan(30);
 
     translate([nut_x, y_pos, z_pos])
-        rotate([angle, 0, 0]) {
-            // Main slot
-            translate([-pocket_depth / 2, -slot_width / 2, -slot_h])
-                cube([pocket_depth, slot_width, slot_h]);
-          
-        }
+        rotate([angle, 0, 0])
+            hull() {
+                // Narrow end at nut pocket
+                translate([-pocket_depth / 2, -slot_width / 2, 0])
+                    cube([pocket_depth, slot_width, 0.01]);
+                // Wide end at shell exit — 30° on each X side
+                translate([-(pocket_depth / 2 + flare_extra), -slot_width / 2, -slot_h])
+                    cube([pocket_depth + 2 * flare_extra, slot_width, 0.01]);
+            }
 }
 
 // Bolt channel through the slipper — connects the split face to the nut pocket.
