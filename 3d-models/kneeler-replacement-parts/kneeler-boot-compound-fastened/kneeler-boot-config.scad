@@ -17,7 +17,7 @@ groove_overhang = 2;      // groove extends this far beyond socket per side
 
 // --- Performance Settings ---
 preview = false; //set preview=true for faster rendering with lower detail, or false for full detail.
-crosssection_view = true; // Set to true to cut the model along a plane and show only one side
+crosssection_view = false; // Set to true to cut the model along a plane and show only one side
 crosssection_axis = "y"; // axis: 'x', 'y', or 'z'
 crosssection_pos = 0.5; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
 
@@ -53,7 +53,7 @@ bolt_clearance  = tolerance; // clearance for bolt holes (0 for snug fit, increa
 bolt_length     = 20;    // M3x20 — shaft length under head (very common size)
 nut_af          = 5.5;   // hex nut across-flats
 nut_clearance   = tolerance * 3; // clearance for nut pockets
-nut_thickness   = 0.5;
+nut_thickness   = 2.4;
 head_dia        = 6.0;   // M3 socket head cap screw head diameter
 head_clearance  = tolerance;
 head_height     = 3.5;   // M3 socket head height
@@ -127,11 +127,12 @@ module coupler_shell() {
 // TOP SOCKET CUT — reusable for re-cutting after lip is added
 // =====================================================================
 module top_socket_cut() {
-    //translate([0, 0, (total_h / 2) - (sole_plate_h / 2) + tolerance])
-       //minkowski() {
-            //cube([leg_l + tolerance, leg_w + tolerance, sole_plate_h + tolerance], center=true);
-        //    sphere(r=1.0);
-        //}
+    // Flat cut — shaves 2*tolerance off the underside of the lip
+    cut_h = tolerance * 2;
+    lip_r = 1.0;
+    lip_bottom_z = (total_h / 2) - lip_r + (lip_thickness / 2) - (lip_thickness / 2);
+    translate([0, 0, lip_bottom_z + (cut_h / 2)])
+        cube([sole_plate_l, sole_plate_w, cut_h], center=true);
 }
 
 // =====================================================================

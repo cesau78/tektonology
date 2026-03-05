@@ -79,6 +79,12 @@ module cap() {
             if (enable_top_lip) cap_lip();
             // Lip piece that was cut from slipper entrance
             //if (enable_top_lip) entrance_lip_fill();
+            // Fill socket from lip bottom to shell top so groove starts at lip level
+            intersection() {
+                translate([0, 0, (total_h / 2) - 0.5])
+                    cube([sole_plate_l, sole_plate_w, 1.0], center=true);
+                cap_half_space();
+            }
             // Side bosses — half-cylinders at cap Y edges
             cap_side_bosses();
         }
