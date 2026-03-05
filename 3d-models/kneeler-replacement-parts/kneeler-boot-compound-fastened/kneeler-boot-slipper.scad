@@ -27,19 +27,23 @@ module hex_nut_slot(z_pos, y_pos) {
     slot_h = total_h;
     angle = (y_pos > 0) ? -45 : 45;
 
-    // Full-length 30° taper on X: narrow at pocket, wide at exit
-    flare_extra = slot_h * tan(30);
+    // Flare starts at nut pocket edge, not center
+    nut_r = (nut_af + nut_clearance) / 2 / cos(30);
+    flare_extra = (slot_h - nut_r) * tan(30);
 
     translate([nut_x, y_pos, z_pos])
-        rotate([angle, 0, 0])
+        rotate([angle, 0, 0]) {
+            // Straight slot from pocket center to pocket edge
+            translate([-pocket_depth / 2, -slot_width / 2, -nut_r])
+                cube([pocket_depth, slot_width, nut_r]);
+            // 30° flare from pocket edge to shell exit
             hull() {
-                // Narrow end at nut pocket
-                translate([-pocket_depth / 2, -slot_width / 2, 0])
+                translate([-pocket_depth / 2, -slot_width / 2, -nut_r])
                     cube([pocket_depth, slot_width, 0.01]);
-                // Wide end at shell exit — 30° on each X side
                 translate([-(pocket_depth / 2 + flare_extra), -slot_width / 2, -slot_h])
                     cube([pocket_depth + 2 * flare_extra, slot_width, 0.01]);
             }
+        }
 }
 
 // Bolt channel through the slipper — connects the split face to the nut pocket.
