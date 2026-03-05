@@ -53,14 +53,6 @@ module cap_side_boss_holes() {
                 cylinder(h=boss_len + 0.2, d=boss_dia + (boss_clearance * 2), center=true);
 }
 
-// =====================================================================
-// ALIGNMENT FEATURES
-// =====================================================================
-
-module alignment_tongue() {
-    translate([split_x, -tongue_width / 2, -tongue_height / 2])
-        cube([tongue_depth, tongue_width, tongue_height]);
-}
 
 // =====================================================================
 // SLIPPER PIECE
@@ -81,7 +73,6 @@ module slipper() {
                 side_bands();
             }
             if (enable_top_lip) slipper_lip();
-            //alignment_tongue();
         }
         // Hex nut pockets, slide-in slots, and bolt channels
         for (pos = bolt_positions) {
@@ -95,11 +86,11 @@ module slipper() {
         if (enable_top_lip) top_socket_cut();
 
         //offset entrance slide holes for the leg to slide into
-        translate([sole_plate_l / 2, 0, (total_h / 2) - (sole_plate_h / 2) + tolerance])
-            minkowski() {
-                cube([sole_plate_l / 2, leg_w, sole_plate_h], center=true);
-                sphere(r=1.0);
-            }
+        // translate([sole_plate_l / 2, 0, (total_h / 2) - (sole_plate_h / 2) + tolerance])
+        //     minkowski() {
+        //         cube([sole_plate_l / 2, leg_w, sole_plate_h], center=true);
+        //         sphere(r=1.0);
+        //     }
         // Relief cut so the cap lip nests flush into the slipper
         // Top of this cut aligns with the top of the coupler_shell
         relief_cut_z = (total_h / 2) - (lip_height / 2);

@@ -78,7 +78,7 @@ module cap() {
             }
             if (enable_top_lip) cap_lip();
             // Lip piece that was cut from slipper entrance
-            if (enable_top_lip) entrance_lip_fill();
+            //if (enable_top_lip) entrance_lip_fill();
             // Side bosses — half-cylinders at cap Y edges
             cap_side_bosses();
         }

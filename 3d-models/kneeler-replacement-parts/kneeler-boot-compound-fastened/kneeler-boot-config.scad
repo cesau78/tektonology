@@ -17,7 +17,7 @@ groove_overhang = 2;      // groove extends this far beyond socket per side
 
 // --- Performance Settings ---
 preview = false; //set preview=true for faster rendering with lower detail, or false for full detail.
-crosssection_view = false; // Set to true to cut the model along a plane and show only one side
+crosssection_view = true; // Set to true to cut the model along a plane and show only one side
 crosssection_axis = "y"; // axis: 'x', 'y', or 'z'
 crosssection_pos = 0.5; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
 
@@ -127,11 +127,11 @@ module coupler_shell() {
 // TOP SOCKET CUT — reusable for re-cutting after lip is added
 // =====================================================================
 module top_socket_cut() {
-    translate([0, 0, (total_h / 2) - (sole_plate_h / 2) + tolerance])
-        minkowski() {
-            cube([leg_l + tolerance, leg_w + tolerance, sole_plate_h + tolerance], center=true);
-            sphere(r=1.0);
-        }
+    //translate([0, 0, (total_h / 2) - (sole_plate_h / 2) + tolerance])
+       //minkowski() {
+            //cube([leg_l + tolerance, leg_w + tolerance, sole_plate_h + tolerance], center=true);
+        //    sphere(r=1.0);
+        //}
 }
 
 // =====================================================================
