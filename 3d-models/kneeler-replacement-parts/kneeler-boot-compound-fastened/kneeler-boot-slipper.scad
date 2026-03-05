@@ -12,14 +12,13 @@ include <kneeler-boot-config.scad>
 // Hex nut pocket — centered at nut_x in the slipper body.
 module hex_nut_pocket(z_pos, y_pos) {
     nut_r = (nut_af + nut_clearance) / 2 / cos(30);
-    pocket_depth = nut_thickness + tolerance * 2;
+    pocket_depth = nut_thickness + tolerance;
 
     translate([nut_x - pocket_depth / 2, y_pos, z_pos])
         rotate([0, 90, 0])
             cylinder(h=pocket_depth, r=nut_r, $fn=6);
 }
 
-<<<<<<< HEAD
 // Hex nut slide-in slot — 45° toward center from nut pocket through shell.
 // 30° flared entrance on X axis widens toward shell exit.
 module hex_nut_slot(z_pos, y_pos) {
@@ -40,27 +39,6 @@ module hex_nut_slot(z_pos, y_pos) {
                 // Wide end at shell exit — 30° on each X side
                 translate([-(pocket_depth / 2 + flare_extra), -slot_width / 2, -slot_h])
                     cube([pocket_depth + 2 * flare_extra, slot_width, 0.01]);
-=======
-// Hex nut slide-in slot — wedge cut, 60° toward center from nut pocket.
-// Narrow at the nut pocket, widens toward the entry for easy insertion
-// and angled walls that print cleanly with X-axis up.
-// Only called with positive y_pos; mirror() handles the opposite side.
-module hex_nut_slot(z_pos, y_pos) {
-    slot_width = nut_af + nut_clearance;
-    pocket_depth = nut_thickness + tolerance * 2;
-    entry_depth = pocket_depth + 2 * slot_width * tan(60); // flared in X (print axis) for self-supporting walls
-    slot_h = total_h; // generous length to exit the shell
-
-    translate([nut_x, y_pos, z_pos])
-        rotate([-44, 0, 0])
-            hull() {
-                // Narrow end at nut pocket
-                translate([-pocket_depth / 2, -slot_width / 2, -0.01])
-                    cube([pocket_depth, slot_width, 0.01]);
-                // Wide end at entry — flared in X for printability
-                translate([-entry_depth / 2, -slot_width / 2, -slot_h])
-                    cube([entry_depth, slot_width, 0.01]);
->>>>>>> 425e971 (adjusted pockets for easier access and cleaning)
             }
 }
 
