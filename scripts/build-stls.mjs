@@ -19,10 +19,13 @@ function findOpenSCAD() {
   process.exit(1);
 }
 
-function build(openscad, scad) {
-  const stl = scad.replace(/\.scad$/, ".stl");
+function build(openscad, scad, { output, defines = {} } = {}) {
+  const stl = output ?? scad.replace(/\.scad$/, ".stl");
   console.log(`  Building: ${stl}`);
-  const result = spawnSync(openscad, ["-o", stl, scad], { stdio: "inherit" });
+  const args = ["-o", stl];
+  for (const [k, v] of Object.entries(defines)) args.push("-D", `${k}=${v}`);
+  args.push(scad);
+  const result = spawnSync(openscad, args, { stdio: "inherit" });
   if (result.status !== 0) {
     console.error(`  FAILED: ${scad}`);
     process.exit(result.status ?? 1);
@@ -30,8 +33,20 @@ function build(openscad, scad) {
 }
 
 const openscad = findOpenSCAD();
+const ciOverrides = { preview: "false", crosssection_view: "false" };
+
+const fastened = "3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened";
+
+console.log("==> kneeler-boot-compound-fastened (slipper)");
+build(openscad, resolve(`${fastened}/kneeler-boot-slipper.scad`), { defines: ciOverrides });
+
+console.log("==> kneeler-boot-compound-fastened (cap)");
+build(openscad, resolve(`${fastened}/kneeler-boot-cap.scad`), { defines: ciOverrides });
+
+console.log("==> kneeler-boot-compound-fastened (insert)");
+build(openscad, resolve(`${fastened}/kneeler-boot-insert.scad`), { defines: ciOverrides });
 
 console.log("==> kneeler-bushing");
-build(openscad, resolve("3d-models/kneeler-replacement-parts/kneeler-bushing/kneeler-bushing.scad"));
+build(openscad, resolve("3d-models/kneeler-replacement-parts/kneeler-bushing/kneeler-bushing.scad"), { defines: ciOverrides });
 
 console.log("Done.");
