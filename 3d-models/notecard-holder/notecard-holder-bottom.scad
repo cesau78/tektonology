@@ -38,8 +38,9 @@ module bottom() {
 
                 for (i = [0 : plates - 1]) {
                     y_cut = i * (plate_thick + gap_width) - tolerance;
+                    cw = (i == plates - 1) ? length - y_cut + 0.1 : cut_width;
                     translate([x_inner - 0.1, y_cut, plate_thick - 0.1])
-                        cube([plate_thick + 0.2, cut_width, rail_height + 0.2]);
+                        cube([plate_thick + 0.2, cw, rail_height + 0.2]);
                 }
             }
         }
