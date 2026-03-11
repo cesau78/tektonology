@@ -1,10 +1,14 @@
 // --- TEKTONOLOGY NOTECARD HOLDER — SHARED CONFIG ---
 // Shared parameters for notecard holder
 
+// 3"x5" notecard dimensions (landscape)
+card_w = 127;    // 5 inches (across holder)
+card_h = 76.2;   // 3 inches (height)
+
 // --- Plate Parameters ---
-width          = 130;     // bolts per plate
-length          = 130;      // rows of bolts
-height         = 50;       // notecard slot height
+width          = card_w + 11;     // width of the box
+length          = width;      // length of the box (square)
+height         = card_h * 0.66;       // notecard slot height
 sections       = 7;      // number of separate plates to print (divide length by this for each plate)
 plates = sections + 1;
 spacing       = 7;  // center-to-center hole spacing (along X)

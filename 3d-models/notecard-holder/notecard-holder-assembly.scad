@@ -7,6 +7,12 @@ use <perforated-plate.scad>
 bottom_width = width + 2 * (plate_thick + tolerance);
 divider_width = width - 2 * plate_thick;
 
+// 3"x5" notecard dimensions (landscape)
+card_w = 127;    // 5 inches (across holder)
+card_h = 76.2;   // 3 inches (height)
+card_t = 0.5;    // thin for visualization
+card_tilt = 15;   // degrees from vertical, leaning toward next divider
+
 // --- Assembled view ---
 module assembly() {
     // Bottom plate
@@ -46,6 +52,15 @@ module assembly() {
                         p_length_margin = edge_margin,
                         p_width_margin  = edge_margin
                     );
+    }
+
+    // Simulated 3"x5" notecards — one per slot, tilted back
+    for (i = [0 : plates - 2]) {
+        slot_y = (i + 1) * (plate_thick + gap_width) + plate_thick - plate_thick;
+        color("White", 0.7)
+            translate([bottom_width / 2 - card_w / 2, slot_y, plate_thick])
+                rotate([card_tilt, 0, 0])
+                    cube([card_w, card_t, card_h]);
     }
 }
 
