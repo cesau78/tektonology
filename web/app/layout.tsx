@@ -31,7 +31,11 @@ export default function RootLayout({
             <Link href="/" className="text-lg font-bold tracking-tight text-white">
               Tektonology
             </Link>
-            <span className="text-xs text-neutral-400">3D-printable church solutions</span>
+            <div className="flex items-center gap-4">
+              <Link href="/accounting" className="text-xs text-neutral-400 hover:text-white transition-colors">
+                Accounting
+              </Link>
+            </div>
           </div>
         </header>
         <main className="max-w-3xl mx-auto px-4 py-10">
