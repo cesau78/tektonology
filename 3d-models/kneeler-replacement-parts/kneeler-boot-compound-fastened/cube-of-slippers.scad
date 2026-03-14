@@ -11,6 +11,7 @@ box_height_in = 12;
 // === PACKING GAP (mm) ===
 gap_xy = 1; // spacing between slippers in X and Y
 gap_z  = 2; // spacing between layers (foam sheet)
+tolerance = 0.1; // inset from box walls on each side
 
 // === CONVERSIONS ===
 mm_per_in = 25.4;
@@ -34,11 +35,15 @@ ny = floor(box_y / cell_y);
 nz = floor(box_z / cell_z);
 
 // === FLUSH STRIDE ===
-// Distribute slippers so outer edges are flush with the box walls.
-// First centre at slipper/2, last centre at box - slipper/2.
-stride_x = (nx > 1) ? (box_x - slipper_x) / (nx - 1) : 0;
-stride_y = (ny > 1) ? (box_y - slipper_y) / (ny - 1) : 0;
-stride_z = (nz > 1) ? (box_z - slipper_z) / (nz - 1) : 0;
+// Distribute slippers so outer edges sit tolerance inset from the box walls.
+// Usable span is box minus tolerance on each side.
+usable_x = box_x - 2 * tolerance;
+usable_y = box_y - 2 * tolerance;
+usable_z = box_z - 2 * tolerance;
+
+stride_x = (nx > 1) ? (usable_x - slipper_x) / (nx - 1) : 0;
+stride_y = (ny > 1) ? (usable_y - slipper_y) / (ny - 1) : 0;
+stride_z = (nz > 1) ? (usable_z - slipper_z) / (nz - 1) : 0;
 
 total_slippers = nx * ny * nz;
 
@@ -61,8 +66,8 @@ for (iz = [0 : max(0, nz - 1)])
         for (ix = [0 : max(0, nx - 1)])
             for (iy = [0 : max(0, ny - 1)])
                 translate([
-                    slipper_x / 2 + ix * stride_x,
-                    slipper_y / 2 + iy * stride_y,
-                    slipper_z / 2 + iz * stride_z
+                    tolerance + slipper_x / 2 + ix * stride_x,
+                    tolerance + slipper_y / 2 + iy * stride_y,
+                    tolerance + slipper_z / 2 + iz * stride_z
                 ])
                 cube([slipper_x, slipper_y, slipper_z], center=true);
