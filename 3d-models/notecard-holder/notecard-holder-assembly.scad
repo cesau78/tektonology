@@ -7,9 +7,7 @@ use <perforated-plate.scad>
 bottom_width = width + 2 * (plate_thick + tolerance);
 divider_width = width - 2 * plate_thick;
 
-// 3"x5" notecard dimensions (landscape)
-card_w = 127;    // 5 inches (across holder)
-card_h = 76.2;   // 3 inches (height)
+
 card_t = 0.5;    // thin for visualization
 card_tilt = 15;   // degrees from vertical, leaning toward next divider
 
