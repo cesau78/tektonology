@@ -1,6 +1,7 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { generateKeyPairSync, createSign, randomBytes } from "crypto";
+import fs from "fs";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, mkdtempSync } from "fs";
 import os from "os";
 import path from "path";
@@ -524,6 +525,149 @@ describe("upstream relay", () => {
   });
 });
 
+describe("upstream error handling", () => {
+  it("logs auth-specific message when upstream error code is 5", async () => {
+    const errors = [];
+    const origError = console.error;
+    const origLog = console.log;
+    console.error = (...args) => errors.push(args.join(" "));
+    console.log = () => {}; // suppress noise
+
+    // Use a port that no MQTT broker is listening on — will trigger connection error
+    // But to specifically test code-5 path, we emit the error manually
+    const p = createProxy({
+      port: 0,
+      certPath,
+      keyPath,
+      accessCode: TEST_ACCESS_CODE,
+      printerSerial: TEST_SERIAL,
+      printerIp: "localhost",
+      printerPort: 19999, // nothing listening here
+      onMessage: () => {},
+    });
+
+    await p.start();
+
+    // Emit a code-5 error on the upstream client
+    const err5 = new Error("Connection refused");
+    err5.code = 5;
+    p.upstreamClient.emit("error", err5);
+
+    console.error = origError;
+    console.log = origLog;
+
+    assert.ok(errors.some((e) => e.includes("upstream auth failed")));
+
+    await p.stop();
+  });
+
+  it("logs subscribe error when upstream subscribe fails", async () => {
+    const errors = [];
+    const origError = console.error;
+    const origLog = console.log;
+    console.error = (...args) => errors.push(args.join(" "));
+    console.log = () => {};
+
+    // Create a fake printer that rejects subscriptions
+    const fakeAedes = new Aedes();
+    fakeAedes.authenticate = (_c, _u, _p, cb) => cb(null, true);
+    fakeAedes.authorizeSubscribe = (_client, _sub, cb) => {
+      cb(new Error("subscribe denied"));
+    };
+
+    const tlsOpts = { key: readFileSync(keyPath), cert: readFileSync(certPath) };
+    const fakePrinter = tls.createServer(tlsOpts, fakeAedes.handle);
+    await new Promise((resolve) => fakePrinter.listen(0, resolve));
+    const fakePort = fakePrinter.address().port;
+
+    const p = createProxy({
+      port: 0,
+      certPath,
+      keyPath,
+      accessCode: TEST_ACCESS_CODE,
+      printerSerial: TEST_SERIAL,
+      printerIp: "localhost",
+      printerPort: fakePort,
+      onMessage: () => {},
+    });
+
+    await p.start();
+
+    // Wait for upstream connect + subscribe attempt
+    await new Promise((resolve, reject) => {
+      if (p.upstreamClient.connected) return resolve();
+      p.upstreamClient.on("connect", resolve);
+      p.upstreamClient.on("error", reject);
+    });
+    await new Promise((r) => setTimeout(r, 200));
+
+    console.error = origError;
+    console.log = origLog;
+
+    assert.ok(errors.some((e) => e.includes("upstream subscribe error")));
+
+    await p.stop();
+    await new Promise((resolve) => {
+      fakeAedes.close(() => fakePrinter.close(resolve));
+    });
+  });
+
+  it("logs generic message for non-code-5 upstream errors", async () => {
+    const errors = [];
+    const origError = console.error;
+    const origLog = console.log;
+    console.error = (...args) => errors.push(args.join(" "));
+    console.log = () => {};
+
+    const p = createProxy({
+      port: 0,
+      certPath,
+      keyPath,
+      accessCode: TEST_ACCESS_CODE,
+      printerSerial: TEST_SERIAL,
+      printerIp: "localhost",
+      printerPort: 19999,
+      onMessage: () => {},
+    });
+
+    await p.start();
+
+    const errGeneric = new Error("ECONNREFUSED");
+    errGeneric.code = "ECONNREFUSED";
+    p.upstreamClient.emit("error", errGeneric);
+
+    console.error = origError;
+    console.log = origLog;
+
+    assert.ok(errors.some((e) => e.includes("upstream error: ECONNREFUSED")));
+
+    await p.stop();
+  });
+});
+
+describe("cert watcher failure", () => {
+  it("silently handles fs.watch failure", async () => {
+    const origWatch = fs.watch;
+    fs.watch = () => { throw new Error("watch not supported"); };
+
+    const p = createProxy({
+      port: 0,
+      certPath,
+      keyPath,
+      accessCode: TEST_ACCESS_CODE,
+      printerSerial: TEST_SERIAL,
+      onMessage: () => {},
+    });
+
+    // start() calls startCertWatcher which should not throw
+    await p.start();
+    fs.watch = origWatch;
+
+    assert.ok(true, "Proxy started despite fs.watch failure");
+    await p.stop();
+  });
+});
+
 describe("cert hot-reload", () => {
   let proxy;
   let tmpCertDir;
@@ -578,6 +722,21 @@ describe("cert hot-reload", () => {
 
     console.error = origError;
     assert.ok(errors.some((e) => e.includes("cert reload failed")));
+  });
+
+  it("auto-reloads when key file changes on disk", async () => {
+    const logs = [];
+    const origLog = console.log;
+    console.log = (...args) => logs.push(args.join(" "));
+
+    // Touch the key file to trigger the watcher via key path
+    const keyContent = readFileSync(tmpKeyPath);
+    writeFileSync(tmpKeyPath, keyContent);
+
+    await new Promise((r) => setTimeout(r, 1000));
+
+    console.log = origLog;
+    assert.ok(logs.some((l) => l.includes("TLS certs reloaded")), "Expected auto-reload after key file change");
   });
 
   it("auto-reloads when cert files change on disk", async () => {

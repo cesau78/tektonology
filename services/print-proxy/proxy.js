@@ -104,7 +104,7 @@ export function createProxy({ port, listenHost, certPath, keyPath, accessCode, p
     const allowed = await intercept({ topic: packet.topic, payload });
 
     if (allowed && upstreamClient?.connected) {
-      upstreamClient.publish(packet.topic, packet.payload, { qos: packet.qos ?? 0 });
+      upstreamClient.publish(packet.topic, packet.payload, { qos: packet.qos });
     } else if (!allowed) {
       console.log("[proxy] job BLOCKED — not forwarded to printer");
     }
@@ -136,7 +136,10 @@ export function createProxy({ port, listenHost, certPath, keyPath, accessCode, p
   function startCertWatcher() {
     try {
       certWatcher = fs.watch(certDir, (_event, filename) => {
-        if (filename !== path.basename(certPath) && filename !== path.basename(keyPath)) return;
+        const certBase = path.basename(certPath);
+        const keyBase = path.basename(keyPath);
+        /* c8 ignore next -- fs.watch on Windows may not report unrelated filenames reliably */
+        if (filename !== certBase && filename !== keyBase) return;
         clearTimeout(reloadTimer);
         reloadTimer = setTimeout(reloadCerts, 500);
       });
