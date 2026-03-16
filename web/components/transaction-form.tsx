@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { apiFetch } from "@/lib/api";
+import { useApiFetch } from "@/lib/api";
 
 interface AccountInfo {
   number: number;
@@ -29,6 +29,7 @@ function today(): string {
 
 export function TransactionForm({ accounts }: { accounts: AccountInfo[] }) {
   const router = useRouter();
+  const apiFetch = useApiFetch();
   const [date, setDate] = useState(today());
   const [description, setDescription] = useState("");
   const [lines, setLines] = useState<LineItem[]>([

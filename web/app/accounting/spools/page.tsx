@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingState, ErrorState } from "@/components/api-error";
-import { apiFetch } from "@/lib/api";
+import { useApiFetch } from "@/lib/api";
+import { RequireRole } from "@/components/auth-guard";
 
 interface SpoolData {
   spoolId: number;
@@ -30,12 +31,13 @@ const materialColor: Record<string, string> = {
 export default function SpoolsPage() {
   const [spools, setSpools] = useState<SpoolData[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const apiFetch = useApiFetch();
 
   useEffect(() => {
     apiFetch<SpoolData[]>("/api/spools")
       .then(setSpools)
       .catch((e) => setError(e.message));
-  }, []);
+  }, [apiFetch]);
 
   const totalRemaining = spools?.reduce((s, sp) => s + sp.remainingG, 0) ?? 0;
   const totalWeight = spools?.reduce((s, sp) => s + sp.weightG, 0) ?? 0;
@@ -50,6 +52,7 @@ export default function SpoolsPage() {
   }
 
   return (
+    <RequireRole roles={["owner", "auditor"]}>
     <div>
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
@@ -140,5 +143,6 @@ export default function SpoolsPage() {
         </div>
       )}
     </div>
+    </RequireRole>
   );
 }

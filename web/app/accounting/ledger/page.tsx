@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingState, ErrorState } from "@/components/api-error";
-import { apiFetch } from "@/lib/api";
+import { useApiFetch } from "@/lib/api";
+import { RequireRole } from "@/components/auth-guard";
+import { useRole, canWrite } from "@/lib/auth";
 
 interface JournalLine {
   accountNumber: number;
@@ -39,14 +41,17 @@ function codeColor(code: number): string {
 export default function LedgerPage() {
   const [entries, setEntries] = useState<JournalEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { role } = useRole();
+  const apiFetch = useApiFetch();
 
   useEffect(() => {
     apiFetch<JournalEntry[]>("/api/journal-entries")
       .then(setEntries)
       .catch((e) => setError(e.message));
-  }, []);
+  }, [apiFetch]);
 
   return (
+    <RequireRole roles={["owner", "auditor"]}>
     <div>
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
@@ -63,9 +68,11 @@ export default function LedgerPage() {
             <p className="text-muted-foreground text-sm">{entries.length} transactions.</p>
           )}
         </div>
-        <Link href="/accounting/new">
-          <Button variant="outline" size="sm">+ New Transaction</Button>
-        </Link>
+        {canWrite(role) && (
+          <Link href="/accounting/new">
+            <Button variant="outline" size="sm">+ New Transaction</Button>
+          </Link>
+        )}
       </div>
 
       {error && <ErrorState message={error} />}
@@ -116,5 +123,6 @@ export default function LedgerPage() {
         </div>
       )}
     </div>
+    </RequireRole>
   );
 }

@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { MongoClient } from "mongodb";
 import { createRoutes } from "./routes.js";
+import { clerkAuth } from "./auth.js";
 
 const port = process.env.FINOPS_API_PORT ?? 3001;
 const uri = process.env.MONGODB_URI ?? "mongodb://localhost:27017/tektonology";
@@ -17,6 +18,7 @@ console.log(`Connected to MongoDB: ${dbName}`);
 const app = express();
 app.use(cors({ origin: /localhost/ }));
 app.use(express.json());
+app.use(clerkAuth);
 
 createRoutes(app, db);
 

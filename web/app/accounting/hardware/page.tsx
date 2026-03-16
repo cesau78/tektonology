@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingState, ErrorState } from "@/components/api-error";
-import { apiFetch } from "@/lib/api";
+import { useApiFetch } from "@/lib/api";
+import { RequireRole } from "@/components/auth-guard";
 
 interface HardwareData {
   hardwareId: number;
@@ -23,17 +24,19 @@ function fmt(n: number): string {
 export default function HardwarePage() {
   const [hardware, setHardware] = useState<HardwareData[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const apiFetch = useApiFetch();
 
   useEffect(() => {
     apiFetch<HardwareData[]>("/api/hardware")
       .then(setHardware)
       .catch((e) => setError(e.message));
-  }, []);
+  }, [apiFetch]);
 
   const totalCost = hardware?.reduce((s, h) => s + h.cost, 0) ?? 0;
   const totalPieces = hardware?.reduce((s, h) => s + h.remaining, 0) ?? 0;
 
   return (
+    <RequireRole roles={["owner", "auditor"]}>
     <div>
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
@@ -93,5 +96,6 @@ export default function HardwarePage() {
         </Card>
       )}
     </div>
+    </RequireRole>
   );
 }

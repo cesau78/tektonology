@@ -1,3 +1,8 @@
+import { requireRole } from "./auth.js";
+
+const read = requireRole("owner", "auditor");
+const write = requireRole("owner");
+
 /**
  * @param {import('express').Express} app
  * @param {import('mongodb').Db} db
@@ -10,18 +15,18 @@ export function createRoutes(app, db) {
   const printJobs = db.collection("print_jobs");
 
   // -- Accounts --
-  app.get("/api/accounts", async (_req, res) => {
+  app.get("/api/accounts", read, async (_req, res) => {
     const docs = await accounts.find().sort({ number: 1 }).toArray();
     res.json(docs);
   });
 
   // -- Journal Entries (Ledger) --
-  app.get("/api/journal-entries", async (_req, res) => {
+  app.get("/api/journal-entries", read, async (_req, res) => {
     const docs = await journalEntries.find().sort({ date: 1, transactionId: 1 }).toArray();
     res.json(docs);
   });
 
-  app.post("/api/journal-entries", async (req, res) => {
+  app.post("/api/journal-entries", write, async (req, res) => {
     const entry = req.body;
 
     if (!entry.date || !entry.lines || !Array.isArray(entry.lines) || entry.lines.length < 2) {
@@ -53,25 +58,25 @@ export function createRoutes(app, db) {
   });
 
   // -- Spools --
-  app.get("/api/spools", async (_req, res) => {
+  app.get("/api/spools", read, async (_req, res) => {
     const docs = await spools.find().sort({ spoolId: 1 }).toArray();
     res.json(docs);
   });
 
   // -- Hardware --
-  app.get("/api/hardware", async (_req, res) => {
+  app.get("/api/hardware", read, async (_req, res) => {
     const docs = await hardware.find().sort({ hardwareId: 1 }).toArray();
     res.json(docs);
   });
 
   // -- Print Jobs --
-  app.get("/api/print-jobs", async (_req, res) => {
+  app.get("/api/print-jobs", read, async (_req, res) => {
     const docs = await printJobs.find().sort({ date: -1, batchId: -1 }).toArray();
     res.json(docs);
   });
 
   // -- Dashboard aggregation --
-  app.get("/api/dashboard", async (_req, res) => {
+  app.get("/api/dashboard", read, async (_req, res) => {
     const [accts, entries, spoolDocs, jobDocs] = await Promise.all([
       accounts.find().toArray(),
       journalEntries.find().toArray(),

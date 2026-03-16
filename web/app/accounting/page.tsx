@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingState, ErrorState } from "@/components/api-error";
-import { apiFetch } from "@/lib/api";
+import { useApiFetch } from "@/lib/api";
+import { RequireRole } from "@/components/auth-guard";
+import { useRole, canWrite } from "@/lib/auth";
 
 interface DashboardData {
   balanceSheet: {
@@ -41,22 +43,27 @@ function fmt(n: number): string {
 export default function AccountingDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { role } = useRole();
+  const apiFetch = useApiFetch();
 
   useEffect(() => {
     apiFetch<DashboardData>("/api/dashboard")
       .then(setData)
       .catch((e) => setError(e.message));
-  }, []);
+  }, [apiFetch]);
 
-  const navItems = [
-    { href: "/accounting/new", label: "New Transaction", desc: "Add a ledger entry" },
-    { href: "/accounting/ledger", label: "General Ledger", desc: "All transactions" },
-    { href: "/accounting/spools", label: "Filament Spools", desc: "Inventory tracking" },
-    { href: "/accounting/hardware", label: "Hardware Inventory", desc: "Bolts, nuts, wrenches" },
-    { href: "/accounting/print-jobs", label: "Print Jobs", desc: "Production log" },
+  const allNavItems = [
+    { href: "/accounting/new", label: "New Transaction", desc: "Add a ledger entry", ownerOnly: true },
+    { href: "/accounting/ledger", label: "General Ledger", desc: "All transactions", ownerOnly: false },
+    { href: "/accounting/spools", label: "Filament Spools", desc: "Inventory tracking", ownerOnly: false },
+    { href: "/accounting/hardware", label: "Hardware Inventory", desc: "Bolts, nuts, wrenches", ownerOnly: false },
+    { href: "/accounting/print-jobs", label: "Print Jobs", desc: "Production log", ownerOnly: false },
   ];
 
+  const navItems = allNavItems.filter((item) => !item.ownerOnly || canWrite(role));
+
   return (
+    <RequireRole roles={["owner", "auditor"]}>
     <div>
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
@@ -179,5 +186,6 @@ export default function AccountingDashboard() {
         )}
       </div>
     </div>
+    </RequireRole>
   );
 }

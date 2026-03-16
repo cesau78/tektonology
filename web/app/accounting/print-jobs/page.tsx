@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingState, ErrorState } from "@/components/api-error";
-import { apiFetch } from "@/lib/api";
+import { useApiFetch } from "@/lib/api";
+import { RequireRole } from "@/components/auth-guard";
 
 interface PrintJobData {
   batchId: number;
@@ -37,12 +38,13 @@ const usageBadge: Record<string, string> = {
 export default function PrintJobsPage() {
   const [jobs, setJobs] = useState<PrintJobData[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const apiFetch = useApiFetch();
 
   useEffect(() => {
     apiFetch<PrintJobData[]>("/api/print-jobs")
       .then(setJobs)
       .catch((e) => setError(e.message));
-  }, []);
+  }, [apiFetch]);
 
   const totalHours = jobs?.reduce((s, j) => s + (j.totalHours ?? 0), 0) ?? 0;
   const totalCost = jobs?.reduce((s, j) => s + (j.cost ?? 0), 0) ?? 0;
@@ -59,6 +61,7 @@ export default function PrintJobsPage() {
   }
 
   return (
+    <RequireRole roles={["owner", "auditor"]}>
     <div>
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
@@ -146,5 +149,6 @@ export default function PrintJobsPage() {
         </>
       )}
     </div>
+    </RequireRole>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Link from "next/link";
+import { Providers } from "@/components/providers";
+import { Header } from "@/components/header";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,26 +27,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-stone-50`}>
-        <header className="bg-black border-b border-neutral-800">
-          <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/" className="text-lg font-bold tracking-tight text-white">
-              Tektonology
-            </Link>
-            <div className="flex items-center gap-4">
-              <Link href="/accounting" className="text-xs text-neutral-400 hover:text-white transition-colors">
-                Accounting
-              </Link>
+        <Providers>
+          <Header />
+          <main className="max-w-3xl mx-auto px-4 py-10">
+            {children}
+          </main>
+          <footer className="bg-black border-t border-neutral-800 mt-16">
+            <div className="max-w-3xl mx-auto px-4 py-6 text-center text-xs text-neutral-400">
+              Tektonology — Godspeed.
             </div>
-          </div>
-        </header>
-        <main className="max-w-3xl mx-auto px-4 py-10">
-          {children}
-        </main>
-        <footer className="bg-black border-t border-neutral-800 mt-16">
-          <div className="max-w-3xl mx-auto px-4 py-6 text-center text-xs text-neutral-400">
-            Tektonology — reducing suffering, one pew at a time.
-          </div>
-        </footer>
+          </footer>
+        </Providers>
       </body>
     </html>
   );
