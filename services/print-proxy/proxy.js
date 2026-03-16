@@ -138,7 +138,6 @@ export function createProxy({ port, listenHost, certPath, keyPath, accessCode, p
       certWatcher = fs.watch(certDir, (_event, filename) => {
         const certBase = path.basename(certPath);
         const keyBase = path.basename(keyPath);
-        /* c8 ignore next -- fs.watch on Windows may not report unrelated filenames reliably */
         if (filename !== certBase && filename !== keyBase) return;
         clearTimeout(reloadTimer);
         reloadTimer = setTimeout(reloadCerts, 500);

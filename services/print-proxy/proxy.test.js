@@ -668,6 +668,53 @@ describe("cert watcher failure", () => {
   });
 });
 
+describe("cert watcher filename filter", () => {
+  let proxy;
+  let watchCallback;
+
+  before(async () => {
+    const origWatch = fs.watch;
+    fs.watch = (_dir, cb) => {
+      watchCallback = cb;
+      return { close() {} };
+    };
+
+    proxy = createProxy({
+      port: 0,
+      certPath,
+      keyPath,
+      accessCode: TEST_ACCESS_CODE,
+      printerSerial: TEST_SERIAL,
+      onMessage: () => {},
+    });
+
+    await proxy.start();
+    fs.watch = origWatch;
+  });
+
+  after(async () => {
+    await proxy.stop();
+  });
+
+  it("ignores changes to files that are not the cert or key", async () => {
+    const logs = [];
+    const origLog = console.log;
+    console.log = (...args) => logs.push(args.join(" "));
+
+    // Simulate a watcher event for an unrelated filename
+    watchCallback("change", "notes.txt");
+
+    // Wait past the debounce window
+    await new Promise((r) => setTimeout(r, 800));
+
+    console.log = origLog;
+    assert.ok(
+      !logs.some((l) => l.includes("TLS certs reloaded")),
+      "Should not reload for unrelated file",
+    );
+  });
+});
+
 describe("cert hot-reload", () => {
   let proxy;
   let tmpCertDir;
