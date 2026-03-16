@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Pre-push hook: enforce 100% test coverage on all services with changes.
+# Mirrors the CI logic in .github/workflows/services-test.yml.
+
+set -euo pipefail
+
+SERVICES=(agent-bus printing-agent accounting-agent print-proxy studio-proxy)
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+# Determine which files are being pushed (diff against remote ref)
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    # New branch — diff against main
+    remote_sha="$(git merge-base HEAD main 2>/dev/null || echo HEAD~1)"
+  fi
+  CHANGED_FILES="$(git diff --name-only "$remote_sha" "$local_sha" 2>/dev/null || true)"
+done
+
+if [ -z "${CHANGED_FILES:-}" ]; then
+  exit 0
+fi
+
+FAILED=0
+
+for SERVICE in "${SERVICES[@]}"; do
+  # Skip services with no changed files
+  if ! echo "$CHANGED_FILES" | grep -q "^services/$SERVICE/"; then
+    continue
+  fi
+
+  SERVICE_DIR="$REPO_ROOT/services/$SERVICE"
+
+  # Skip if service has no test:coverage script
+  if ! grep -q '"test:coverage"' "$SERVICE_DIR/package.json" 2>/dev/null; then
+    continue
+  fi
+
+  echo "▶ Checking coverage: $SERVICE"
+
+  COVERAGE_OUTPUT="$(cd "$SERVICE_DIR" && npm run test:coverage 2>&1)" || {
+    echo "✗ $SERVICE — tests failed"
+    echo "$COVERAGE_OUTPUT" | tail -20
+    FAILED=1
+    continue
+  }
+
+  # Extract source-file coverage lines (skip test files)
+  SOURCE_LINES="$(echo "$COVERAGE_OUTPUT" | grep -E '^#\s+\S+\.js\s+\|' | grep -v '\.test\.js' || true)"
+
+  if [ -z "$SOURCE_LINES" ]; then
+    echo "✗ $SERVICE — no source coverage data found"
+    FAILED=1
+    continue
+  fi
+
+  while IFS= read -r line; do
+    FILE=$(echo "$line" | awk -F'|' '{gsub(/^# *| *$/, "", $1); print $1}')
+    LINE_PCT=$(echo "$line" | awk -F'|' '{gsub(/ /, "", $2); print $2}')
+    BRANCH_PCT=$(echo "$line" | awk -F'|' '{gsub(/ /, "", $3); print $3}')
+    FUNC_PCT=$(echo "$line" | awk -F'|' '{gsub(/ /, "", $4); print $4}')
+
+    for PCT in "$LINE_PCT" "$BRANCH_PCT" "$FUNC_PCT"; do
+      if [ "$PCT" != "100.00" ]; then
+        echo "✗ $SERVICE/$FILE — line: $LINE_PCT% branch: $BRANCH_PCT% funcs: $FUNC_PCT%"
+        FAILED=1
+        break
+      fi
+    done
+  done <<< "$SOURCE_LINES"
+
+  if [ $FAILED -eq 0 ]; then
+    echo "✓ $SERVICE — 100% coverage"
+  fi
+done
+
+if [ "$FAILED" -eq 1 ]; then
+  echo ""
+  echo "Push rejected: coverage below 100%. Fix coverage before pushing."
+  exit 1
+fi

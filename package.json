@@ -3,6 +3,7 @@
   "private": false,
   "version": "1.0.0",
       "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "build:stls": "node scripts/build-stls.mjs",
     "start:print-proxy": "node services/print-proxy/index.js",
     "start:studio-proxy": "node services/studio-proxy/index.js",
