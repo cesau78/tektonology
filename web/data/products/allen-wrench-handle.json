@@ -1,0 +1,23 @@
+{
+  "id": "allen-wrench-handle",
+  "name": "Ergonomic Allen Wrench T-Handle",
+  "category": "Tools",
+  "description": "A 3D-printable T-handle grip for a 2.5mm L-shaped allen wrench. Eliminates hand pain during repetitive M3 socket head cap screw assembly. Slide the L-key in from one side — the snug slot holds it in place.",
+  "printSettings": {
+    "handle": "PLA or PETG | 4 Wall Loops | 40% Gyroid Infill | 0.16mm Layer Height"
+  },
+  "assemblyGuide": [
+    "Print upright with hex socket opening on the build plate.",
+    "Clean hex socket: remove any elephant-foot or stringing with a 2.5mm drill bit or the wrench itself.",
+    "Slide the long arm of the 2.5mm L-key in through the slot from the side — short arm drops into the hex socket.",
+    "The snug slot holds the wrench in place during use.",
+    "If too tight, lightly sand the slot or reprint with increased channel_clearance (0.2mm)."
+  ],
+  "stlDownloadUrls": [
+    {
+      "label": "T-Handle (PLA/PETG)",
+      "url": "https://github.com/cesau78/tektonology/raw/main/3d-models/tools/allen-wrench-handle/allen-wrench-handle.stl"
+    }
+  ],
+  "purchaseLinks": []
+}
