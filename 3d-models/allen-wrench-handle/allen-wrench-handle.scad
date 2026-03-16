@@ -31,7 +31,7 @@ chamfer_r = (wrench_af + socket_clearance + 1.0) / 2 / cos(30); // wider entry c
 grip_dia = 2 * (21 - (wrench_af/2));  // sized so 21mm from hex edge to handle edge (mm)
 total_height = grip_height + shaft_height;
 // Channel: snug slot for the wrench shaft
-channel_w = wrench_af / cos(30) + channel_clearance; // across-corners + clearance
+channel_w = wrench_af / cos(30); // across-corners + clearance
 channel_reach = grip_dia / 2;  // channel reaches to center of handle (mm)
 channel_depth = socket_depth;  // channel depth matches hex socket (mm)
 // Top of model: grip Minkowski extends to shaft_height + grip_height - grip_rounding
@@ -46,7 +46,7 @@ module hex_socket() {
     rotate([0, 0, 30]) {
         // Main hex bore running up from z=0
         translate([0, 0, -0.01])
-            cylinder(h = socket_depth + 0.01, r = socket_r, $fn = 6);
+            cylinder(h = socket_depth + 0.01, r = socket_r + 0.2, $fn = 6);
 
         // Entry chamfer — slightly wider hex at the opening to ease insertion
         translate([0, 0, -0.01])
@@ -68,9 +68,9 @@ module wrench_channel() {
 
     // 30° V-groove along the bottom of the channel
     v_depth = (channel_w / 2) * tan(30);  // depth of the V from channel floor
-    translate([0, channel_start_y - 0.01, channel_depth])
+    translate([0, channel_start_y - 0.01 - (wrench_af / 2), channel_depth ])
         rotate([-90, 0, 0])
-            linear_extrude(height = channel_len + 0.02)
+            linear_extrude(height = channel_len + 0.02 + (wrench_af / 2))
                 polygon([
                     [-channel_w / 2, 0],
                     [ channel_w / 2, 0],
