@@ -21,6 +21,11 @@ channel_clearance = 0;     // clearance for the slide-in slot — zero tolerance
 grip_height     = 25;      // height of grip section (mm)
 grip_rounding   = 3;       // Minkowski sphere radius for comfortable edges (mm)
 
+// --- Grip Grooves ---
+groove_count    = 12;       // number of grooves around perimeter
+groove_radius   = 3;        // radius of each cylindrical groove (mm)
+groove_depth    = 1.5;      // how deep the groove cuts into the surface (mm)
+
 // --- Shaft (transition between grip and socket tip) ---
 shaft_dia       = 14;      // shaft diameter below grip (mm)
 shaft_height    = 10;      // shaft length below grip (mm)
@@ -100,6 +105,18 @@ module shaft_body() {
     }
 }
 
+// Cylindrical grooves running along the z-axis around the grip perimeter
+module grip_grooves() {
+    groove_center_r = grip_dia / 2 - groove_depth / 4; // center of groove cylinder (pushed outward)
+    for (i = [0 : groove_count - 1]) {
+        angle = i * 360 / groove_count;
+        translate([groove_center_r * cos(angle),
+                   groove_center_r * sin(angle),
+                   -1])
+            cylinder(h = total_height + grip_rounding + 2, r = groove_radius);
+    }
+}
+
 // Complete handle assembly
 module allen_wrench_handle() {
     difference() {
@@ -110,6 +127,7 @@ module allen_wrench_handle() {
         hex_socket();
         wrench_channel();
         hex_through_hole();
+        grip_grooves();
     }
 }
 
