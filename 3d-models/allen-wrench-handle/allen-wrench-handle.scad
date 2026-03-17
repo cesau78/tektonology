@@ -15,7 +15,7 @@ wrench_af       = 2.5;     // across-flats of hex key (mm)
 socket_clearance = 0.1;    // total across-flats clearance for press fit (mm)
 socket_depth    = 18;      // depth of hex socket — holds short arm securely (mm)
 socket_chamfer  = 0.5;     // entry chamfer to ease insertion and offset elephant foot (mm)
-channel_clearance = 0.1;   // clearance for the slide-in slot — snug fit to retain wrench (mm)
+channel_clearance = 0;     // clearance for the slide-in slot — zero tolerance for tight fit (mm)
 
 // --- Handle Grip ---
 grip_height     = 25;      // height of grip section (mm)
@@ -31,7 +31,7 @@ chamfer_r = (wrench_af + socket_clearance + 1.0) / 2 / cos(30); // wider entry c
 grip_dia = 2 * (21 - (wrench_af/2));  // sized so 21mm from hex edge to handle edge (mm)
 total_height = grip_height + shaft_height;
 // Channel: snug slot for the wrench shaft
-channel_w = wrench_af / cos(30); // across-corners + clearance
+channel_w = wrench_af; // across-flats, no tolerance — V-groove constrains rotation
 channel_reach = grip_dia / 2;  // channel reaches to center of handle (mm)
 channel_depth = socket_depth;  // channel depth matches hex socket (mm)
 // Top of model: grip Minkowski extends to shaft_height + grip_height - grip_rounding
@@ -56,8 +56,7 @@ module hex_socket() {
 
 // Half-slot — runs from the edge of the handle to center, cut from the top
 // down to the hex socket. Slide the long arm in from one side; the snug
-// fit holds the wrench in place. Bottom is a 30° V-groove to cradle the
-// hex wrench shaft.
+// fit holds the wrench in place.
 module wrench_channel() {
     channel_len = channel_reach + 1;
     channel_start_y = grip_dia / 2 - channel_reach;
@@ -65,17 +64,16 @@ module wrench_channel() {
     // Rectangular portion above the V
     translate([-channel_w / 2, channel_start_y, -1])
         cube([channel_w, channel_len, channel_depth + 1]);
+}
 
-    // 30° V-groove along the bottom of the channel
-    v_depth = (channel_w / 2) * tan(30);  // depth of the V from channel floor
-    translate([0, channel_start_y - 0.01 - (wrench_af / 2), channel_depth ])
-        rotate([-90, 0, 0])
-            linear_extrude(height = channel_len + 0.02 + (wrench_af / 2))
-                polygon([
-                    [-channel_w / 2, 0],
-                    [ channel_w / 2, 0],
-                    [0, -v_depth]
-                ]);
+// Horizontal hex through-hole — lets long arm pass through for alternate grip.
+module hex_through_hole() {
+    hex_r = wrench_af / 2 / cos(30); // circumscribed radius
+    hole_z = channel_depth;
+    translate([0, 0, hole_z])
+        rotate([90, 0, 0])
+            cylinder(h = grip_dia + 2, r = hex_r,
+                     center = true, $fn = 6);
 }
 
 // Rounded grip body — Minkowski sum of cylinder + sphere for smooth edges
@@ -111,6 +109,7 @@ module allen_wrench_handle() {
         }
         hex_socket();
         wrench_channel();
+        hex_through_hole();
     }
 }
 
