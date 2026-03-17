@@ -25,8 +25,8 @@ function loadEnv(filePath) {
   }
 }
 
-// Load local .env first (service-specific, takes priority)
-loadEnv(path.resolve(process.cwd(), ".env"));
+// Load root .env.local (single source of truth for local dev)
+loadEnv(path.resolve(__dirname, "../../.env.local"));
 
-// Then load root .env (shared vars fill in gaps)
+// Fallback: root .env (for Docker/CI where vars are injected)
 loadEnv(path.resolve(__dirname, "../../.env"));

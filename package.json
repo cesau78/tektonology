@@ -16,6 +16,7 @@
     "test:agent-bus": "node --test services/agent-bus/index.test.js",
     "test": "npm run test:agent-bus && npm run test:printing-agent && npm run test:accounting-agent && npm run test:print-proxy && npm run test:studio-proxy",
     "rotate-certs": "node services/print-proxy/rotate-certs.js",
-    "start:api": "node tektonology-api/index.js"
+    "start:api": "node tektonology-api/index.js",
+    "dev": "docker compose up --build api & cd tektonology-spa && npm run dev"
   }
 }

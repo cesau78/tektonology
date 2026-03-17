@@ -23,7 +23,7 @@ services:
     depends_on:
       - mongo
     env_file:
-      - .env
+      - .env.local
     environment:
       - MONGODB_URI=mongodb://mongo:27017/tektonology
       - API_PORT=3001
