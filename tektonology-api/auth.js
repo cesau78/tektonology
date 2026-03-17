@@ -23,7 +23,19 @@ export function requireAuth(req, res, next) {
   next();
 }
 
+const EMAIL_VERIFIED_CLAIM = "https://tektonology.com/email_verified";
 const ROLE_CLAIM = "https://tektonology.com/role";
+
+/**
+ * Express middleware that requires a verified email address.
+ * Checks the custom claim added by the Auth0 Login Action.
+ */
+export function requireEmailVerified(req, res, next) {
+  if (!req.auth?.payload?.[EMAIL_VERIFIED_CLAIM]) {
+    return res.status(403).json({ error: "Email verification required" });
+  }
+  next();
+}
 
 /**
  * Express middleware factory that checks the user's role from

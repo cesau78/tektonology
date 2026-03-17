@@ -34,27 +34,6 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (user && !user.email_verified) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Email verification required</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center gap-4">
-          <p className="text-sm text-neutral-500">
-            Please check your inbox and verify your email address to continue.
-          </p>
-          <Button
-            variant="outline"
-            onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
-          >
-            Sign out
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return <>{children}</>;
 }
 
@@ -66,7 +45,7 @@ export function RequireRole({
   children: React.ReactNode;
 }) {
   const { role, isLoaded } = useRole();
-  const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
+  const { isAuthenticated, isLoading, loginWithRedirect, user, logout } = useAuth0();
 
   if (isLoading || !isLoaded) {
     return (
@@ -89,6 +68,28 @@ export function RequireRole({
             You need to sign in to access this page.
           </p>
           <Button onClick={() => loginWithRedirect()}>Sign in</Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (user && !user.email_verified) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Email verification required</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center gap-4">
+          <p className="text-sm text-neutral-500">
+            Please check your inbox and verify your email address to access this
+            page.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+          >
+            Sign out
+          </Button>
         </CardContent>
       </Card>
     );

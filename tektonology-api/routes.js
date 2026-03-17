@@ -1,7 +1,8 @@
-import { requireRole } from "./auth.js";
+import { requireEmailVerified, requireRole } from "./auth.js";
 
-const read = requireRole("owner", "auditor");
-const write = requireRole("owner");
+const verified = requireEmailVerified;
+const read = [verified, requireRole("owner", "auditor")];
+const write = [verified, requireRole("owner")];
 
 /**
  * @param {import('express').Express} app

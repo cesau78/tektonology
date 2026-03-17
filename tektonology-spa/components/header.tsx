@@ -15,13 +15,20 @@ export function Header() {
         <Link href="/" className="text-lg font-bold tracking-tight text-white">
           Tektonology
         </Link>
-        <div className="flex items-center gap-4">
-          {isAuthenticated && user && !user.email_verified && (
-            <span className="text-xs text-amber-400">
-              Verify your email
-            </span>
+        <div className="relative flex items-center gap-4">
+          {isAuthenticated && user && !user.email_verified && canAccessAccounting(role) && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-amber-400 whitespace-nowrap">
+                Verify Email to Access:
+              </span>
+              <div className="border border-amber-400 rounded px-3 py-1.5 flex items-center">
+                <span className="text-xs leading-none text-neutral-500 cursor-default">
+                  Accounting
+                </span>
+              </div>
+            </div>
           )}
-          {canAccessAccounting(role) && (
+          {canAccessAccounting(role) && user?.email_verified && (
             <Link
               href="/accounting"
               className="text-xs text-neutral-400 hover:text-white transition-colors"
