@@ -1,14 +1,14 @@
 "use client";
 
-import { SignInButton, useAuth } from "@clerk/react";
+import { useAuth0 } from "@auth0/auth0-react";
 import { type Role, useRole } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isAuthenticated, isLoading, loginWithRedirect, user, logout } = useAuth0();
 
-  if (!isLoaded) {
+  if (isLoading) {
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-neutral-500">
@@ -18,7 +18,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isSignedIn) {
+  if (!isAuthenticated) {
     return (
       <Card>
         <CardHeader>
@@ -28,9 +28,28 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
           <p className="text-sm text-neutral-500">
             You need to sign in to access this page.
           </p>
-          <SignInButton mode="modal">
-            <Button>Sign in</Button>
-          </SignInButton>
+          <Button onClick={() => loginWithRedirect()}>Sign in</Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (user && !user.email_verified) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Email verification required</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center gap-4">
+          <p className="text-sm text-neutral-500">
+            Please check your inbox and verify your email address to continue.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+          >
+            Sign out
+          </Button>
         </CardContent>
       </Card>
     );
@@ -47,8 +66,9 @@ export function RequireRole({
   children: React.ReactNode;
 }) {
   const { role, isLoaded } = useRole();
+  const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
 
-  if (!isLoaded) {
+  if (isLoading || !isLoaded) {
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-neutral-500">
@@ -58,7 +78,7 @@ export function RequireRole({
     );
   }
 
-  if (role === "anonymous") {
+  if (!isAuthenticated) {
     return (
       <Card>
         <CardHeader>
@@ -68,9 +88,7 @@ export function RequireRole({
           <p className="text-sm text-neutral-500">
             You need to sign in to access this page.
           </p>
-          <SignInButton mode="modal">
-            <Button>Sign in</Button>
-          </SignInButton>
+          <Button onClick={() => loginWithRedirect()}>Sign in</Button>
         </CardContent>
       </Card>
     );

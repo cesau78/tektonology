@@ -17,7 +17,7 @@ export function ErrorState({ message }: { message: string }) {
         <p className="text-red-700 font-medium text-sm mb-1">Unable to load data</p>
         <p className="text-muted-foreground text-xs">{message}</p>
         <p className="text-muted-foreground text-xs mt-2">
-          Make sure the finops-api server is running on localhost:3001
+          Make sure the tektonology-api server is running on localhost:3001
         </p>
       </CardContent>
     </Card>

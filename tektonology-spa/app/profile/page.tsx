@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useUser } from "@clerk/react";
+import { useAuth0 } from "@auth0/auth0-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RequireAuth } from "@/components/auth-guard";
@@ -35,7 +35,7 @@ export default function ProfilePage() {
 }
 
 function ProfileContent() {
-  const { user } = useUser();
+  const { user } = useAuth0();
   const { role } = useRole();
   const info = roleDescriptions[role];
 
@@ -63,11 +63,11 @@ function ProfileContent() {
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Name</dt>
-                <dd className="font-medium text-foreground">{user.fullName ?? "—"}</dd>
+                <dd className="font-medium text-foreground">{user.name ?? "—"}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Email</dt>
-                <dd className="font-medium text-foreground">{user.primaryEmailAddress?.emailAddress ?? "—"}</dd>
+                <dd className="font-medium text-foreground">{user.email ?? "—"}</dd>
               </div>
               <div className="flex justify-between items-center">
                 <dt className="text-muted-foreground">Role</dt>
@@ -88,24 +88,24 @@ function ProfileContent() {
             <ul className="space-y-1.5 text-sm">
               <li className="flex items-center gap-2">
                 <span className="text-emerald-600">&#10003;</span>
-                <span>Products and assembly guides</span>
+                <span>Products and Assembly Guides</span>
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-emerald-600">&#10003;</span>
-                <span>Profile management</span>
+                <span>Profile Management</span>
               </li>
-              <li className="flex items-center gap-2">
-                <span className={canAccessAccounting(role) ? "text-emerald-600" : "text-red-400"}>
-                  {canAccessAccounting(role) ? "\u2713" : "\u2717"}
-                </span>
-                <span>Accounting and inventory (read)</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className={canWrite(role) ? "text-emerald-600" : "text-red-400"}>
-                  {canWrite(role) ? "\u2713" : "\u2717"}
-                </span>
-                <span>Accounting and inventory (write)</span>
-              </li>
+              {canAccessAccounting(role) && (
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-600">&#10003;</span>
+                  <span>Accounting and Inventory (read)</span>
+                </li>
+              )}
+              {canWrite(role) && (
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-600">&#10003;</span>
+                  <span>Accounting and Inventory (write)</span>
+                </li>
+              )}
             </ul>
           </CardContent>
         </Card>

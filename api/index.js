@@ -1,11 +1,11 @@
-import "../../services/shared/env.js";
+import "../services/shared/env.js";
 import express from "express";
 import cors from "cors";
 import { MongoClient } from "mongodb";
 import { createRoutes } from "./routes.js";
-import { clerkAuth } from "./auth.js";
+import { jwtCheck } from "./auth.js";
 
-const port = process.env.FINOPS_API_PORT ?? 3001;
+const port = process.env.API_PORT ?? 3001;
 const uri = process.env.MONGODB_URI ?? "mongodb://localhost:27017/tektonology";
 const dbName = process.env.DB_NAME ?? "tektonology";
 
@@ -18,12 +18,12 @@ console.log(`Connected to MongoDB: ${dbName}`);
 const app = express();
 app.use(cors({ origin: /localhost/ }));
 app.use(express.json());
-app.use(clerkAuth);
+app.use(jwtCheck);
 
 createRoutes(app, db);
 
 app.listen(port, () => {
-  console.log(`finops-api listening on http://localhost:${port}`);
+  console.log(`tektonology-api listening on http://localhost:${port}`);
 });
 
 process.on("SIGINT", async () => {

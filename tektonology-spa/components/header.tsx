@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { SignInButton, UserButton, useAuth } from "@clerk/react";
+import { useAuth0 } from "@auth0/auth0-react";
 import { useRole, canAccessAccounting } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 
 export function Header() {
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isAuthenticated, isLoading, loginWithRedirect, logout, user } = useAuth0();
   const { role } = useRole();
 
   return (
@@ -16,6 +16,11 @@ export function Header() {
           Tektonology
         </Link>
         <div className="flex items-center gap-4">
+          {isAuthenticated && user && !user.email_verified && (
+            <span className="text-xs text-amber-400">
+              Verify your email
+            </span>
+          )}
           {canAccessAccounting(role) && (
             <Link
               href="/accounting"
@@ -24,7 +29,7 @@ export function Header() {
               Accounting
             </Link>
           )}
-          {isLoaded && isSignedIn && (
+          {!isLoading && isAuthenticated && (
             <Link
               href="/profile"
               className="text-xs text-neutral-400 hover:text-white transition-colors"
@@ -32,15 +37,25 @@ export function Header() {
               Profile
             </Link>
           )}
-          {isLoaded && !isSignedIn && (
-            <SignInButton mode="modal">
-              <Button variant="ghost" size="sm" className="text-xs text-neutral-400 hover:text-white">
-                Sign in
-              </Button>
-            </SignInButton>
+          {!isLoading && !isAuthenticated && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-neutral-400 hover:text-white"
+              onClick={() => loginWithRedirect()}
+            >
+              Sign in
+            </Button>
           )}
-          {isLoaded && isSignedIn && (
-            <UserButton />
+          {!isLoading && isAuthenticated && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-neutral-400 hover:text-white"
+              onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+            >
+              Sign out
+            </Button>
           )}
         </div>
       </div>

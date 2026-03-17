@@ -1,11 +1,11 @@
-import "../../services/shared/env.js";
+import "../services/shared/env.js";
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { MongoClient } from "mongodb";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const dataDir = join(__dirname, "../../web/data/accounting");
+const dataDir = join(__dirname, "../tektonology-spa/data/accounting");
 
 const uri = process.env.MONGODB_URI ?? "mongodb://localhost:27017/tektonology";
 const dbName = process.env.DB_NAME ?? "tektonology";

@@ -14,5 +14,19 @@ services:
     volumes:
       - ./mongo-db/data:/data/db
 
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mongo
+    env_file:
+      - .env
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/tektonology
+      - API_PORT=3001
+
 volumes:
   redis-data:

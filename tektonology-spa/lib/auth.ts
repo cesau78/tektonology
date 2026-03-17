@@ -1,16 +1,18 @@
 "use client";
 
-import { useUser } from "@clerk/react";
+import { useAuth0 } from "@auth0/auth0-react";
 
 export type Role = "anonymous" | "member" | "owner" | "auditor";
 
+const ROLE_CLAIM = "https://tektonology.com/role";
+
 export function useRole(): { role: Role; isLoaded: boolean } {
-  const { isSignedIn, user, isLoaded } = useUser();
+  const { isAuthenticated, isLoading, user } = useAuth0();
 
-  if (!isLoaded) return { role: "anonymous", isLoaded: false };
-  if (!isSignedIn || !user) return { role: "anonymous", isLoaded: true };
+  if (isLoading) return { role: "anonymous", isLoaded: false };
+  if (!isAuthenticated || !user) return { role: "anonymous", isLoaded: true };
 
-  const role = (user.publicMetadata?.role as Role) ?? "member";
+  const role = (user[ROLE_CLAIM] as Role) ?? "member";
   return { role, isLoaded: true };
 }
 

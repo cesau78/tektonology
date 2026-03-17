@@ -28,10 +28,11 @@ When making decisions — about design, naming, architecture, or implementation 
 mongo-db/                      # MongoDB — models and local data
   data/                        # Local MongoDB bind mount (gitignored)
   *.ts                         # Shared document interfaces (TypeScript)
-services/                      # Backend services (agents)
+api/                           # Express API (tektonology-api) — Auth0 + MongoDB
+services/                      # Backend services (local agents)
   printing-agent/              # MQTT daemon — detects print completion, writes raw print_jobs
   accounting-agent/            # Polls unprocessed print_jobs, updates spools + journal_entries
-web/                           # Next.js static site (tectonology.com)
+tektonology-spa/               # Next.js static site (tektonology.com)
   app/                         # Next.js App Router pages
   data/
     products/                  # One JSON file per product
@@ -41,5 +42,5 @@ web/                           # Next.js static site (tectonology.com)
 ## Web / Next.js
 
 - Static export only (`output: "export"`) — no server-side runtime.
-- Product and batch data lives in `web/data/` as JSON files, loaded at build time via `readFileSync`.
+- Product and batch data lives in `tektonology-spa/data/` as JSON files, loaded at build time via `readFileSync`.
 - `PrintSettings` is `Record<string, string>` with camelCase keys; the UI converts them to title-case labels for display.

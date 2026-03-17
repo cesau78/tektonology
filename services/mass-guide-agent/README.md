@@ -8,7 +8,7 @@ Generates printable Order of Mass pamphlets for the Catholic Ordinary Form (Roma
 2. For each date, fetches the USCCB daily readings page
 3. Parses the HTML to extract readings, psalm refrain, season, and liturgical color
 4. Renders the data into the pamphlet template (`src/template.ts`)
-5. Writes `order-of-mass-yyyy-mm-dd.html` to `web/app/info/instructions/catholicism/`
+5. Writes `order-of-mass-yyyy-mm-dd.html` to `tektonology-spa/app/info/instructions/catholicism/`
 
 ## Usage
 
@@ -33,8 +33,8 @@ The template and output pipeline are complete. The USCCB fetch + parse step is s
 Files land in:
 
 ```
-web/app/info/instructions/catholicism/order-of-mass-2026-03-01.html
-web/app/info/instructions/catholicism/order-of-mass-2026-03-02.html
+tektonology-spa/app/info/instructions/catholicism/order-of-mass-2026-03-01.html
+tektonology-spa/app/info/instructions/catholicism/order-of-mass-2026-03-02.html
 ...
 ```
 

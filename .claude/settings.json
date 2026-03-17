@@ -29,12 +29,9 @@
       "Bash(node -e \"const tls = require\\(''tls''\\); const c = tls.connect\\(8883, ''192.168.20.69'', {rejectUnauthorized:false}, \\(\\) => {console.log\\(''TLS connected to 192.168.20.69:8883''\\); c.end\\(\\)}\\); c.on\\(''error'', e => console.error\\(''error:'', e.message\\)\\)\")",
       "Bash(node -e \":*)",
       "Bash(node seed-sample.js)",
-<<<<<<< HEAD
-      "Bash(ls -la /c/Users/chuck/source/tektonology/web/app/products/[product]/)"
-=======
+      "Bash(ls -la /c/Users/chuck/source/tektonology/tektonology-spa/app/products/[product]/)",
       "Bash(powershell -Command \"Get-DnsClientCache | Where-Object { $_.Data -eq ''34.208.11.28'' } | Format-Table Entry,Data -AutoSize\")",
       "Bash(powershell -NoProfile -Command 'Get-DnsClientCache | Where-Object { $_.Data -eq \"\"34.208.11.28\"\" } | Format-Table Entry,Data -AutoSize')"
->>>>>>> 52cdb26 (added studio proxy for a mim redirect)
     ],
     "deny": [
       "Read(**/.env)",

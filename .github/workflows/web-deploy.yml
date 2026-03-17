@@ -13,7 +13,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'web/**'
+      - 'tektonology-spa/**'
       - '.github/workflows/web-deploy.yml'
 
 jobs:
@@ -28,20 +28,20 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: tektonology-spa/package-lock.json
 
       - name: Install dependencies
         run: npm ci
-        working-directory: web
+        working-directory: tektonology-spa
 
       - name: Build
         run: npm run build
-        working-directory: web
+        working-directory: tektonology-spa
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: web/out
+          path: tektonology-spa/out
 
   deploy:
     environment:
