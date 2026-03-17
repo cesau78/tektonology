@@ -1,5 +1,5 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_FINOPS_API_URL ?? "http://localhost:3001";
 
@@ -28,12 +28,14 @@ export async function authedApiFetch<T>(
 
 export function useApiFetch() {
   const { getAccessTokenSilently } = useAuth0();
+  const getTokenRef = useRef(getAccessTokenSilently);
+  getTokenRef.current = getAccessTokenSilently;
 
   return useCallback(
     async <T>(path: string, init?: RequestInit): Promise<T> => {
-      const token = await getAccessTokenSilently();
+      const token = await getTokenRef.current();
       return authedApiFetch<T>(path, token, init);
     },
-    [getAccessTokenSilently],
+    [],
   );
 }
