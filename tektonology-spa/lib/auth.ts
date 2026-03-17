@@ -16,7 +16,7 @@ export function useRole(): { role: Role; isLoaded: boolean } {
   return { role, isLoaded: true };
 }
 
-export function canAccessAccounting(role: Role): boolean {
+export function canAccessFinance(role: Role): boolean {
   return role === "owner" || role === "auditor";
 }
 

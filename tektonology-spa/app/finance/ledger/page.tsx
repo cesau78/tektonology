@@ -56,7 +56,7 @@ export default function LedgerPage() {
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
         <span>›</span>
-        <Link href="/accounting" className="hover:text-foreground transition-colors">Accounting</Link>
+        <Link href="/finance" className="hover:text-foreground transition-colors">Finance</Link>
         <span>›</span>
         <span className="text-foreground">General Ledger</span>
       </nav>
@@ -69,7 +69,7 @@ export default function LedgerPage() {
           )}
         </div>
         {canWrite(role) && (
-          <Link href="/accounting/new">
+          <Link href="/finance/new">
             <Button variant="outline" size="sm">+ New Transaction</Button>
           </Link>
         )}

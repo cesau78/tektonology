@@ -97,7 +97,7 @@ export function TransactionForm({ accounts }: { accounts: AccountInfo[] }) {
         body: JSON.stringify(entry),
       });
       setSaved(true);
-      setTimeout(() => router.push("/accounting/ledger"), 1000);
+      setTimeout(() => router.push("/finance/ledger"), 1000);
     } catch (e: unknown) {
       setSaveError(e instanceof Error ? e.message : "Failed to save");
     } finally {

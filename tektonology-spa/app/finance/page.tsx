@@ -22,25 +22,13 @@ interface DashboardData {
     totalExpenses: number;
     netIncome: number;
   };
-  operations: {
-    totalFilamentG: number;
-    totalFilamentCost: number;
-    activeSpools: number;
-    depletedSpools: number;
-    totalSpools: number;
-    totalPrintHours: number;
-    totalPrintCost: number;
-    totalJobs: number;
-    failedJobs: number;
-    scrapRate: string;
-  };
 }
 
 function fmt(n: number): string {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
 
-export default function AccountingDashboard() {
+export default function FinanceDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { role } = useRole();
@@ -53,11 +41,8 @@ export default function AccountingDashboard() {
   }, [apiFetch]);
 
   const allNavItems = [
-    { href: "/accounting/new", label: "New Transaction", desc: "Add a ledger entry", ownerOnly: true },
-    { href: "/accounting/ledger", label: "General Ledger", desc: "All transactions", ownerOnly: false },
-    { href: "/accounting/spools", label: "Filament Spools", desc: "Inventory tracking", ownerOnly: false },
-    { href: "/accounting/hardware", label: "Hardware Inventory", desc: "Bolts, nuts, wrenches", ownerOnly: false },
-    { href: "/accounting/print-jobs", label: "Print Jobs", desc: "Production log", ownerOnly: false },
+    { href: "/finance/new", label: "New Transaction", desc: "Add a ledger entry", ownerOnly: true },
+    { href: "/finance/ledger", label: "General Ledger", desc: "All transactions", ownerOnly: false },
   ];
 
   const navItems = allNavItems.filter((item) => !item.ownerOnly || canWrite(role));
@@ -68,12 +53,12 @@ export default function AccountingDashboard() {
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
         <span>›</span>
-        <span className="text-foreground">Accounting</span>
+        <span className="text-foreground">Finance</span>
       </nav>
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground mb-1">Accounting</h1>
-        <p className="text-muted-foreground text-sm">Financial overview and inventory tracking.</p>
+        <h1 className="text-2xl font-bold text-foreground mb-1">Finance</h1>
+        <p className="text-muted-foreground text-sm">Balance sheet, profit & loss, and transaction history.</p>
       </div>
 
       <div className="grid gap-4 [&>*]:shadow-sm">
@@ -148,36 +133,6 @@ export default function AccountingDashboard() {
                     <span className={`font-mono ${data.profitLoss.netIncome >= 0 ? "text-emerald-700" : "text-red-700"}`}>
                       {fmt(data.profitLoss.netIncome)}
                     </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Operations</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-0.5">Filament on Hand</p>
-                    <p className="text-lg font-semibold text-foreground">{(data.operations.totalFilamentG / 1000).toFixed(1)} kg</p>
-                    <p className="text-xs text-muted-foreground">{fmt(data.operations.totalFilamentCost)} invested</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-0.5">Print Hours</p>
-                    <p className="text-lg font-semibold text-foreground">{data.operations.totalPrintHours.toFixed(0)} hrs</p>
-                    <p className="text-xs text-muted-foreground">{fmt(data.operations.totalPrintCost)} in materials</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-0.5">Scrap Rate</p>
-                    <p className="text-lg font-semibold text-foreground">{data.operations.scrapRate}%</p>
-                    <p className="text-xs text-muted-foreground">{data.operations.failedJobs} of {data.operations.totalJobs} jobs failed</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-0.5">Spools</p>
-                    <p className="text-lg font-semibold text-foreground">{data.operations.activeSpools} active</p>
-                    <p className="text-xs text-muted-foreground">{data.operations.depletedSpools} depleted</p>
                   </div>
                 </div>
               </CardContent>

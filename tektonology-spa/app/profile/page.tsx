@@ -5,7 +5,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RequireAuth } from "@/components/auth-guard";
-import { useRole, canAccessAccounting, canWrite, type Role } from "@/lib/auth";
+import { useRole, canAccessFinance, canWrite, type Role } from "@/lib/auth";
 
 const roleDescriptions: Record<Role, { label: string; color: string; description: string }> = {
   anonymous: { label: "Anonymous", color: "bg-gray-100 text-gray-900 border-gray-300", description: "" },
@@ -17,12 +17,12 @@ const roleDescriptions: Record<Role, { label: string; color: string; description
   owner: {
     label: "Owner",
     color: "bg-amber-100 text-amber-900 border-amber-300",
-    description: "Full access to accounting, inventory, and all administrative functions.",
+    description: "Full access to finance, operations, and all administrative functions.",
   },
   auditor: {
     label: "Auditor",
     color: "bg-violet-100 text-violet-900 border-violet-300",
-    description: "Read-only access to accounting and inventory data.",
+    description: "Read-only access to finance and operations data.",
   },
 };
 
@@ -94,16 +94,16 @@ function ProfileContent() {
                 <span className="text-emerald-600">&#10003;</span>
                 <span>Profile Management</span>
               </li>
-              {canAccessAccounting(role) && (
+              {canAccessFinance(role) && (
                 <li className="flex items-center gap-2">
                   <span className="text-emerald-600">&#10003;</span>
-                  <span>Accounting and Inventory (read)</span>
+                  <span>Finance and Operations (read)</span>
                 </li>
               )}
               {canWrite(role) && (
                 <li className="flex items-center gap-2">
                   <span className="text-emerald-600">&#10003;</span>
-                  <span>Accounting and Inventory (write)</span>
+                  <span>Finance and Operations (write)</span>
                 </li>
               )}
             </ul>

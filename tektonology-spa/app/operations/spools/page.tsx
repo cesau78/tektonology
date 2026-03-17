@@ -57,7 +57,7 @@ export default function SpoolsPage() {
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
         <span>›</span>
-        <Link href="/accounting" className="hover:text-foreground transition-colors">Accounting</Link>
+        <Link href="/operations" className="hover:text-foreground transition-colors">Operations</Link>
         <span>›</span>
         <span className="text-foreground">Filament Spools</span>
       </nav>
