@@ -28,7 +28,7 @@ When making decisions — about design, naming, architecture, or implementation 
 mongo-db/                      # MongoDB — models and local data
   data/                        # Local MongoDB bind mount (gitignored)
   *.ts                         # Shared document interfaces (TypeScript)
-api/                           # Express API (tektonology-api) — Auth0 + MongoDB
+tektonology-api/               # Express API — Auth0 + MongoDB
 services/                      # Backend services (local agents)
   printing-agent/              # MQTT daemon — detects print completion, writes raw print_jobs
   accounting-agent/            # Polls unprocessed print_jobs, updates spools + journal_entries
