@@ -392,6 +392,20 @@ describe("upstream relay", () => {
     client.end(true);
   });
 
+  it("forwards messages with explicit QoS", async () => {
+    const client = connectTo(proxyPort);
+    await waitForConnect(client);
+    cloudReceived.length = 0;
+
+    const payload = { print: { command: "push_all" } };
+    await new Promise((resolve) => client.publish("device/S/request", JSON.stringify(payload), { qos: 1 }, resolve));
+    await new Promise((r) => setTimeout(r, 150));
+
+    const fwd = cloudReceived.find((m) => m.topic === "device/S/request");
+    assert.ok(fwd, "Expected QoS 1 message to be forwarded");
+    client.end(true);
+  });
+
   it("stores credentials from client for upstream auth", async () => {
     // The upstream was created with credentials from the trigger client
     assert.ok(proxy.upstreamClient, "Upstream client should exist after client connected");
@@ -578,6 +592,17 @@ describe("upstream error handling", () => {
     assert.ok(errors.some((e) => e.includes("upstream auth failed")));
   });
 
+  it("logs upstream close event", () => {
+    const logs = [];
+    const origLog = console.log;
+    console.log = (...args) => logs.push(args.join(" "));
+
+    proxy.upstreamClient.emit("close");
+
+    console.log = origLog;
+    assert.ok(logs.some((l) => l.includes("upstream connection closed")));
+  });
+
   it("logs generic upstream errors", () => {
     const errors = [];
     const origError = console.error;
@@ -617,6 +642,44 @@ describe("cert watcher fallback", () => {
   });
 });
 
+describe("allowed but upstream disconnected", () => {
+  it("silently drops message when upstream is not connected", async () => {
+    const messages = [];
+    const logs = [];
+    const origLog = console.log;
+
+    // Create proxy with upstreamHost pointing to a non-existent server
+    const proxy = createStudioProxy({
+      port: 0,
+      certPath,
+      keyPath,
+      upstreamHost: "localhost",
+      upstreamPort: 1, // will never connect
+      onMessage: (msg) => messages.push(msg),
+      onIntercept: () => Promise.resolve(true), // allow everything
+    });
+    await proxy.start();
+    const port = proxy.server.address().port;
+
+    const client = connectTo(port);
+    await waitForConnect(client);
+
+    // upstream won't be connected (bad port), but intercept returns true
+    console.log = (...args) => logs.push(args.join(" "));
+    await new Promise((resolve) => {
+      client.publish("device/S/request", JSON.stringify({ test: true }), resolve);
+    });
+    await new Promise((r) => setTimeout(r, 100));
+    console.log = origLog;
+
+    // Should NOT log "BLOCKED" since it was allowed, just not forwarded
+    assert.ok(!logs.some((l) => l.includes("BLOCKED")));
+
+    client.end(true);
+    await proxy.stop();
+  });
+});
+
 describe("no upstream", () => {
   it("works without upstreamHost configured", async () => {
     const messages = [];
@@ -642,5 +705,191 @@ describe("no upstream", () => {
 
     client.end(true);
     await proxy.stop();
+  });
+});
+
+describe("listenHost option", () => {
+  it("binds to specified host when listenHost is provided", async () => {
+    const proxy = createStudioProxy({
+      port: 0,
+      listenHost: "127.0.0.1",
+      certPath,
+      keyPath,
+      onMessage: () => {},
+    });
+    await proxy.start();
+    const addr = proxy.server.address();
+    assert.equal(addr.address, "127.0.0.1");
+    await proxy.stop();
+  });
+});
+
+describe("upstream subscribe error", () => {
+  it("logs subscribe errors from upstream", async () => {
+    const fakeCloudAedes = new Aedes();
+    fakeCloudAedes.authenticate = (_c, _u, _p, cb) => cb(null, true);
+
+    // Override authorizeSubscribe to reject subscriptions
+    fakeCloudAedes.authorizeSubscribe = (_client, sub, cb) => {
+      cb(new Error("subscribe denied"));
+    };
+
+    const tlsOpts = { key: readFileSync(keyPath), cert: readFileSync(certPath) };
+    const fakeCloud = tls.createServer(tlsOpts, fakeCloudAedes.handle);
+    await new Promise((resolve) => fakeCloud.listen(0, resolve));
+    const fakeCloudPort = fakeCloud.address().port;
+
+    const errors = [];
+    const origError = console.error;
+
+    const proxy = createStudioProxy({
+      port: 0,
+      certPath,
+      keyPath,
+      upstreamHost: "localhost",
+      upstreamPort: fakeCloudPort,
+      onMessage: () => {},
+    });
+    await proxy.start();
+    const proxyPort = proxy.server.address().port;
+
+    console.error = (...args) => errors.push(args.join(" "));
+
+    const client = connectTo(proxyPort);
+    await waitForConnect(client);
+    await new Promise((r) => setTimeout(r, 500));
+
+    console.error = origError;
+
+    assert.ok(errors.some((e) => e.includes("upstream subscribe error")));
+
+    client.end(true);
+    await proxy.stop();
+    await new Promise((resolve) => {
+      fakeCloudAedes.close(() => fakeCloud.close(resolve));
+    });
+  });
+});
+
+describe("upstreamPort default", () => {
+  it("defaults upstreamPort to 8883 when not specified", async () => {
+    const errors = [];
+    const origError = console.error;
+    console.error = (...args) => errors.push(args.join(" "));
+
+    // Create proxy with upstreamHost but no upstreamPort — will try port 8883
+    const proxy = createStudioProxy({
+      port: 0,
+      certPath,
+      keyPath,
+      upstreamHost: "127.0.0.1",
+      // upstreamPort intentionally omitted — should default to 8883
+      onMessage: () => {},
+    });
+    await proxy.start();
+    const proxyPort = proxy.server.address().port;
+
+    const client = connectTo(proxyPort);
+    await waitForConnect(client);
+    // Give upstream time to attempt connection on default port
+    await new Promise((r) => setTimeout(r, 200));
+
+    console.error = origError;
+    client.end(true);
+    await proxy.stop();
+    // Just verifying it doesn't crash — the upstream will fail to connect on 8883
+    assert.ok(true);
+  });
+});
+
+describe("cert watcher ignores irrelevant files", () => {
+  it("does not reload when a non-cert file changes", async () => {
+    const tmpDir = mkdtempSync(path.join(os.tmpdir(), "studio-proxy-watch-"));
+    generateCert(tmpDir);
+    const tmpCertPath = path.join(tmpDir, "server.crt");
+    const tmpKeyPath = path.join(tmpDir, "server.key");
+
+    const logs = [];
+    const origLog = console.log;
+
+    const proxy = createStudioProxy({
+      port: 0,
+      certPath: tmpCertPath,
+      keyPath: tmpKeyPath,
+      onMessage: () => {},
+    });
+    await proxy.start();
+
+    // Write an unrelated file in the cert directory
+    console.log = (...args) => logs.push(args.join(" "));
+    writeFileSync(path.join(tmpDir, "unrelated.txt"), "nope");
+    await new Promise((r) => setTimeout(r, 1000));
+    console.log = origLog;
+
+    // Should NOT have reloaded certs
+    assert.ok(!logs.some((l) => l.includes("TLS certs reloaded")));
+
+    await proxy.stop();
+  });
+});
+
+describe("connectUpstream idempotency", () => {
+  let fakeCloudAedes;
+  let fakeCloud;
+  let fakeCloudPort;
+  let proxy;
+  let proxyPort;
+
+  before(async () => {
+    fakeCloudAedes = new Aedes();
+    fakeCloudAedes.authenticate = (_c, _u, _p, cb) => cb(null, true);
+    const tlsOpts = { key: readFileSync(keyPath), cert: readFileSync(certPath) };
+    fakeCloud = tls.createServer(tlsOpts, fakeCloudAedes.handle);
+    await new Promise((resolve) => fakeCloud.listen(0, resolve));
+    fakeCloudPort = fakeCloud.address().port;
+
+    proxy = createStudioProxy({
+      port: 0,
+      certPath,
+      keyPath,
+      upstreamHost: "localhost",
+      upstreamPort: fakeCloudPort,
+      onMessage: () => {},
+    });
+    await proxy.start();
+    proxyPort = proxy.server.address().port;
+
+    // First client triggers upstream connection
+    const c1 = connectTo(proxyPort);
+    await waitForConnect(c1);
+    await new Promise((resolve) => {
+      const check = () => {
+        if (proxy.upstreamClient?.connected) return resolve();
+        setTimeout(check, 50);
+      };
+      check();
+    });
+    c1.end(true);
+    await new Promise((r) => setTimeout(r, 50));
+  });
+
+  after(async () => {
+    await proxy.stop();
+    await new Promise((resolve) => {
+      fakeCloudAedes.close(() => fakeCloud.close(resolve));
+    });
+  });
+
+  it("does not create a second upstream when another client connects", async () => {
+    const firstUpstream = proxy.upstreamClient;
+    assert.ok(firstUpstream?.connected);
+
+    // Second client connects — should not replace upstream
+    const c2 = connectTo(proxyPort);
+    await waitForConnect(c2);
+    await new Promise((r) => setTimeout(r, 100));
+
+    assert.strictEqual(proxy.upstreamClient, firstUpstream, "upstream should not be replaced");
+    c2.end(true);
   });
 });

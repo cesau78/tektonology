@@ -100,7 +100,7 @@ export function createStudioProxy({ port, listenHost, certPath, keyPath, upstrea
     const allowed = await intercept({ topic: packet.topic, payload });
 
     if (allowed && upstreamClient?.connected) {
-      upstreamClient.publish(packet.topic, packet.payload, { qos: packet.qos ?? 0 });
+      upstreamClient.publish(packet.topic, packet.payload, { qos: packet.qos });
     } else if (!allowed) {
       console.log("[studio-proxy] message BLOCKED — not forwarded to cloud");
     }
