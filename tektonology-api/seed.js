@@ -58,7 +58,10 @@ for (const r of ledgerRows) {
   if (!accountMap.has(code)) {
     accountMap.set(code, { number: code, name, type, balance: 0 });
   }
-  accountMap.get(code).balance += (debit ?? 0) - (credit ?? 0);
+  const creditNormal = type === "liability" || type === "equity" || type === "revenue";
+  accountMap.get(code).balance += creditNormal
+    ? (credit ?? 0) - (debit ?? 0)
+    : (debit ?? 0) - (credit ?? 0);
 
   if (!txMap.has(txId)) {
     txMap.set(txId, { transactionId: txId, date, description: r["Description"], lines: [] });

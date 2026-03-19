@@ -41,8 +41,9 @@ export default function FinanceDashboard() {
   }, [apiFetch]);
 
   const allNavItems = [
-    { href: "/finance/new", label: "New Transaction", desc: "Add a ledger entry", ownerOnly: true },
+    { href: "/finance/accounts", label: "Chart of Accounts", desc: "Account codes, types, and balances", ownerOnly: false },
     { href: "/finance/ledger", label: "General Ledger", desc: "All transactions", ownerOnly: false },
+    { href: "/finance/new", label: "New Transaction", desc: "Add a ledger entry", ownerOnly: true },
   ];
 
   const navItems = allNavItems.filter((item) => !item.ownerOnly || canWrite(role));
@@ -62,7 +63,7 @@ export default function FinanceDashboard() {
       </div>
 
       <div className="grid gap-4 [&>*]:shadow-sm">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href}>
               <Card className="bg-card hover:shadow-md hover:border-amber-300 transition-all cursor-pointer h-full">
@@ -100,7 +101,7 @@ export default function FinanceDashboard() {
                         {(data.balanceSheet.byType[type] ?? []).map((a) => (
                           <div key={a.number} className="flex justify-between text-sm">
                             <span className="text-muted-foreground">{a.number}: {a.name}</span>
-                            <span className="font-mono text-foreground">{fmt(Math.abs(a.balance))}</span>
+                            <span className="font-mono text-foreground">{fmt(a.balance)}</span>
                           </div>
                         ))}
                       </div>

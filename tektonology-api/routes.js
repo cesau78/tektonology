@@ -33,8 +33,59 @@ export function createRoutes(app, db) {
     const docs = req.headers["content-type"] === "text/csv" ? parseCsv(req.body) : req.body;
     const items = Array.isArray(docs) ? docs : [docs];
     if (items.length === 0) return res.status(400).json({ error: "No records provided" });
+    for (const item of items) {
+      if (await accounts.findOne({ number: item.number })) {
+        return res.status(409).json({ error: `Account code ${item.number} already exists` });
+      }
+      if (await accounts.findOne({ name: item.name })) {
+        return res.status(409).json({ error: `Account name "${item.name}" already exists` });
+      }
+    }
     const result = await accounts.insertMany(items);
     res.status(201).json({ inserted: result.insertedCount });
+  });
+
+  app.put("/api/finance/accounts/:number", write, async (req, res) => {
+    const num = parseInt(req.params.number, 10);
+    if (Number.isNaN(num)) return res.status(400).json({ error: "Invalid account number" });
+    const existing = await accounts.findOne({ number: num });
+    if (!existing) return res.status(404).json({ error: "Account not found" });
+    const { number: newNumber, name, type } = req.body;
+    const update = {};
+    if (name !== undefined) update.name = name;
+    if (type !== undefined) update.type = type;
+    if (newNumber !== undefined) update.number = newNumber;
+    if (Object.keys(update).length === 0) return res.status(400).json({ error: "Nothing to update" });
+    if (update.number !== undefined && update.number !== num) {
+      if (await accounts.findOne({ number: update.number })) {
+        return res.status(409).json({ error: `Account code ${update.number} already exists` });
+      }
+    }
+    if (update.name !== undefined && update.name !== existing.name) {
+      if (await accounts.findOne({ name: update.name })) {
+        return res.status(409).json({ error: `Account name "${update.name}" already exists` });
+      }
+    }
+    await accounts.updateOne({ number: num }, { $set: update });
+    if (update.number !== undefined && update.number !== num) {
+      await journalEntries.updateMany(
+        { "lines.accountNumber": num },
+        { $set: { "lines.$[el].accountNumber": update.number } },
+        { arrayFilters: [{ "el.accountNumber": num }] }
+      );
+    }
+    const doc = await accounts.findOne({ number: update.number ?? num });
+    res.json(doc);
+  });
+
+  app.delete("/api/finance/accounts/:number", write, async (req, res) => {
+    const num = parseInt(req.params.number, 10);
+    if (Number.isNaN(num)) return res.status(400).json({ error: "Invalid account number" });
+    const hasEntries = await journalEntries.findOne({ "lines.accountNumber": num });
+    if (hasEntries) return res.status(409).json({ error: "Cannot delete account with ledger entries" });
+    const result = await accounts.deleteOne({ number: num });
+    if (result.deletedCount === 0) return res.status(404).json({ error: "Account not found" });
+    res.json({ deleted: 1 });
   });
 
   // -- Journal Entries (General Ledger) --
@@ -67,7 +118,11 @@ export function createRoutes(app, db) {
     entry.transactionId = (last?.transactionId ?? 0) + 1;
 
     for (const line of entry.lines) {
-      const inc = (line.debit ?? 0) - (line.credit ?? 0);
+      const acct = await accounts.findOne({ number: line.accountNumber });
+      const creditNormal = acct && ["liability", "equity", "revenue"].includes(acct.type);
+      const inc = creditNormal
+        ? (line.credit ?? 0) - (line.debit ?? 0)
+        : (line.debit ?? 0) - (line.credit ?? 0);
       await accounts.updateOne(
         { number: line.accountNumber },
         { $inc: { balance: inc } },
@@ -177,8 +232,8 @@ export function createRoutes(app, db) {
       balanceSheet: {
         byType,
         totalAssets: sum("asset"),
-        totalLiabilities: Math.abs(sum("liability")),
-        totalEquity: Math.abs(sum("equity")),
+        totalLiabilities: sum("liability"),
+        totalEquity: sum("equity"),
       },
       profitLoss: {
         revenue,
