@@ -16,7 +16,7 @@ wrench_ac       = 2.8; // across-corners (mm)
 wrench_short_arm = 19.6;      // length of short arm that fits in the socket (mm)
 wrench_long_arm = 57;         // length of long arm that passes through the handle (mm)
 
-socket_clearance = 0.2;    // total across-flats clearance for press fit (mm)
+socket_clearance = 0.4;    // total across-flats clearance for press fit (mm)
 socket_depth    = 18;      // depth of hex socket — holds short arm securely (mm)
 socket_chamfer  = 0.5;     // entry chamfer to ease insertion and offset elephant foot (mm)
 
@@ -55,7 +55,7 @@ module hex_socket() {
     rotate([0, 0, 0]) {
         // Main hex bore running up from z=0
         translate([0, 0, -0.01])
-            cylinder(h = socket_depth + 0.02, r = wrench_ac + 0.2, $fn = 6);
+            cylinder(h = socket_depth + 0.02, r = wrench_ac / 2 + socket_clearance / 2, $fn = 6);
     }
 }
 
@@ -77,7 +77,7 @@ module hex_through_hole() {
     hole_z = channel_depth;
     translate([0, 0, hole_z])
         rotate([90, 0, 0])
-            cylinder(h = grip_dia + 2, r = wrench_ac + 0.2,
+            cylinder(h = grip_dia + 2, r = wrench_ac / 2 + socket_clearance / 2,
                      center = true, $fn = 6);
 }
 
