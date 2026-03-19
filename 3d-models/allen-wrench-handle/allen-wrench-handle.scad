@@ -12,14 +12,18 @@ $fn = preview ? 32 : 64;
 
 // --- Allen Key Dimensions ---
 wrench_af       = 2.5;     // across-flats of hex key (mm)
-socket_clearance = 0.1;    // total across-flats clearance for press fit (mm)
+wrench_ac       = 2.8; // across-corners (mm)
+wrench_short_arm = 19.6;      // length of short arm that fits in the socket (mm)
+wrench_long_arm = 57;         // length of long arm that passes through the handle (mm)
+
+socket_clearance = 0.2;    // total across-flats clearance for press fit (mm)
 socket_depth    = 18;      // depth of hex socket — holds short arm securely (mm)
 socket_chamfer  = 0.5;     // entry chamfer to ease insertion and offset elephant foot (mm)
-channel_clearance = 0;     // clearance for the slide-in slot — zero tolerance for tight fit (mm)
 
 // --- Handle Grip ---
-grip_height     = 25;      // height of grip section (mm)
+grip_height     = wrench_long_arm / 4;      // height of grip section (mm)
 grip_rounding   = 3;       // Minkowski sphere radius for comfortable edges (mm)
+grip_base = grip_height / 2;
 
 // --- Grip Grooves ---
 groove_count    = 12;       // number of grooves around perimeter
@@ -27,20 +31,20 @@ groove_radius   = 3;        // radius of each cylindrical groove (mm)
 groove_depth    = 1.5;      // how deep the groove cuts into the surface (mm)
 
 // --- Shaft (transition between grip and socket tip) ---
-shaft_dia       = 14;      // shaft diameter below grip (mm)
-shaft_height    = 10;      // shaft length below grip (mm)
+shaft_dia       = wrench_ac + 6;      // shaft diameter below grip (mm)
+shaft_height    = grip_height / 2;      // shaft length below grip (mm)
 
 // --- Derived ---
-socket_r = (wrench_af + socket_clearance) / 2 / cos(30); // circumscribed hex radius
-chamfer_r = (wrench_af + socket_clearance + 1.0) / 2 / cos(30); // wider entry chamfer
-grip_dia = 2 * (21 - (wrench_af/2));  // sized so 21mm from hex edge to handle edge (mm)
-total_height = grip_height + shaft_height;
+grip_dia = 2 * (wrench_short_arm - (wrench_af/2)) + grip_rounding;  // sized so 22mm from hex edge to handle edge (mm)
+total_height = grip_height + shaft_height + grip_base;
+
 // Channel: snug slot for the wrench shaft
-channel_w = wrench_af; // across-flats, no tolerance — V-groove constrains rotation
+channel_w = wrench_ac; // across-flats, no tolerance — V-groove constrains rotation
 channel_reach = grip_dia / 2;  // channel reaches to center of handle (mm)
 channel_depth = socket_depth;  // channel depth matches hex socket (mm)
+
 // Top of model: grip Minkowski extends to shaft_height + grip_height - grip_rounding
-model_top = shaft_height + grip_height - grip_rounding;
+model_top = shaft_height + grip_height + grip_base - grip_rounding;
 
 // =====================================================================
 // MODULES
@@ -48,14 +52,10 @@ model_top = shaft_height + grip_height - grip_rounding;
 
 // Hex socket bore — subtracted from the body to hold the wrench short arm
 module hex_socket() {
-    rotate([0, 0, 30]) {
+    rotate([0, 0, 0]) {
         // Main hex bore running up from z=0
         translate([0, 0, -0.01])
-            cylinder(h = socket_depth + 0.01, r = socket_r + 0.2, $fn = 6);
-
-        // Entry chamfer — slightly wider hex at the opening to ease insertion
-        translate([0, 0, -0.01])
-            cylinder(h = socket_chamfer + 0.01, r = chamfer_r, $fn = 6);
+            cylinder(h = socket_depth + 0.02, r = wrench_ac + 0.2, $fn = 6);
     }
 }
 
@@ -77,7 +77,7 @@ module hex_through_hole() {
     hole_z = channel_depth;
     translate([0, 0, hole_z])
         rotate([90, 0, 0])
-            cylinder(h = grip_dia + 2, r = hex_r,
+            cylinder(h = grip_dia + 2, r = wrench_ac + 0.2,
                      center = true, $fn = 6);
 }
 
@@ -86,7 +86,7 @@ module grip_body() {
     translate([0, 0, shaft_height]) {
         minkowski() {
             cylinder(
-                h = grip_height - 2 * grip_rounding,
+                h = grip_base + grip_height - 2 * grip_rounding,
                 d = grip_dia - 2 * grip_rounding
             );
             sphere(r = grip_rounding);
