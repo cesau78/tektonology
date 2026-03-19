@@ -27,13 +27,21 @@ export async function authedApiFetch<T>(
 }
 
 export function useApiFetch() {
-  const { getAccessTokenSilently } = useAuth0();
+  const { getAccessTokenSilently, loginWithRedirect } = useAuth0();
   const getTokenRef = useRef(getAccessTokenSilently);
+  const loginRef = useRef(loginWithRedirect);
   getTokenRef.current = getAccessTokenSilently;
+  loginRef.current = loginWithRedirect;
 
   return useCallback(
     async <T>(path: string, init?: RequestInit): Promise<T> => {
-      const token = await getTokenRef.current();
+      let token: string;
+      try {
+        token = await getTokenRef.current();
+      } catch {
+        await loginRef.current({ appState: { returnTo: window.location.pathname } });
+        throw new Error("Redirecting to login");
+      }
       return authedApiFetch<T>(path, token, init);
     },
     [],
