@@ -91,7 +91,7 @@ export function TransactionForm({ accounts }: { accounts: AccountInfo[] }) {
     };
 
     try {
-      await apiFetch("/api/journal-entries", {
+      await apiFetch("/api/finance/ledger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(entry),

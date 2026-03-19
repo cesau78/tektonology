@@ -34,7 +34,7 @@ export default function SpoolsPage() {
   const apiFetch = useApiFetch();
 
   useEffect(() => {
-    apiFetch<SpoolData[]>("/api/spools")
+    apiFetch<SpoolData[]>("/api/procurement/spools")
       .then(setSpools)
       .catch((e) => setError(e.message));
   }, [apiFetch]);
@@ -57,7 +57,7 @@ export default function SpoolsPage() {
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
         <span>›</span>
-        <Link href="/operations" className="hover:text-foreground transition-colors">Operations</Link>
+        <Link href="/procurement" className="hover:text-foreground transition-colors">Procurement</Link>
         <span>›</span>
         <span className="text-foreground">Filament Spools</span>
       </nav>

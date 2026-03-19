@@ -1,4 +1,5 @@
 import { requireEmailVerified, requireRole } from "./auth.js";
+import { parseCsv, negotiate, csvBodyParser } from "./csv.js";
 
 const verified = requireEmailVerified;
 const read = [verified, requireRole("owner", "auditor")];
@@ -15,21 +16,43 @@ export function createRoutes(app, db) {
   const hardware = db.collection("hardware");
   const printJobs = db.collection("print_jobs");
 
+  // Raw body parsing for text/csv requests
+  app.use(csvBodyParser);
+
+  // =========================================================================
+  // Finance
+  // =========================================================================
+
   // -- Accounts --
-  app.get("/api/accounts", read, async (_req, res) => {
+  app.get("/api/finance/accounts", read, async (req, res) => {
     const docs = await accounts.find().sort({ number: 1 }).toArray();
-    res.json(docs);
+    negotiate(req, res, docs, "accounts.csv");
   });
 
-  // -- Journal Entries (Ledger) --
-  app.get("/api/journal-entries", read, async (_req, res) => {
+  app.post("/api/finance/accounts", write, async (req, res) => {
+    const docs = req.headers["content-type"] === "text/csv" ? parseCsv(req.body) : req.body;
+    const items = Array.isArray(docs) ? docs : [docs];
+    if (items.length === 0) return res.status(400).json({ error: "No records provided" });
+    const result = await accounts.insertMany(items);
+    res.status(201).json({ inserted: result.insertedCount });
+  });
+
+  // -- Journal Entries (General Ledger) --
+  app.get("/api/finance/ledger", read, async (req, res) => {
     const docs = await journalEntries.find().sort({ date: 1, transactionId: 1 }).toArray();
-    res.json(docs);
+    negotiate(req, res, docs, "ledger.csv");
   });
 
-  app.post("/api/journal-entries", write, async (req, res) => {
-    const entry = req.body;
+  app.post("/api/finance/ledger", write, async (req, res) => {
+    if (req.headers["content-type"] === "text/csv") {
+      const rows = parseCsv(req.body);
+      if (rows.length === 0) return res.status(400).json({ error: "No records provided" });
+      const result = await journalEntries.insertMany(rows);
+      return res.status(201).json({ inserted: result.insertedCount });
+    }
 
+    // JSON: single journal entry with balanced lines
+    const entry = req.body;
     if (!entry.date || !entry.lines || !Array.isArray(entry.lines) || entry.lines.length < 2) {
       return res.status(400).json({ error: "Entry must have date and at least 2 lines" });
     }
@@ -40,11 +63,9 @@ export function createRoutes(app, db) {
       return res.status(400).json({ error: "Debits must equal credits" });
     }
 
-    // Auto-assign transactionId
     const last = await journalEntries.findOne({}, { sort: { transactionId: -1 } });
     entry.transactionId = (last?.transactionId ?? 0) + 1;
 
-    // Update account balances
     for (const line of entry.lines) {
       const inc = (line.debit ?? 0) - (line.credit ?? 0);
       await accounts.updateOne(
@@ -58,25 +79,60 @@ export function createRoutes(app, db) {
     res.status(201).json(entry);
   });
 
+  // =========================================================================
+  // Procurement
+  // =========================================================================
+
   // -- Spools --
-  app.get("/api/spools", read, async (_req, res) => {
+  app.get("/api/procurement/spools", read, async (req, res) => {
     const docs = await spools.find().sort({ spoolId: 1 }).toArray();
-    res.json(docs);
+    negotiate(req, res, docs, "spools.csv");
+  });
+
+  app.post("/api/procurement/spools", write, async (req, res) => {
+    const docs = req.headers["content-type"] === "text/csv" ? parseCsv(req.body) : req.body;
+    const items = Array.isArray(docs) ? docs : [docs];
+    if (items.length === 0) return res.status(400).json({ error: "No records provided" });
+    const result = await spools.insertMany(items);
+    res.status(201).json({ inserted: result.insertedCount });
   });
 
   // -- Hardware --
-  app.get("/api/hardware", read, async (_req, res) => {
+  app.get("/api/procurement/hardware", read, async (req, res) => {
     const docs = await hardware.find().sort({ hardwareId: 1 }).toArray();
-    res.json(docs);
+    negotiate(req, res, docs, "hardware.csv");
   });
+
+  app.post("/api/procurement/hardware", write, async (req, res) => {
+    const docs = req.headers["content-type"] === "text/csv" ? parseCsv(req.body) : req.body;
+    const items = Array.isArray(docs) ? docs : [docs];
+    if (items.length === 0) return res.status(400).json({ error: "No records provided" });
+    const result = await hardware.insertMany(items);
+    res.status(201).json({ inserted: result.insertedCount });
+  });
+
+  // =========================================================================
+  // Manufacturing
+  // =========================================================================
 
   // -- Print Jobs --
-  app.get("/api/print-jobs", read, async (_req, res) => {
+  app.get("/api/manufacturing/print-jobs", read, async (req, res) => {
     const docs = await printJobs.find().sort({ date: -1, batchId: -1 }).toArray();
-    res.json(docs);
+    negotiate(req, res, docs, "print-jobs.csv");
   });
 
-  // -- Dashboard aggregation --
+  app.post("/api/manufacturing/print-jobs", write, async (req, res) => {
+    const docs = req.headers["content-type"] === "text/csv" ? parseCsv(req.body) : req.body;
+    const items = Array.isArray(docs) ? docs : [docs];
+    if (items.length === 0) return res.status(400).json({ error: "No records provided" });
+    const result = await printJobs.insertMany(items);
+    res.status(201).json({ inserted: result.insertedCount });
+  });
+
+  // =========================================================================
+  // Dashboard (aggregation — JSON only)
+  // =========================================================================
+
   app.get("/api/dashboard", read, async (_req, res) => {
     const [accts, entries, spoolDocs, jobDocs] = await Promise.all([
       accounts.find().toArray(),
@@ -85,7 +141,6 @@ export function createRoutes(app, db) {
       printJobs.find().toArray(),
     ]);
 
-    // Account totals by type
     const byType = {};
     for (const a of accts) {
       if (!byType[a.type]) byType[a.type] = [];
@@ -94,7 +149,6 @@ export function createRoutes(app, db) {
 
     const sum = (type) => (byType[type] ?? []).reduce((s, a) => s + a.balance, 0);
 
-    // P&L from journal entries
     const expensesByCategory = {};
     let revenue = 0;
     for (const e of entries) {
@@ -109,13 +163,11 @@ export function createRoutes(app, db) {
     }
     const totalExpenses = Object.values(expensesByCategory).reduce((s, v) => s + v, 0);
 
-    // Spool metrics
     const totalFilamentG = spoolDocs.reduce((s, sp) => s + (sp.remainingG ?? 0), 0);
     const totalFilamentCost = spoolDocs.reduce((s, sp) => s + (sp.cost ?? 0), 0);
     const activeSpools = spoolDocs.filter((s) => (s.remainingG ?? 0) > 0).length;
     const depletedSpools = spoolDocs.filter((s) => (s.remainingG ?? 0) === 0).length;
 
-    // Print job metrics
     const totalPrintHours = jobDocs.reduce((s, j) => s + (j.totalHours ?? 0), 0);
     const totalPrintCost = jobDocs.reduce((s, j) => s + (j.cost ?? 0), 0);
     const totalJobs = jobDocs.length;
@@ -134,12 +186,14 @@ export function createRoutes(app, db) {
         totalExpenses,
         netIncome: revenue - totalExpenses,
       },
-      operations: {
+      procurement: {
         totalFilamentG,
         totalFilamentCost,
         activeSpools,
         depletedSpools,
         totalSpools: spoolDocs.length,
+      },
+      manufacturing: {
         totalPrintHours,
         totalPrintCost,
         totalJobs,

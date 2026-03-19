@@ -45,7 +45,7 @@ export default function LedgerPage() {
   const apiFetch = useApiFetch();
 
   useEffect(() => {
-    apiFetch<JournalEntry[]>("/api/journal-entries")
+    apiFetch<JournalEntry[]>("/api/finance/ledger")
       .then(setEntries)
       .catch((e) => setError(e.message));
   }, [apiFetch]);

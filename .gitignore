@@ -9,4 +9,6 @@ node_modules/
 services/**/.env
 services/**/certs/
 3d-models/tools/
+3d-models/**/*.3mf
 mongo-db/data/
+tektonology-spa/data/accounting/

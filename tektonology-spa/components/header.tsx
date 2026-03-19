@@ -23,7 +23,7 @@ export function Header() {
               </span>
               <div className="border border-amber-400 rounded px-3 py-1.5 flex items-center">
                 <span className="text-xs leading-none text-neutral-500 cursor-default">
-                  Finance & Operations
+                  Finance, Procurement & Manufacturing
                 </span>
               </div>
             </div>
@@ -37,10 +37,16 @@ export function Header() {
                 Finance
               </Link>
               <Link
-                href="/operations"
+                href="/procurement"
                 className="text-xs text-neutral-400 hover:text-white transition-colors"
               >
-                Operations
+                Procurement
+              </Link>
+              <Link
+                href="/manufacturing"
+                className="text-xs text-neutral-400 hover:text-white transition-colors"
+              >
+                Manufacturing
               </Link>
             </>
           )}

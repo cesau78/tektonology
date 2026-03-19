@@ -19,7 +19,7 @@ export default function NewTransactionPage() {
   const apiFetch = useApiFetch();
 
   useEffect(() => {
-    apiFetch<AccountInfo[]>("/api/accounts")
+    apiFetch<AccountInfo[]>("/api/finance/accounts")
       .then(setAccounts)
       .catch((e) => setError(e.message));
   }, [apiFetch]);
