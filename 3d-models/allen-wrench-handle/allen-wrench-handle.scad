@@ -4,7 +4,7 @@
 
 // Performance Settings
 preview = false; // set preview=true for faster rendering with lower detail
-crosssection_view = true; // set to true to cut the model and show internals
+crosssection_view = false; // set to true to cut the model and show internals
 crosssection_axis = "y"; // axis: 'x', 'y', or 'z'
 crosssection_pos = 0; // position (mm) along the chosen axis where the cut occurs
 
