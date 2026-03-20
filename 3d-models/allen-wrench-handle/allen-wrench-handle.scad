@@ -27,7 +27,7 @@ grip_base = grip_height / 2;
 
 // --- Grip Grooves ---
 groove_count    = 12;       // number of grooves around perimeter
-groove_radius   = 3;        // radius of each cylindrical groove (mm)
+groove_radius   = 3.5;        // radius of each cylindrical groove (mm)
 groove_depth    = 1.5;      // how deep the groove cuts into the surface (mm)
 
 // --- Shaft (transition between grip and socket tip) ---
@@ -35,11 +35,11 @@ shaft_dia       = wrench_ac + 6;      // shaft diameter below grip (mm)
 shaft_height    = grip_height / 2;      // shaft length below grip (mm)
 
 // --- Derived ---
-grip_dia = 2 * (wrench_short_arm - (wrench_af/2)) + grip_rounding;  // sized so 22mm from hex edge to handle edge (mm)
+grip_dia = 2 * (wrench_short_arm - (wrench_af/2)) + groove_depth * 2 + 2;  // sized so 22mm from hex edge to handle edge (mm)
 total_height = grip_height + shaft_height + grip_base;
 
 // Channel: snug slot for the wrench shaft
-channel_w = wrench_ac; // across-flats, no tolerance — V-groove constrains rotation
+channel_w = wrench_ac - 0.1; // across-flats, no tolerance — V-groove constrains rotation
 channel_reach = grip_dia / 2;  // channel reaches to center of handle (mm)
 channel_depth = socket_depth;  // channel depth matches hex socket (mm)
 
