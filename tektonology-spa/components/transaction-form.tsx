@@ -91,13 +91,13 @@ export function TransactionForm({ accounts }: { accounts: AccountInfo[] }) {
     };
 
     try {
-      await apiFetch("/api/finance/ledger", {
+      await apiFetch("/api/finance/journal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(entry),
       });
       setSaved(true);
-      setTimeout(() => router.push("/finance/ledger"), 1000);
+      setTimeout(() => router.push("/finance/journal"), 1000);
     } catch (e: unknown) {
       setSaveError(e instanceof Error ? e.message : "Failed to save");
     } finally {
@@ -109,7 +109,7 @@ export function TransactionForm({ accounts }: { accounts: AccountInfo[] }) {
     return (
       <Card className="shadow-sm border-emerald-300">
         <CardContent className="pt-6 text-center">
-          <p className="text-emerald-700 font-medium">Transaction saved. Redirecting to ledger...</p>
+          <p className="text-emerald-700 font-medium">Transaction saved. Redirecting to journal...</p>
         </CardContent>
       </Card>
     );

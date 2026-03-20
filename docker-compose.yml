@@ -27,6 +27,10 @@ services:
     environment:
       - MONGODB_URI=mongodb://mongo:27017/tektonology
       - API_PORT=3001
+    command: npx -y nodemon --watch /app/tektonology-api --watch /app/services/shared --legacy-watch --polling-interval 1000 index.js
+    volumes:
+      - ./tektonology-api:/app/tektonology-api
+      - ./services/shared:/app/services/shared
 
 volumes:
   redis-data:

@@ -42,8 +42,8 @@ export default function FinanceDashboard() {
 
   const allNavItems = [
     { href: "/finance/accounts", label: "Chart of Accounts", desc: "Account codes, types, and balances", ownerOnly: false },
-    { href: "/finance/ledger", label: "General Ledger", desc: "All transactions", ownerOnly: false },
-    { href: "/finance/new", label: "New Transaction", desc: "Add a ledger entry", ownerOnly: true },
+    { href: "/finance/journal", label: "Journal", desc: "All transactions", ownerOnly: false },
+    { href: "/finance/new", label: "New Transaction", desc: "Add a journal entry", ownerOnly: true },
   ];
 
   const navItems = allNavItems.filter((item) => !item.ownerOnly || canWrite(role));

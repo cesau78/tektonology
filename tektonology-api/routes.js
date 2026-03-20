@@ -82,19 +82,20 @@ export function createRoutes(app, db) {
     const num = parseInt(req.params.number, 10);
     if (Number.isNaN(num)) return res.status(400).json({ error: "Invalid account number" });
     const hasEntries = await journalEntries.findOne({ "lines.accountNumber": num });
-    if (hasEntries) return res.status(409).json({ error: "Cannot delete account with ledger entries" });
+    if (hasEntries) return res.status(409).json({ error: "Cannot delete account with journal entries" });
     const result = await accounts.deleteOne({ number: num });
     if (result.deletedCount === 0) return res.status(404).json({ error: "Account not found" });
     res.json({ deleted: 1 });
   });
 
-  // -- Journal Entries (General Ledger) --
-  app.get("/api/finance/ledger", read, async (req, res) => {
-    const docs = await journalEntries.find().sort({ date: 1, transactionId: 1 }).toArray();
-    negotiate(req, res, docs, "ledger.csv");
+  // -- Journal Entries --
+  app.get("/api/finance/journal", read, async (req, res) => {
+    const filter = req.query.includeDeleted === "true" ? {} : { deletedAt: { $exists: false } };
+    const docs = await journalEntries.find(filter).sort({ date: 1, transactionId: 1 }).toArray();
+    negotiate(req, res, docs, "journal.csv");
   });
 
-  app.post("/api/finance/ledger", write, async (req, res) => {
+  app.post("/api/finance/journal", write, async (req, res) => {
     if (req.headers["content-type"] === "text/csv") {
       const rows = parseCsv(req.body);
       if (rows.length === 0) return res.status(400).json({ error: "No records provided" });
@@ -132,6 +133,135 @@ export function createRoutes(app, db) {
 
     await journalEntries.insertOne(entry);
     res.status(201).json(entry);
+  });
+
+  app.put("/api/finance/journal/:transactionId", write, async (req, res) => {
+    const txId = parseInt(req.params.transactionId, 10);
+    if (Number.isNaN(txId)) return res.status(400).json({ error: "Invalid transaction ID" });
+
+    const existing = await journalEntries.findOne({ transactionId: txId });
+    if (!existing) return res.status(404).json({ error: "Transaction not found" });
+
+    const update = req.body;
+    if (!update.date || !update.lines || !Array.isArray(update.lines) || update.lines.length < 2) {
+      return res.status(400).json({ error: "Entry must have date and at least 2 lines" });
+    }
+
+    const totalDebit = update.lines.reduce((s, l) => s + (l.debit ?? 0), 0);
+    const totalCredit = update.lines.reduce((s, l) => s + (l.credit ?? 0), 0);
+    if (Math.abs(totalDebit - totalCredit) > 0.005) {
+      return res.status(400).json({ error: "Debits must equal credits" });
+    }
+
+    // Reverse old balance impacts
+    for (const line of existing.lines) {
+      const acct = await accounts.findOne({ number: line.accountNumber });
+      if (!acct) continue;
+      const creditNormal = ["liability", "equity", "revenue"].includes(acct.type);
+      const dec = creditNormal
+        ? (line.credit ?? 0) - (line.debit ?? 0)
+        : (line.debit ?? 0) - (line.credit ?? 0);
+      await accounts.updateOne(
+        { number: line.accountNumber },
+        { $inc: { balance: -dec } },
+        { upsert: false }
+      );
+    }
+
+    // Apply new balance impacts
+    for (const line of update.lines) {
+      const acct = await accounts.findOne({ number: line.accountNumber });
+      if (!acct) continue;
+      const creditNormal = ["liability", "equity", "revenue"].includes(acct.type);
+      const inc = creditNormal
+        ? (line.credit ?? 0) - (line.debit ?? 0)
+        : (line.debit ?? 0) - (line.credit ?? 0);
+      await accounts.updateOne(
+        { number: line.accountNumber },
+        { $inc: { balance: inc } },
+        { upsert: false }
+      );
+    }
+
+    await journalEntries.updateOne(
+      { transactionId: txId },
+      { $set: { date: update.date, description: update.description, lines: update.lines } }
+    );
+
+    const doc = await journalEntries.findOne({ transactionId: txId });
+    res.json(doc);
+  });
+
+  app.delete("/api/finance/journal/:transactionId", write, async (req, res) => {
+    const txId = parseInt(req.params.transactionId, 10);
+    if (Number.isNaN(txId)) return res.status(400).json({ error: "Invalid transaction ID" });
+
+    const existing = await journalEntries.findOne({ transactionId: txId });
+    if (!existing) return res.status(404).json({ error: "Transaction not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Transaction already deleted" });
+
+    // Reverse balance impacts
+    for (const line of existing.lines) {
+      const acct = await accounts.findOne({ number: line.accountNumber });
+      if (!acct) continue;
+      const creditNormal = ["liability", "equity", "revenue"].includes(acct.type);
+      const dec = creditNormal
+        ? (line.credit ?? 0) - (line.debit ?? 0)
+        : (line.debit ?? 0) - (line.credit ?? 0);
+      await accounts.updateOne(
+        { number: line.accountNumber },
+        { $inc: { balance: -dec } },
+        { upsert: false }
+      );
+    }
+
+    await journalEntries.updateOne(
+      { transactionId: txId },
+      { $set: { deletedAt: new Date().toISOString() } }
+    );
+    res.json({ deleted: 1 });
+  });
+
+  app.delete("/api/finance/journal/:transactionId/permanent", write, async (req, res) => {
+    const txId = parseInt(req.params.transactionId, 10);
+    if (Number.isNaN(txId)) return res.status(400).json({ error: "Invalid transaction ID" });
+
+    const existing = await journalEntries.findOne({ transactionId: txId });
+    if (!existing) return res.status(404).json({ error: "Transaction not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Transaction must be soft-deleted first" });
+
+    await journalEntries.deleteOne({ transactionId: txId });
+    res.json({ deleted: 1 });
+  });
+
+  app.post("/api/finance/journal/:transactionId/restore", write, async (req, res) => {
+    const txId = parseInt(req.params.transactionId, 10);
+    if (Number.isNaN(txId)) return res.status(400).json({ error: "Invalid transaction ID" });
+
+    const existing = await journalEntries.findOne({ transactionId: txId });
+    if (!existing) return res.status(404).json({ error: "Transaction not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Transaction is not deleted" });
+
+    // Re-apply balance impacts
+    for (const line of existing.lines) {
+      const acct = await accounts.findOne({ number: line.accountNumber });
+      if (!acct) continue;
+      const creditNormal = ["liability", "equity", "revenue"].includes(acct.type);
+      const inc = creditNormal
+        ? (line.credit ?? 0) - (line.debit ?? 0)
+        : (line.debit ?? 0) - (line.credit ?? 0);
+      await accounts.updateOne(
+        { number: line.accountNumber },
+        { $inc: { balance: inc } },
+        { upsert: false }
+      );
+    }
+
+    await journalEntries.updateOne(
+      { transactionId: txId },
+      { $unset: { deletedAt: "" } }
+    );
+    res.json({ restored: 1 });
   });
 
   // =========================================================================
