@@ -4,9 +4,9 @@
 
 // Performance Settings
 preview = false; // set preview=true for faster rendering with lower detail
-crosssection_view = false; // set to true to cut the model and show internals
+crosssection_view = true; // set to true to cut the model and show internals
 crosssection_axis = "y"; // axis: 'x', 'y', or 'z'
-crosssection_pos = 0.5; // position (mm) along the chosen axis where the cut occurs
+crosssection_pos = 0; // position (mm) along the chosen axis where the cut occurs
 
 $fn = preview ? 32 : 64;
 
@@ -19,6 +19,7 @@ wrench_long_arm = 57;         // length of long arm that passes through the hand
 socket_clearance = 0.4;    // total across-flats clearance for press fit (mm)
 socket_depth    = 18;      // depth of hex socket — holds short arm securely (mm)
 socket_chamfer  = 0.5;     // entry chamfer to ease insertion and offset elephant foot (mm)
+wrench_bend_radius = 3.5;  // centerline bend radius of the hex key elbow (mm)
 
 // --- Handle Grip ---
 grip_height     = wrench_long_arm / 4;      // height of grip section (mm)
@@ -39,7 +40,7 @@ grip_dia = 2 * (wrench_short_arm - (wrench_af/2)) + groove_depth * 2 + 2;  // si
 total_height = grip_height + shaft_height + grip_base;
 
 // Channel: snug slot for the wrench shaft
-channel_w = wrench_ac - 0.1; // across-flats, no tolerance — V-groove constrains rotation
+channel_w = wrench_ac - 0.1; // across-corners with a tightening for press fit (mm)
 channel_reach = grip_dia / 2;  // channel reaches to center of handle (mm)
 channel_depth = socket_depth;  // channel depth matches hex socket (mm)
 
@@ -56,6 +57,31 @@ module hex_socket() {
         // Main hex bore running up from z=0
         translate([0, 0, -0.01])
             cylinder(h = socket_depth + 0.02, r = wrench_ac / 2 + socket_clearance / 2, $fn = 6);
+    }
+}
+
+// Bend relief — carves a curved path at the socket top to accommodate
+// the wrench's elbow bend (real wrenches curve, not a sharp 90° corner).
+// Sweeps a hex cross-section along a quarter-circle arc from the vertical
+// socket into the horizontal through-hole.
+module bend_relief() {
+    hex_r = wrench_ac / 2 + socket_clearance / 2;
+    R = wrench_bend_radius;
+    steps = preview ? 6 : 12;
+    z_start = socket_depth - R; // where the bend begins on the vertical arm
+
+    for (i = [0 : steps - 1]) {
+        t1 = i * 90 / steps;
+        t2 = (i + 1) * 90 / steps;
+        hull() {
+            // Sweep hex cross-section along quarter-circle arc in YZ plane
+            translate([0, -R * (1 - cos(t1)), z_start + R * sin(t1)])
+                rotate([t1, 0, 0])
+                    cylinder(h = 0.01, r = hex_r, $fn = 6);
+            translate([0, -R * (1 - cos(t2)), z_start + R * sin(t2)])
+                rotate([t2, 0, 0])
+                    cylinder(h = 0.01, r = hex_r, $fn = 6);
+        }
     }
 }
 
@@ -125,6 +151,7 @@ module allen_wrench_handle() {
             shaft_body();
         }
         hex_socket();
+        bend_relief();
         wrench_channel();
         hex_through_hole();
         grip_grooves();
