@@ -4,8 +4,7 @@
 include <ptfe-port-config.scad>
 
 module ptfe_port_shaft() {
-    shaft_height = gap + flange_thick; // extends through gap and flush with collar top
-    total = flange_thick + shaft_height;
+    shaft_height = gap + flange_thick + socket_depth_top; // through gap, collar, + socket grip
 
     // Slot positions must match collar clip positions (flush with shaft hole edge)
     shaft_w = body_w + collar_clearance * 2;
@@ -41,8 +40,8 @@ module ptfe_port_shaft() {
         translate([0, 0, flange_thick])
             shaft_body(shaft_height);
 
-        // Mirrored shaft + stop plate — taller to match total bottom reach
-        mirror_height = shaft_height + flange_thick;
+        // Mirrored shaft + stop plate — reaches through flange + socket grip
+        mirror_height = gap + flange_thick * 2 + socket_depth_bottom;
         translate([0, 0, flange_thick + shaft_height + mirror_height])
             mirror([0, 0, 1])
                 shaft_body(mirror_height);

@@ -2,7 +2,7 @@
 include <ptfe-port-config.scad>
 
 // Cross-section settings
-crosssection_view = true;
+crosssection_view = false;
 crosssection_axis = "xy";  // "x", "y", "z", or "xy" (45° diagonal)
 crosssection_pos  = 0;    // mm offset from center of model along chosen axis
 
