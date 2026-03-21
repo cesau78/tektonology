@@ -149,7 +149,7 @@ export default function HardwarePage() {
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "Failed to permanently delete");
     } finally {
-      setDeletingId(hardwareId);
+      setDeletingId(null);
     }
   };
 

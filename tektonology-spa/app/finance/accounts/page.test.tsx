@@ -674,4 +674,226 @@ describe("ChartOfAccountsPage", () => {
     fireEvent.click(view.getByText("+ Add Account"));
     expect(view.queryByText("+ Add Account")).not.toBeInTheDocument();
   });
+
+  // -- Soft delete functionality --
+
+  const sampleAccountsWithDeleted = [
+    { number: 1000, name: "Cash", type: "asset", balance: 500 },
+    { number: 2000, name: "Accounts Payable", type: "liability", balance: 200 },
+    { number: 9000, name: "Old Account", type: "expense", balance: 0, deletedAt: "2025-01-01T00:00:00.000Z" },
+  ];
+
+  it("fetches with includeDeleted=true when Show Deleted is clicked", async () => {
+    mockApiFetch.mockResolvedValue(sampleAccounts);
+    const { container } = render(<ChartOfAccountsPage />);
+    const view = within(container);
+    await waitFor(() => expect(view.getByText("Cash")).toBeInTheDocument());
+
+    // Click Show Deleted — triggers re-fetch with query param
+    await act(async () => {
+      fireEvent.click(view.getByText("Show Deleted"));
+    });
+
+    expect(mockApiFetch).toHaveBeenCalledWith("/api/finance/accounts?includeDeleted=true");
+    // Button text should change
+    expect(view.getByText("Hide Deleted")).toBeInTheDocument();
+  });
+
+  it("renders deleted rows with opacity-50 and Restore/Purge buttons", async () => {
+    mockApiFetch.mockResolvedValue(sampleAccountsWithDeleted);
+    const { container } = render(<ChartOfAccountsPage />);
+    const view = within(container);
+    await waitFor(() => expect(view.getByText("Old Account")).toBeInTheDocument());
+
+    // The deleted row should have opacity-50
+    const rows = view.getAllByRole("row");
+    const deletedRow = rows.find((r) => r.textContent?.includes("Old Account"));
+    expect(deletedRow).toHaveClass("opacity-50");
+
+    // Deleted row shows Restore and Purge instead of Edit and Delete
+    const deletedView = within(deletedRow!);
+    expect(deletedView.getByText("Restore")).toBeInTheDocument();
+    expect(deletedView.getByText("Purge")).toBeInTheDocument();
+    expect(deletedView.queryByText("Edit")).not.toBeInTheDocument();
+    expect(deletedView.queryByText("Delete")).not.toBeInTheDocument();
+  });
+
+  it("restores a deleted account", async () => {
+    mockApiFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (opts?.method === "POST" && url.includes("/restore")) return Promise.resolve({});
+      return Promise.resolve(sampleAccountsWithDeleted);
+    });
+    const { container } = render(<ChartOfAccountsPage />);
+    const view = within(container);
+    await waitFor(() => expect(view.getByText("Old Account")).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(view.getByText("Restore"));
+    });
+
+    expect(mockApiFetch).toHaveBeenCalledWith(
+      "/api/finance/accounts/9000/restore",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("shows error on restore failure", async () => {
+    mockApiFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (opts?.method === "POST" && url.includes("/restore")) return Promise.reject(new Error("Restore failed"));
+      return Promise.resolve(sampleAccountsWithDeleted);
+    });
+    const { container } = render(<ChartOfAccountsPage />);
+    const view = within(container);
+    await waitFor(() => expect(view.getByText("Old Account")).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(view.getByText("Restore"));
+    });
+
+    expect(view.getByText("Restore failed")).toBeInTheDocument();
+  });
+
+  it("shows fallback 'Failed to restore' when non-Error is thrown", async () => {
+    mockApiFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (opts?.method === "POST" && url.includes("/restore")) return Promise.reject("string error");
+      return Promise.resolve(sampleAccountsWithDeleted);
+    });
+    const { container } = render(<ChartOfAccountsPage />);
+    const view = within(container);
+    await waitFor(() => expect(view.getByText("Old Account")).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(view.getByText("Restore"));
+    });
+    expect(view.getByText("Failed to restore")).toBeInTheDocument();
+  });
+
+  it("permanently deletes account after purge confirmation", async () => {
+    mockApiFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (opts?.method === "DELETE" && url.includes("/permanent")) return Promise.resolve({});
+      return Promise.resolve(sampleAccountsWithDeleted);
+    });
+    const { container } = render(<ChartOfAccountsPage />);
+    const view = within(container);
+    await waitFor(() => expect(view.getByText("Old Account")).toBeInTheDocument());
+
+    // Click Purge to show inline confirmation
+    await act(async () => {
+      fireEvent.click(view.getByText("Purge"));
+    });
+    expect(view.getByText("Purge?")).toBeInTheDocument();
+
+    // Click Yes to confirm
+    await act(async () => {
+      fireEvent.click(view.getByText("Yes"));
+    });
+
+    expect(mockApiFetch).toHaveBeenCalledWith(
+      "/api/finance/accounts/9000/permanent",
+      expect.objectContaining({ method: "DELETE" }),
+    );
+  });
+
+  it("cancels purge when No is clicked", async () => {
+    mockApiFetch.mockResolvedValue(sampleAccountsWithDeleted);
+    const { container } = render(<ChartOfAccountsPage />);
+    const view = within(container);
+    await waitFor(() => expect(view.getByText("Old Account")).toBeInTheDocument());
+
+    // Click Purge to show inline confirmation
+    await act(async () => {
+      fireEvent.click(view.getByText("Purge"));
+    });
+    expect(view.getByText("Purge?")).toBeInTheDocument();
+
+    // Click No to cancel
+    await act(async () => {
+      fireEvent.click(view.getByText("No"));
+    });
+
+    // Should not have called permanent DELETE
+    expect(mockApiFetch).not.toHaveBeenCalledWith(
+      expect.stringContaining("/api/finance/accounts/9000/permanent"),
+      expect.objectContaining({ method: "DELETE" }),
+    );
+    // Purge? confirmation should be gone
+    expect(view.queryByText("Purge?")).not.toBeInTheDocument();
+  });
+
+  it("shows error on permanent delete failure", async () => {
+    mockApiFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (opts?.method === "DELETE" && url.includes("/permanent")) return Promise.reject(new Error("Cannot purge"));
+      return Promise.resolve(sampleAccountsWithDeleted);
+    });
+    const { container } = render(<ChartOfAccountsPage />);
+    const view = within(container);
+    await waitFor(() => expect(view.getByText("Old Account")).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(view.getByText("Purge"));
+    });
+    await act(async () => {
+      fireEvent.click(view.getByText("Yes"));
+    });
+
+    expect(view.getByText("Cannot purge")).toBeInTheDocument();
+  });
+
+  it("shows generic error on permanent delete with non-Error rejection", async () => {
+    mockApiFetch.mockImplementation((url: string, opts?: RequestInit) => {
+      if (opts?.method === "DELETE" && url.includes("/permanent")) return Promise.reject("oops");
+      return Promise.resolve(sampleAccountsWithDeleted);
+    });
+    const { container } = render(<ChartOfAccountsPage />);
+    const view = within(container);
+    await waitFor(() => expect(view.getByText("Old Account")).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(view.getByText("Purge"));
+    });
+    await act(async () => {
+      fireEvent.click(view.getByText("Yes"));
+    });
+
+    expect(view.getByText("Failed to permanently delete")).toBeInTheDocument();
+  });
+
+  it("shows deleted count when showDeleted is true and deleted accounts exist", async () => {
+    let callCount = 0;
+    mockApiFetch.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return Promise.resolve(sampleAccounts);
+      return Promise.resolve(sampleAccountsWithDeleted);
+    });
+    const { container } = render(<ChartOfAccountsPage />);
+    const view = within(container);
+    await waitFor(() => expect(view.getByText("Cash")).toBeInTheDocument());
+
+    // Toggle Show Deleted
+    await act(async () => {
+      fireEvent.click(view.getByText("Show Deleted"));
+    });
+
+    await waitFor(() => {
+      expect(view.getByText("(1 deleted)")).toBeInTheDocument();
+    });
+  });
+
+  it("applies border-gray-400 class when showDeleted is active", async () => {
+    mockApiFetch.mockResolvedValue(sampleAccounts);
+    const { container } = render(<ChartOfAccountsPage />);
+    const view = within(container);
+    await waitFor(() => expect(view.getByText("Cash")).toBeInTheDocument());
+
+    const showDeletedBtn = view.getByText("Show Deleted");
+    // Before clicking, button should not have border-gray-400
+    expect(showDeletedBtn.closest("button")).not.toHaveClass("border-gray-400");
+
+    // Click to enable showDeleted
+    await act(async () => {
+      fireEvent.click(showDeletedBtn);
+    });
+
+    const hideDeletedBtn = view.getByText("Hide Deleted");
+    expect(hideDeletedBtn.closest("button")).toHaveClass("border-gray-400");
+  });
 });

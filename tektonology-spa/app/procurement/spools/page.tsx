@@ -152,7 +152,7 @@ export default function SpoolsPage() {
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "Failed to permanently delete");
     } finally {
-      setDeletingId(spoolId);
+      setDeletingId(null);
     }
   };
 
