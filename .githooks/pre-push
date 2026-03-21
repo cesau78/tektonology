@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Pre-push hook: enforce 100% test coverage on all services with changes.
-# Mirrors the CI logic in .github/workflows/services-test.yml.
+# Pre-push hook: enforce 100% test coverage on all services, API, and SPA with changes.
+# Mirrors the CI logic in .github/workflows/services-test.yml and api-test.yml.
 
 set -euo pipefail
 
@@ -21,6 +21,10 @@ if [ -z "${CHANGED_FILES:-}" ]; then
 fi
 
 FAILED=0
+
+# ---------------------------------------------------------------------------
+# Services (node:test --experimental-test-coverage)
+# ---------------------------------------------------------------------------
 
 for SERVICE in "${SERVICES[@]}"; do
   # Skip services with no changed files
@@ -72,6 +76,74 @@ for SERVICE in "${SERVICES[@]}"; do
     echo "✓ $SERVICE — 100% coverage"
   fi
 done
+
+# ---------------------------------------------------------------------------
+# API (node:test --experimental-test-coverage)
+# ---------------------------------------------------------------------------
+
+if echo "$CHANGED_FILES" | grep -q "^tektonology-api/"; then
+  echo "▶ Checking coverage: tektonology-api"
+
+  API_DIR="$REPO_ROOT/tektonology-api"
+
+  COVERAGE_OUTPUT="$(cd "$API_DIR" && npm run test:coverage 2>&1)" || {
+    echo "✗ tektonology-api — tests failed"
+    echo "$COVERAGE_OUTPUT" | tail -20
+    FAILED=1
+  }
+
+  if [ $FAILED -eq 0 ]; then
+    SOURCE_LINES="$(echo "$COVERAGE_OUTPUT" | grep -E '^#\s+\S+\.js\s+\|' | grep -v '\.test\.js' || true)"
+
+    if [ -z "$SOURCE_LINES" ]; then
+      echo "✗ tektonology-api — no source coverage data found"
+      FAILED=1
+    else
+      while IFS= read -r line; do
+        FILE=$(echo "$line" | awk -F'|' '{gsub(/^# *| *$/, "", $1); print $1}')
+        LINE_PCT=$(echo "$line" | awk -F'|' '{gsub(/ /, "", $2); print $2}')
+        BRANCH_PCT=$(echo "$line" | awk -F'|' '{gsub(/ /, "", $3); print $3}')
+        FUNC_PCT=$(echo "$line" | awk -F'|' '{gsub(/ /, "", $4); print $4}')
+
+        for PCT in "$LINE_PCT" "$BRANCH_PCT" "$FUNC_PCT"; do
+          if [ "$PCT" != "100.00" ]; then
+            echo "✗ tektonology-api/$FILE — line: $LINE_PCT% branch: $BRANCH_PCT% funcs: $FUNC_PCT%"
+            FAILED=1
+            break
+          fi
+        done
+      done <<< "$SOURCE_LINES"
+
+      if [ $FAILED -eq 0 ]; then
+        echo "✓ tektonology-api — 100% coverage"
+      fi
+    fi
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# SPA (vitest --coverage, thresholds enforced in vitest.config.ts)
+# ---------------------------------------------------------------------------
+
+if echo "$CHANGED_FILES" | grep -q "^tektonology-spa/"; then
+  echo "▶ Checking coverage: tektonology-spa"
+
+  SPA_DIR="$REPO_ROOT/tektonology-spa"
+
+  SPA_OUTPUT="$(cd "$SPA_DIR" && npm run test:coverage 2>&1)" || {
+    echo "✗ tektonology-spa — tests or coverage failed"
+    echo "$SPA_OUTPUT" | tail -20
+    FAILED=1
+  }
+
+  if [ $FAILED -eq 0 ]; then
+    echo "✓ tektonology-spa — 100% coverage"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# Final verdict
+# ---------------------------------------------------------------------------
 
 if [ "$FAILED" -eq 1 ]; then
   echo ""

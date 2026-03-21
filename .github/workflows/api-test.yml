@@ -1,0 +1,69 @@
+name: API — Test & Coverage
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tektonology-api/**"
+      - ".github/workflows/api-test.yml"
+  pull_request:
+    paths:
+      - "tektonology-api/**"
+      - ".github/workflows/api-test.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: tektonology-api
+
+      - name: Run tests with coverage
+        run: |
+          npm run test:coverage 2>&1 | tee coverage-output.txt
+          grep -E '^\#\s+\S+\.js\s+\|' coverage-output.txt | grep -v '\.test\.js' > source-coverage.txt || true
+
+          if [ ! -s source-coverage.txt ]; then
+            echo "::error::No source coverage data found"
+            exit 1
+          fi
+
+          FAILED=0
+          while IFS= read -r line; do
+            FILE=$(echo "$line" | awk -F'|' '{gsub(/^# *| *$/, "", $1); print $1}')
+            LINE_PCT=$(echo "$line" | awk -F'|' '{gsub(/ /, "", $2); print $2}')
+            BRANCH_PCT=$(echo "$line" | awk -F'|' '{gsub(/ /, "", $3); print $3}')
+            FUNC_PCT=$(echo "$line" | awk -F'|' '{gsub(/ /, "", $4); print $4}')
+
+            echo "  $FILE — line: $LINE_PCT% branch: $BRANCH_PCT% funcs: $FUNC_PCT%"
+
+            for PCT in "$LINE_PCT" "$BRANCH_PCT" "$FUNC_PCT"; do
+              if [ "$PCT" != "100.00" ]; then
+                echo "::error::$FILE has coverage below 100% (line: $LINE_PCT%, branch: $BRANCH_PCT%, funcs: $FUNC_PCT%)"
+                FAILED=1
+              fi
+            done
+          done < source-coverage.txt
+
+          if [ "$FAILED" -eq 1 ]; then
+            exit 1
+          fi
+
+          echo "All source files at 100% coverage"
+        working-directory: tektonology-api

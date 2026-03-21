@@ -560,3 +560,960 @@ describe("Full journal entry lifecycle", () => {
     assert.equal(revenue.balance, 0);
   });
 });
+
+// ===========================================================================
+// GET /api/finance/accounts
+// ===========================================================================
+
+describe("GET /api/finance/accounts", () => {
+  it("returns empty array when no accounts exist", async () => {
+    const res = await GET("/api/finance/accounts");
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body, []);
+  });
+
+  it("returns accounts sorted by number", async () => {
+    await seedAccounts();
+    const res = await GET("/api/finance/accounts");
+    assert.equal(res.status, 200);
+    assert.equal(res.body.length, 5);
+    assert.equal(res.body[0].number, 1000);
+    assert.equal(res.body[4].number, 5000);
+  });
+
+  it("returns CSV when Accept: text/csv", async () => {
+    await seedAccounts();
+    const res = await GET("/api/finance/accounts", { accept: "text/csv" });
+    assert.equal(res.status, 200);
+    assert.ok(res.headers.get("content-type").startsWith("text/csv"));
+    assert.ok(res.body.includes("number"));
+    assert.ok(res.body.includes("Cash"));
+  });
+});
+
+// ===========================================================================
+// POST /api/finance/accounts
+// ===========================================================================
+
+describe("POST /api/finance/accounts", () => {
+  it("creates a single account", async () => {
+    const res = await POST("/api/finance/accounts", { number: 1100, name: "Petty Cash", type: "asset", balance: 0 });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.inserted, 1);
+  });
+
+  it("creates multiple accounts from array", async () => {
+    const res = await POST("/api/finance/accounts", [
+      { number: 1100, name: "Petty Cash", type: "asset", balance: 0 },
+      { number: 1200, name: "Checking", type: "asset", balance: 0 },
+    ]);
+    assert.equal(res.status, 201);
+    assert.equal(res.body.inserted, 2);
+  });
+
+  it("rejects duplicate account number", async () => {
+    await seedAccounts();
+    const res = await POST("/api/finance/accounts", { number: 1000, name: "Duplicate", type: "asset", balance: 0 });
+    assert.equal(res.status, 409);
+    assert.match(res.body.error, /1000.*already exists/);
+  });
+
+  it("rejects duplicate account name", async () => {
+    await seedAccounts();
+    const res = await POST("/api/finance/accounts", { number: 9999, name: "Cash", type: "asset", balance: 0 });
+    assert.equal(res.status, 409);
+    assert.match(res.body.error, /Cash.*already exists/);
+  });
+
+  it("rejects empty array", async () => {
+    const res = await POST("/api/finance/accounts", []);
+    assert.equal(res.status, 400);
+    assert.match(res.body.error, /[Nn]o records/);
+  });
+
+  it("accepts CSV content-type", async () => {
+    const csv = "number,name,type,balance\n1100,Petty Cash,asset,0\n";
+    const res = await POST("/api/finance/accounts", csv, { "content-type": "text/csv" });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.inserted, 1);
+  });
+});
+
+// ===========================================================================
+// PUT /api/finance/accounts/:number
+// ===========================================================================
+
+describe("PUT /api/finance/accounts/:number", () => {
+  it("updates account name", async () => {
+    await seedAccounts();
+    const res = await PUT("/api/finance/accounts/1000", { name: "Cash on Hand" });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.name, "Cash on Hand");
+  });
+
+  it("updates account type", async () => {
+    await seedAccounts();
+    const res = await PUT("/api/finance/accounts/1000", { type: "expense" });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.type, "expense");
+  });
+
+  it("updates account number and cascades to journal entries", async () => {
+    await seedAccounts();
+    await POST("/api/finance/journal", balancedEntry());
+
+    const res = await PUT("/api/finance/accounts/1000", { number: 1001 });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.number, 1001);
+
+    // Verify journal entries were updated
+    const entry = await db.collection("journal_entries").findOne({ transactionId: 1 });
+    assert.equal(entry.lines[0].accountNumber, 1001);
+  });
+
+  it("returns 400 for invalid (NaN) account number", async () => {
+    const res = await PUT("/api/finance/accounts/abc", { name: "Test" });
+    assert.equal(res.status, 400);
+    assert.match(res.body.error, /[Ii]nvalid/);
+  });
+
+  it("returns 404 for non-existent account", async () => {
+    const res = await PUT("/api/finance/accounts/9999", { name: "Test" });
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 when nothing to update", async () => {
+    await seedAccounts();
+    const res = await PUT("/api/finance/accounts/1000", {});
+    assert.equal(res.status, 400);
+    assert.match(res.body.error, /[Nn]othing to update/);
+  });
+
+  it("rejects duplicate number on rename", async () => {
+    await seedAccounts();
+    const res = await PUT("/api/finance/accounts/1000", { number: 2000 });
+    assert.equal(res.status, 409);
+    assert.match(res.body.error, /2000.*already exists/);
+  });
+
+  it("rejects duplicate name on rename", async () => {
+    await seedAccounts();
+    const res = await PUT("/api/finance/accounts/1000", { name: "Accounts Payable" });
+    assert.equal(res.status, 409);
+    assert.match(res.body.error, /Accounts Payable.*already exists/);
+  });
+
+  it("allows setting same number (no-op rename)", async () => {
+    await seedAccounts();
+    const res = await PUT("/api/finance/accounts/1000", { number: 1000, name: "Cash Updated" });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.name, "Cash Updated");
+  });
+
+  it("allows setting same name (no-op rename)", async () => {
+    await seedAccounts();
+    const res = await PUT("/api/finance/accounts/1000", { name: "Cash" });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.name, "Cash");
+  });
+});
+
+// ===========================================================================
+// DELETE /api/finance/accounts/:number
+// ===========================================================================
+
+describe("DELETE /api/finance/accounts/:number", () => {
+  it("deletes an account with no journal entries", async () => {
+    await seedAccounts();
+    const res = await DELETE("/api/finance/accounts/1000");
+    assert.equal(res.status, 200);
+    assert.equal(res.body.deleted, 1);
+  });
+
+  it("returns 409 when account has journal entries", async () => {
+    await seedAccounts();
+    await POST("/api/finance/journal", balancedEntry());
+
+    const res = await DELETE("/api/finance/accounts/1000");
+    assert.equal(res.status, 409);
+    assert.match(res.body.error, /journal entries/);
+  });
+
+  it("returns 404 for non-existent account", async () => {
+    const res = await DELETE("/api/finance/accounts/9999");
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid (NaN) account number", async () => {
+    const res = await DELETE("/api/finance/accounts/abc");
+    assert.equal(res.status, 400);
+    assert.match(res.body.error, /[Ii]nvalid/);
+  });
+});
+
+// ===========================================================================
+// POST /api/finance/journal (CSV)
+// ===========================================================================
+
+describe("POST /api/finance/journal (CSV)", () => {
+  it("inserts journal rows from CSV", async () => {
+    const csv = "transactionId,date,description\n1,2025-01-01,Test row\n";
+    const res = await POST("/api/finance/journal", csv, { "content-type": "text/csv" });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.inserted, 1);
+  });
+
+  it("rejects empty CSV", async () => {
+    const csv = "transactionId,date,description\n";
+    const res = await POST("/api/finance/journal", csv, { "content-type": "text/csv" });
+    assert.equal(res.status, 400);
+    assert.match(res.body.error, /[Nn]o records/);
+  });
+});
+
+// ===========================================================================
+// GET /api/finance/journal (CSV)
+// ===========================================================================
+
+describe("GET /api/finance/journal (CSV)", () => {
+  it("returns CSV when Accept: text/csv", async () => {
+    await db.collection("journal_entries").insertOne({
+      transactionId: 1,
+      date: "2025-01-01",
+      description: "Test",
+      lines: [],
+    });
+    const res = await GET("/api/finance/journal", { accept: "text/csv" });
+    assert.equal(res.status, 200);
+    assert.ok(res.headers.get("content-type").startsWith("text/csv"));
+    assert.ok(res.body.includes("transactionId"));
+  });
+});
+
+// ===========================================================================
+// Invalid transactionId (NaN) edge cases
+// ===========================================================================
+
+describe("Invalid transactionId (NaN)", () => {
+  it("PUT returns 400 for NaN transactionId", async () => {
+    const res = await PUT("/api/finance/journal/abc", balancedEntry());
+    assert.equal(res.status, 400);
+    assert.match(res.body.error, /[Ii]nvalid/);
+  });
+
+  it("DELETE returns 400 for NaN transactionId", async () => {
+    const res = await DELETE("/api/finance/journal/abc");
+    assert.equal(res.status, 400);
+  });
+
+  it("DELETE permanent returns 400 for NaN transactionId", async () => {
+    const res = await DELETE("/api/finance/journal/abc/permanent");
+    assert.equal(res.status, 400);
+  });
+
+  it("POST restore returns 400 for NaN transactionId", async () => {
+    const res = await POST("/api/finance/journal/abc/restore");
+    assert.equal(res.status, 400);
+  });
+});
+
+// ===========================================================================
+// Procurement — Spools
+// ===========================================================================
+
+describe("GET /api/procurement/spools", () => {
+  it("returns empty array when no spools", async () => {
+    const res = await GET("/api/procurement/spools");
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body, []);
+  });
+
+  it("returns spools sorted by spoolId", async () => {
+    await db.collection("spools").insertMany([
+      { spoolId: 2, brand: "Bambu", material: "PLA" },
+      { spoolId: 1, brand: "Bambu", material: "PETG" },
+    ]);
+    const res = await GET("/api/procurement/spools");
+    assert.equal(res.status, 200);
+    assert.equal(res.body.length, 2);
+    assert.equal(res.body[0].spoolId, 1);
+  });
+
+  it("returns CSV when Accept: text/csv", async () => {
+    await db.collection("spools").insertOne({ spoolId: 1, brand: "Bambu" });
+    const res = await GET("/api/procurement/spools", { accept: "text/csv" });
+    assert.equal(res.status, 200);
+    assert.ok(res.headers.get("content-type").startsWith("text/csv"));
+    assert.ok(res.body.includes("spoolId"));
+  });
+});
+
+describe("POST /api/procurement/spools", () => {
+  it("creates a spool from JSON", async () => {
+    const res = await POST("/api/procurement/spools", { spoolId: 1, brand: "Bambu", material: "PLA" });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.inserted, 1);
+  });
+
+  it("creates spools from array", async () => {
+    const res = await POST("/api/procurement/spools", [
+      { spoolId: 1, brand: "Bambu" },
+      { spoolId: 2, brand: "Polymaker" },
+    ]);
+    assert.equal(res.status, 201);
+    assert.equal(res.body.inserted, 2);
+  });
+
+  it("creates spools from CSV", async () => {
+    const csv = "spoolId,brand,material\n1,Bambu,PLA\n";
+    const res = await POST("/api/procurement/spools", csv, { "content-type": "text/csv" });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.inserted, 1);
+  });
+
+  it("rejects empty payload", async () => {
+    const res = await POST("/api/procurement/spools", []);
+    assert.equal(res.status, 400);
+    assert.match(res.body.error, /[Nn]o records/);
+  });
+});
+
+// ===========================================================================
+// Procurement — Hardware
+// ===========================================================================
+
+describe("GET /api/procurement/hardware", () => {
+  it("returns empty array when no hardware", async () => {
+    const res = await GET("/api/procurement/hardware");
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body, []);
+  });
+
+  it("returns hardware sorted by hardwareId", async () => {
+    await db.collection("hardware").insertMany([
+      { hardwareId: 2, item: "Bolt" },
+      { hardwareId: 1, item: "Nut" },
+    ]);
+    const res = await GET("/api/procurement/hardware");
+    assert.equal(res.status, 200);
+    assert.equal(res.body[0].hardwareId, 1);
+  });
+
+  it("returns CSV when Accept: text/csv", async () => {
+    await db.collection("hardware").insertOne({ hardwareId: 1, item: "Bolt" });
+    const res = await GET("/api/procurement/hardware", { accept: "text/csv" });
+    assert.equal(res.status, 200);
+    assert.ok(res.headers.get("content-type").startsWith("text/csv"));
+  });
+});
+
+describe("POST /api/procurement/hardware", () => {
+  it("creates hardware from JSON", async () => {
+    const res = await POST("/api/procurement/hardware", { hardwareId: 1, item: "Bolt" });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.inserted, 1);
+  });
+
+  it("creates hardware from array", async () => {
+    const res = await POST("/api/procurement/hardware", [
+      { hardwareId: 1, item: "Bolt" },
+      { hardwareId: 2, item: "Nut" },
+    ]);
+    assert.equal(res.status, 201);
+    assert.equal(res.body.inserted, 2);
+  });
+
+  it("creates hardware from CSV", async () => {
+    const csv = "hardwareId,item\n1,Bolt\n";
+    const res = await POST("/api/procurement/hardware", csv, { "content-type": "text/csv" });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.inserted, 1);
+  });
+
+  it("rejects empty payload", async () => {
+    const res = await POST("/api/procurement/hardware", []);
+    assert.equal(res.status, 400);
+    assert.match(res.body.error, /[Nn]o records/);
+  });
+});
+
+// ===========================================================================
+// Manufacturing — Print Jobs
+// ===========================================================================
+
+describe("GET /api/manufacturing/print-jobs", () => {
+  it("returns empty array when no print jobs", async () => {
+    const res = await GET("/api/manufacturing/print-jobs");
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body, []);
+  });
+
+  it("returns print jobs sorted by date descending", async () => {
+    await db.collection("print_jobs").insertMany([
+      { date: "2025-01-01", batchId: 1, project: "A" },
+      { date: "2025-02-01", batchId: 1, project: "B" },
+    ]);
+    const res = await GET("/api/manufacturing/print-jobs");
+    assert.equal(res.status, 200);
+    assert.equal(res.body[0].project, "B");
+  });
+
+  it("returns CSV when Accept: text/csv", async () => {
+    await db.collection("print_jobs").insertOne({ date: "2025-01-01", project: "A" });
+    const res = await GET("/api/manufacturing/print-jobs", { accept: "text/csv" });
+    assert.equal(res.status, 200);
+    assert.ok(res.headers.get("content-type").startsWith("text/csv"));
+  });
+});
+
+describe("POST /api/manufacturing/print-jobs", () => {
+  it("creates print job from JSON", async () => {
+    const res = await POST("/api/manufacturing/print-jobs", { date: "2025-01-01", project: "Boot" });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.inserted, 1);
+  });
+
+  it("creates print jobs from array", async () => {
+    const res = await POST("/api/manufacturing/print-jobs", [
+      { date: "2025-01-01", project: "Boot" },
+      { date: "2025-01-02", project: "Bushing" },
+    ]);
+    assert.equal(res.status, 201);
+    assert.equal(res.body.inserted, 2);
+  });
+
+  it("creates print jobs from CSV", async () => {
+    const csv = "date,project\n2025-01-01,Boot\n";
+    const res = await POST("/api/manufacturing/print-jobs", csv, { "content-type": "text/csv" });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.inserted, 1);
+  });
+
+  it("rejects empty payload", async () => {
+    const res = await POST("/api/manufacturing/print-jobs", []);
+    assert.equal(res.status, 400);
+    assert.match(res.body.error, /[Nn]o records/);
+  });
+});
+
+// ===========================================================================
+// Dashboard
+// ===========================================================================
+
+describe("GET /api/dashboard", () => {
+  it("returns aggregated dashboard with empty collections", async () => {
+    const res = await GET("/api/dashboard");
+    assert.equal(res.status, 200);
+    assert.ok(res.body.balanceSheet);
+    assert.ok(res.body.profitLoss);
+    assert.ok(res.body.procurement);
+    assert.ok(res.body.manufacturing);
+    assert.equal(res.body.procurement.totalSpools, 0);
+    assert.equal(res.body.manufacturing.totalJobs, 0);
+    assert.equal(res.body.manufacturing.scrapRate, "0");
+  });
+
+  it("returns correct balance sheet aggregations", async () => {
+    await seedAccounts();
+    await POST("/api/finance/journal", balancedEntry());
+
+    const res = await GET("/api/dashboard");
+    assert.equal(res.body.balanceSheet.totalAssets, 100);
+    assert.ok(res.body.balanceSheet.byType.asset);
+  });
+
+  it("returns correct P&L with expenses and revenue", async () => {
+    await seedAccounts();
+    // Revenue entry: cash debit 100, revenue credit 100
+    await POST("/api/finance/journal", balancedEntry());
+    // Expense entry: expense debit 50, payable credit 50
+    await POST("/api/finance/journal", balancedEntry({
+      date: "2025-06-02",
+      lines: [
+        { accountNumber: 5000, debit: 50, credit: 0 },
+        { accountNumber: 2000, debit: 0, credit: 50 },
+      ],
+    }));
+
+    const res = await GET("/api/dashboard");
+    assert.equal(res.body.profitLoss.revenue, 100);
+    assert.equal(res.body.profitLoss.totalExpenses, 50);
+    assert.equal(res.body.profitLoss.netIncome, 50);
+    assert.ok(res.body.profitLoss.expensesByCategory["Filament Expense"]);
+  });
+
+  it("returns correct procurement aggregations", async () => {
+    await db.collection("spools").insertMany([
+      { spoolId: 1, remainingG: 500, cost: 25 },
+      { spoolId: 2, remainingG: 0, cost: 25 },
+    ]);
+
+    const res = await GET("/api/dashboard");
+    assert.equal(res.body.procurement.totalFilamentG, 500);
+    assert.equal(res.body.procurement.totalFilamentCost, 50);
+    assert.equal(res.body.procurement.activeSpools, 1);
+    assert.equal(res.body.procurement.depletedSpools, 1);
+    assert.equal(res.body.procurement.totalSpools, 2);
+  });
+
+  it("returns correct manufacturing aggregations", async () => {
+    await db.collection("print_jobs").insertMany([
+      { totalHours: 2, cost: 5, success: true },
+      { totalHours: 1, cost: 3, success: false },
+    ]);
+
+    const res = await GET("/api/dashboard");
+    assert.equal(res.body.manufacturing.totalPrintHours, 3);
+    assert.equal(res.body.manufacturing.totalPrintCost, 8);
+    assert.equal(res.body.manufacturing.totalJobs, 2);
+    assert.equal(res.body.manufacturing.failedJobs, 1);
+    assert.equal(res.body.manufacturing.scrapRate, "50.0");
+  });
+});
+
+// ===========================================================================
+// CSV utilities (exercised via routes)
+// ===========================================================================
+
+describe("CSV parsing edge cases", () => {
+  it("handles quoted fields with commas", async () => {
+    const csv = 'name,description\n"Widget, Large","A ""big"" item"\n';
+    const res = await POST("/api/finance/accounts", csv, { "content-type": "text/csv" });
+    assert.equal(res.status, 201);
+    // Verify the parsed data
+    const doc = await db.collection("accounts").findOne({ name: "Widget, Large" });
+    assert.ok(doc);
+    assert.equal(doc.description, 'A "big" item');
+  });
+
+  it("handles CRLF line endings in CSV", async () => {
+    const csv = "spoolId,brand\r\n1,Bambu\r\n";
+    const res = await POST("/api/procurement/spools", csv, { "content-type": "text/csv" });
+    assert.equal(res.status, 201);
+  });
+
+  it("handles CSV with empty trailing rows", async () => {
+    const csv = "spoolId,brand\n1,Bambu\n\n";
+    const res = await POST("/api/procurement/spools", csv, { "content-type": "text/csv" });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.inserted, 1);
+  });
+
+  it("toCsv escapes fields with newlines", async () => {
+    await db.collection("hardware").insertOne({ hardwareId: 1, item: "Line\nBreak" });
+    const res = await GET("/api/procurement/hardware", { accept: "text/csv" });
+    assert.equal(res.status, 200);
+    // Field with newline should be quoted
+    assert.ok(res.body.includes('"Line\nBreak"'));
+  });
+
+  it("toCsv returns empty string for empty array", async () => {
+    const res = await GET("/api/procurement/hardware", { accept: "text/csv" });
+    assert.equal(res.status, 200);
+    assert.equal(res.body, "");
+  });
+
+  it("toCsv handles null/undefined field values", async () => {
+    await db.collection("hardware").insertOne({ hardwareId: 1, item: null });
+    const res = await GET("/api/procurement/hardware", { accept: "text/csv" });
+    assert.equal(res.status, 200);
+    assert.ok(res.body.includes("hardwareId"));
+  });
+
+  it("parseCsv handles empty string input", async () => {
+    const res = await POST("/api/procurement/spools", "", { "content-type": "text/csv" });
+    assert.equal(res.status, 400);
+  });
+
+  it("skips rows where first field is empty", async () => {
+    const csv = "spoolId,brand\n1,Bambu\n,\n";
+    const res = await POST("/api/procurement/spools", csv, { "content-type": "text/csv" });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.inserted, 1);
+  });
+
+  it("handles rows with fewer columns than headers", async () => {
+    const csv = "spoolId,brand,material\n1,Bambu\n";
+    const res = await POST("/api/procurement/spools", csv, { "content-type": "text/csv" });
+    assert.equal(res.status, 201);
+    const doc = await db.collection("spools").findOne({ spoolId: "1" });
+    assert.equal(doc.material, "");
+  });
+
+  it("handles quoted field with newline inside", async () => {
+    const csv = 'hardwareId,item\n1,"Multi\nLine"\n';
+    const res = await POST("/api/procurement/hardware", csv, { "content-type": "text/csv" });
+    assert.equal(res.status, 201);
+    const doc = await db.collection("hardware").findOne({ hardwareId: "1" });
+    assert.equal(doc.item, "Multi\nLine");
+  });
+});
+
+// ===========================================================================
+// Journal entry with missing account (acct is null in balance loops)
+// ===========================================================================
+
+describe("Journal entries with missing accounts", () => {
+  it("POST skips balance update for non-existent account", async () => {
+    // Insert only Cash account, not account 9999
+    await db.collection("accounts").insertOne({ number: 1000, name: "Cash", type: "asset", balance: 0 });
+
+    const entry = {
+      date: "2025-06-01",
+      lines: [
+        { accountNumber: 1000, debit: 100, credit: 0 },
+        { accountNumber: 9999, debit: 0, credit: 100 },
+      ],
+    };
+    const res = await POST("/api/finance/journal", entry);
+    assert.equal(res.status, 201);
+    // Cash balance updated, 9999 skipped (no upsert)
+    const cash = await db.collection("accounts").findOne({ number: 1000 });
+    assert.equal(cash.balance, 100);
+  });
+
+  it("PUT skips balance reversal for non-existent account in old entry", async () => {
+    await db.collection("accounts").insertOne({ number: 1000, name: "Cash", type: "asset", balance: 0 });
+
+    // Create entry referencing non-existent account
+    const entry = {
+      date: "2025-06-01",
+      lines: [
+        { accountNumber: 1000, debit: 100, credit: 0 },
+        { accountNumber: 9999, debit: 0, credit: 100 },
+      ],
+    };
+    await POST("/api/finance/journal", entry);
+
+    // Update to use only existing account
+    const updated = {
+      date: "2025-06-02",
+      lines: [
+        { accountNumber: 1000, debit: 50, credit: 0 },
+        { accountNumber: 9999, debit: 0, credit: 50 },
+      ],
+    };
+    const res = await PUT("/api/finance/journal/1", updated);
+    assert.equal(res.status, 200);
+  });
+
+  it("DELETE skips balance reversal for non-existent account", async () => {
+    await db.collection("accounts").insertOne({ number: 1000, name: "Cash", type: "asset", balance: 0 });
+
+    const entry = {
+      date: "2025-06-01",
+      lines: [
+        { accountNumber: 1000, debit: 100, credit: 0 },
+        { accountNumber: 9999, debit: 0, credit: 100 },
+      ],
+    };
+    await POST("/api/finance/journal", entry);
+
+    const res = await DELETE("/api/finance/journal/1");
+    assert.equal(res.status, 200);
+  });
+
+  it("restore skips balance re-apply for non-existent account", async () => {
+    await db.collection("accounts").insertOne({ number: 1000, name: "Cash", type: "asset", balance: 0 });
+
+    const entry = {
+      date: "2025-06-01",
+      lines: [
+        { accountNumber: 1000, debit: 100, credit: 0 },
+        { accountNumber: 9999, debit: 0, credit: 100 },
+      ],
+    };
+    await POST("/api/finance/journal", entry);
+    await DELETE("/api/finance/journal/1");
+
+    const res = await POST("/api/finance/journal/1/restore");
+    assert.equal(res.status, 200);
+  });
+
+  it("dashboard handles entries with missing account references", async () => {
+    await db.collection("accounts").insertOne({ number: 1000, name: "Cash", type: "asset", balance: 100 });
+    await db.collection("journal_entries").insertOne({
+      transactionId: 1,
+      date: "2025-01-01",
+      lines: [
+        { accountNumber: 1000, debit: 100 },
+        { accountNumber: 9999, credit: 100 },
+      ],
+    });
+
+    const res = await GET("/api/dashboard");
+    assert.equal(res.status, 200);
+    // Should not crash; missing account lines are skipped
+    assert.equal(res.body.balanceSheet.totalAssets, 100);
+  });
+});
+
+// ===========================================================================
+// Journal entry edge cases for ?? operators
+// ===========================================================================
+
+describe("Journal entry null coalescing edge cases", () => {
+  it("handles lines with only debit (no credit field)", async () => {
+    await seedAccounts();
+    const entry = {
+      date: "2025-06-01",
+      lines: [
+        { accountNumber: 1000, debit: 100 },
+        { accountNumber: 4000, credit: 100 },
+      ],
+    };
+    const res = await POST("/api/finance/journal", entry);
+    assert.equal(res.status, 201);
+
+    const cash = await db.collection("accounts").findOne({ number: 1000 });
+    assert.equal(cash.balance, 100);
+  });
+
+  it("handles spools with missing remainingG and cost", async () => {
+    await db.collection("spools").insertMany([
+      { spoolId: 1 },
+      { spoolId: 2 },
+    ]);
+    const res = await GET("/api/dashboard");
+    assert.equal(res.status, 200);
+    assert.equal(res.body.procurement.totalFilamentG, 0);
+    assert.equal(res.body.procurement.totalFilamentCost, 0);
+    assert.equal(res.body.procurement.activeSpools, 0);
+    assert.equal(res.body.procurement.depletedSpools, 2);
+  });
+
+  it("handles print jobs with missing totalHours and cost", async () => {
+    await db.collection("print_jobs").insertMany([
+      { project: "A" },
+      { project: "B" },
+    ]);
+    const res = await GET("/api/dashboard");
+    assert.equal(res.status, 200);
+    assert.equal(res.body.manufacturing.totalPrintHours, 0);
+    assert.equal(res.body.manufacturing.totalPrintCost, 0);
+    assert.equal(res.body.manufacturing.totalJobs, 2);
+  });
+
+  it("first journal entry gets transactionId 1 when no prior entries", async () => {
+    await seedAccounts();
+    const res = await POST("/api/finance/journal", balancedEntry());
+    assert.equal(res.body.transactionId, 1);
+  });
+
+  it("POST handles lines with undefined debit and credit", async () => {
+    await seedAccounts();
+    const entry = {
+      date: "2025-06-01",
+      lines: [
+        { accountNumber: 1000 },
+        { accountNumber: 4000 },
+      ],
+    };
+    const res = await POST("/api/finance/journal", entry);
+    assert.equal(res.status, 201);
+    // Both debit and credit default to 0 via ?? operator, so balanced
+    const cash = await db.collection("accounts").findOne({ number: 1000 });
+    assert.equal(cash.balance, 0);
+  });
+
+  it("PUT reverses old entry with undefined debit/credit and applies new with partial fields", async () => {
+    await seedAccounts();
+    // Manually insert entry with lines missing debit/credit (existing accounts)
+    await db.collection("journal_entries").insertOne({
+      transactionId: 1,
+      date: "2025-06-01",
+      lines: [
+        { accountNumber: 1000 },
+        { accountNumber: 4000 },
+      ],
+    });
+
+    // Update with lines that have only debit or only credit (no zero counterpart)
+    // This exercises ?? 0 in both reduce (line 150-151) and apply-new loop (line 177-178)
+    const updated = {
+      date: "2025-07-01",
+      lines: [
+        { accountNumber: 1000, debit: 50 },
+        { accountNumber: 4000, credit: 50 },
+      ],
+    };
+    const res = await PUT("/api/finance/journal/1", updated);
+    assert.equal(res.status, 200);
+  });
+
+  it("PUT applies new balance with all fields undefined for both account types", async () => {
+    await seedAccounts();
+    await POST("/api/finance/journal", balancedEntry());
+
+    // Update with lines where both debit and credit are undefined
+    // Both credit-normal (4000) and debit-normal (1000) exercise ?? 0 in apply-new loop
+    const updated = {
+      date: "2025-07-01",
+      lines: [
+        { accountNumber: 1000 },
+        { accountNumber: 4000 },
+      ],
+    };
+    const res = await PUT("/api/finance/journal/1", updated);
+    assert.equal(res.status, 200);
+  });
+
+  it("DELETE reverses lines with undefined debit/credit fields", async () => {
+    await seedAccounts();
+    // Manually insert entry with lines missing debit/credit
+    await db.collection("journal_entries").insertOne({
+      transactionId: 1,
+      date: "2025-06-01",
+      lines: [
+        { accountNumber: 1000 },
+        { accountNumber: 4000 },
+      ],
+    });
+
+    const res = await DELETE("/api/finance/journal/1");
+    assert.equal(res.status, 200);
+  });
+
+  it("restore reapplies lines with undefined debit/credit fields", async () => {
+    await seedAccounts();
+    // Manually insert soft-deleted entry with lines missing debit/credit
+    await db.collection("journal_entries").insertOne({
+      transactionId: 1,
+      date: "2025-06-01",
+      deletedAt: "2025-06-02T00:00:00Z",
+      lines: [
+        { accountNumber: 1000 },
+        { accountNumber: 4000 },
+      ],
+    });
+
+    const res = await POST("/api/finance/journal/1/restore");
+    assert.equal(res.status, 200);
+  });
+
+  it("PUT handles update with no description field", async () => {
+    await seedAccounts();
+    await POST("/api/finance/journal", balancedEntry());
+
+    const updated = {
+      date: "2025-07-01",
+      lines: [
+        { accountNumber: 1000, debit: 50, credit: 0 },
+        { accountNumber: 4000, debit: 0, credit: 50 },
+      ],
+    };
+    const res = await PUT("/api/finance/journal/1", updated);
+    assert.equal(res.status, 200);
+  });
+
+  it("dashboard handles revenue with debit line (no credit)", async () => {
+    await seedAccounts();
+    // Revenue account with a debit line (reversal scenario)
+    await db.collection("journal_entries").insertOne({
+      transactionId: 1,
+      date: "2025-01-01",
+      lines: [
+        { accountNumber: 4000, debit: 50 },
+        { accountNumber: 1000, credit: 50 },
+      ],
+    });
+
+    const res = await GET("/api/dashboard");
+    assert.equal(res.status, 200);
+    // Revenue debit line should not add to revenue (line.credit is falsy)
+    assert.equal(res.body.profitLoss.revenue, 0);
+  });
+
+  it("dashboard handles expense with credit line (no debit)", async () => {
+    await seedAccounts();
+    // Expense account with a credit line (reversal scenario)
+    await db.collection("journal_entries").insertOne({
+      transactionId: 1,
+      date: "2025-01-01",
+      lines: [
+        { accountNumber: 5000, credit: 50 },
+        { accountNumber: 1000, debit: 50 },
+      ],
+    });
+
+    const res = await GET("/api/dashboard");
+    assert.equal(res.status, 200);
+    assert.equal(res.body.profitLoss.totalExpenses, 0);
+  });
+
+  it("PUT with equity account (credit-normal) reversal and reapply", async () => {
+    await seedAccounts();
+    // Entry: debit cash, credit equity
+    const entry = {
+      date: "2025-06-01",
+      lines: [
+        { accountNumber: 1000, debit: 100, credit: 0 },
+        { accountNumber: 3000, debit: 0, credit: 100 },
+      ],
+    };
+    await POST("/api/finance/journal", entry);
+
+    const equity = await db.collection("accounts").findOne({ number: 3000 });
+    assert.equal(equity.balance, 100);
+
+    // Update: change amount
+    const updated = {
+      date: "2025-06-01",
+      lines: [
+        { accountNumber: 1000, debit: 200, credit: 0 },
+        { accountNumber: 3000, debit: 0, credit: 200 },
+      ],
+    };
+    await PUT("/api/finance/journal/1", updated);
+
+    const equityAfter = await db.collection("accounts").findOne({ number: 3000 });
+    assert.equal(equityAfter.balance, 200);
+  });
+
+  it("DELETE and restore with liability account", async () => {
+    await seedAccounts();
+    const entry = {
+      date: "2025-06-01",
+      lines: [
+        { accountNumber: 5000, debit: 75, credit: 0 },
+        { accountNumber: 2000, debit: 0, credit: 75 },
+      ],
+    };
+    await POST("/api/finance/journal", entry);
+
+    await DELETE("/api/finance/journal/1");
+    const payableAfterDelete = await db.collection("accounts").findOne({ number: 2000 });
+    assert.equal(payableAfterDelete.balance, 0);
+
+    await POST("/api/finance/journal/1/restore");
+    const payableAfterRestore = await db.collection("accounts").findOne({ number: 2000 });
+    assert.equal(payableAfterRestore.balance, 75);
+  });
+
+  it("dashboard handles journal entries where debit/credit lines touch revenue or expense", async () => {
+    await seedAccounts();
+    // Entry with both revenue credit AND expense debit
+    const entry = {
+      date: "2025-06-01",
+      lines: [
+        { accountNumber: 5000, debit: 100, credit: 0 },
+        { accountNumber: 4000, debit: 0, credit: 100 },
+      ],
+    };
+    await POST("/api/finance/journal", entry);
+
+    const res = await GET("/api/dashboard");
+    assert.equal(res.body.profitLoss.revenue, 100);
+    assert.equal(res.body.profitLoss.totalExpenses, 100);
+    assert.equal(res.body.profitLoss.netIncome, 0);
+  });
+
+  it("dashboard handles accounts with types not in byType yet", async () => {
+    // Add a COGS account type not typically seeded
+    await db.collection("accounts").insertOne({ number: 6000, name: "COGS", type: "cogs", balance: 50 });
+    const res = await GET("/api/dashboard");
+    assert.equal(res.status, 200);
+    assert.ok(res.body.balanceSheet.byType.cogs);
+    assert.equal(res.body.balanceSheet.byType.cogs[0].balance, 50);
+  });
+});

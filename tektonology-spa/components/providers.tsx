@@ -24,8 +24,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       useRefreshTokens={true}
       onRedirectCallback={onRedirectCallback}
       authorizationParams={{
-        redirect_uri: typeof window !== "undefined" ? window.location.origin : "",
-        ...(AUDIENCE ? { audience: AUDIENCE } : {}),
+        redirect_uri: window.location.origin,
+        audience: AUDIENCE,
       }}
     >
       {children}

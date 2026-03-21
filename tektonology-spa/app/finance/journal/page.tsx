@@ -117,22 +117,20 @@ export default function JournalPage() {
   };
 
   const removeEditLine = (i: number) => {
-    if (editLines.length <= 2) return;
     setEditLines((prev) => prev.filter((_, j) => j !== i));
   };
 
   const totalDebit = editLines
     .filter((l) => l.side === "debit" && l.amount)
-    .reduce((s, l) => s + parseFloat(l.amount || "0"), 0);
+    .reduce((s, l) => s + parseFloat(l.amount), 0);
   const totalCredit = editLines
     .filter((l) => l.side === "credit" && l.amount)
-    .reduce((s, l) => s + parseFloat(l.amount || "0"), 0);
+    .reduce((s, l) => s + parseFloat(l.amount), 0);
   const balanced = Math.abs(totalDebit - totalCredit) < 0.005;
   const allFilled = editLines.every((l) => l.accountNumber != null && l.amount && parseFloat(l.amount) > 0);
   const canSave = balanced && allFilled && totalDebit > 0 && editDescription.trim().length > 0;
 
   const handleSave = async () => {
-    if (!editingId) return;
     setSaving(true);
     try {
       const body = {
@@ -142,7 +140,7 @@ export default function JournalPage() {
           const acct = accounts.find((a) => a.number === l.accountNumber);
           return {
             accountNumber: l.accountNumber,
-            accountName: acct?.name ?? "",
+            accountName: acct!.name,
             debit: l.side === "debit" ? parseFloat(parseFloat(l.amount).toFixed(2)) : null,
             credit: l.side === "credit" ? parseFloat(parseFloat(l.amount).toFixed(2)) : null,
             description: l.description,
@@ -304,7 +302,7 @@ export default function JournalPage() {
                               <option value="">Select account...</option>
                               {typeOrder.filter((t) => grouped.has(t)).map((type) => (
                                 <optgroup key={type} label={type.charAt(0).toUpperCase() + type.slice(1)}>
-                                  {(grouped.get(type) ?? []).map((a) => (
+                                  {grouped.get(type)!.map((a) => (
                                     <option key={a.number} value={a.number}>
                                       {a.number}: {a.name}
                                     </option>
@@ -451,9 +449,8 @@ export default function JournalPage() {
                                   size="sm"
                                   className="text-xs h-7 text-red-600 hover:text-red-700 hover:bg-red-50"
                                   onClick={() => { setConfirmDeleteId(null); handleDelete(entry.transactionId); }}
-                                  disabled={deletingId === entry.transactionId}
                                 >
-                                  {deletingId === entry.transactionId ? "Deleting..." : "Yes"}
+                                  Yes
                                 </Button>
                                 <Button
                                   variant="ghost"
