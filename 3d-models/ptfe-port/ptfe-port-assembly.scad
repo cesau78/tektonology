@@ -3,7 +3,7 @@ include <ptfe-port-config.scad>
 
 // Cross-section settings
 crosssection_view = true;
-crosssection_axis = "x";  // "x", "y", or "z"
+crosssection_axis = "xy";  // "x", "y", "z", or "xy" (45° diagonal)
 crosssection_pos  = 0;    // mm offset from center of model along chosen axis
 
 // Exploded view — set > 0 to separate parts for inspection
@@ -45,5 +45,10 @@ if (!crosssection_view) {
         if (crosssection_axis == "z")
             translate([-half, -half, cz])
                 cube([half * 2, half * 2, half * 2]);
+        if (crosssection_axis == "xy")
+            translate([flange_w / 2, flange_h / 2, -half])
+                rotate([0, 0, 45])
+                    translate([crosssection_pos, -half, 0])
+                        cube([half * 2, half * 2, half * 2]);
     }
 }

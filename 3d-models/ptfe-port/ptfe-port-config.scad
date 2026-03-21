@@ -17,7 +17,7 @@ spacing   = 10;  // center-to-center distance between tubes
 
 // Body dimensions
 wall       = 2.0;  // minimum wall around outermost holes
-gap        = 2.0;  // space between flanges for tent fabric
+gap        = 0.3;  // space between flanges for tent fabric
 
 // Flange dimensions
 flange_thick = 2.0;
