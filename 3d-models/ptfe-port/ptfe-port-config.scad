@@ -6,7 +6,7 @@ $fn = preview ? 32 : 64;
 
 // PTFE tube dimensions (standard 1.75mm filament tube)
 ptfe_od       = 4.0;   // outer diameter of PTFE tube
-ptfe_clearance = 0.2;  // clearance per side for push-fit
+ptfe_clearance = 0.1;  // clearance per side for snug push-fit (FDM shrinkage helps grip)
 hole_dia      = ptfe_od + ptfe_clearance * 2;
 
 // Tube layout — 2x2 grid
@@ -22,7 +22,7 @@ gap        = 2.0;  // space between flanges for tent fabric
 // Flange dimensions
 flange_thick = 2.0;
 flange_extra = 4.0; // how far flange extends beyond body on each side
-collar_clearance = 0.2; // clearance per side for collar fit around shaft
+collar_clearance = 0.15; // clearance per side for collar fit around shaft
 
 // Derived
 grid_w = (cols - 1) * spacing;

@@ -1,4 +1,4 @@
-// PTFE Port — Shaft: flange + shaft
+// PTFE Port — Shaft: flange + dual shaft with stop plates meeting in the middle
 // Push shaft through tent, then slide collar on from the other side.
 // Flange has slots for the collar's snap-fit clips.
 include <ptfe-port-config.scad>
@@ -14,45 +14,61 @@ module ptfe_port_shaft() {
     hole_y_max = (flange_h + shaft_h) / 2;
     clip_x = (flange_w - clip_width) / 2;
 
-    // Slot dimensions (only as deep as the clip tab, not the barb)
+    // Slot dimensions (wide enough for barb to pass through during assembly)
     slot_w = clip_width + clip_clearance * 2;
-    slot_d = clip_thick + clip_clearance * 2;
+    slot_d = clip_thick + lip_depth + clip_clearance * 2;
 
     body_offset = [(flange_w - body_w) / 2, (flange_h - body_h) / 2, 0];
     plate_z = flange_thick + shaft_height - stop_thick;
 
     union() {
-        // Main body with tube channels cut through
+        // Flange with clip slots
         difference() {
-            union() {
-                // Flange (sits against inside of tent)
-                rounded_rect(flange_w, flange_h, flange_thick, corner_r);
+            rounded_rect(flange_w, flange_h, flange_thick, corner_r);
 
-                // Shaft (passes through tent fabric and flush with collar top)
-                translate(body_offset + [0, 0, flange_thick])
-                    rounded_rect(body_w, body_h, shaft_height, corner_r);
-            }
-
-            // Tube channels — cut all the way through flange + shaft
+            // Tube channels through flange
             translate(body_offset)
-                tube_holes(total);
+                tube_holes(flange_thick);
 
-            // Clip slots through the flange — flush with outer edge, sized for clip tab only
-            // Front slot
+            // Clip slots
             translate([clip_x - clip_clearance, -clip_clearance, -1])
                 cube([slot_w, slot_d, flange_thick + 2]);
-
-            // Back slot
             translate([clip_x - clip_clearance, flange_h - clip_thick - clip_clearance, -1])
                 cube([slot_w, slot_d, flange_thick + 2]);
         }
 
-        // Stop plate — added after tube channel cuts so it survives
+        // Primary shaft + stop plate
+        translate([0, 0, flange_thick])
+            shaft_body(shaft_height);
+
+        // Mirrored shaft + stop plate — taller to match total bottom reach
+        mirror_height = shaft_height + flange_thick;
+        translate([0, 0, flange_thick + shaft_height + mirror_height])
+            mirror([0, 0, 1])
+                shaft_body(mirror_height);
+    }
+}
+
+module shaft_body(height) {
+    body_offset = [(flange_w - body_w) / 2, (flange_h - body_h) / 2, 0];
+    plate_z = height - stop_thick;
+
+    union() {
+        // Shaft with tube channels
+        difference() {
+            translate(body_offset)
+                rounded_rect(body_w, body_h, height, corner_r);
+
+            translate(body_offset)
+                tube_holes(height);
+        }
+
+        // Stop plate
         difference() {
             translate(body_offset + [0, 0, plate_z])
                 rounded_rect(body_w, body_h, stop_thick, corner_r);
 
-            // Chamfered filament holes — extends stop_thick into shaft below plate
+            // Chamfered filament holes
             chamfer_depth = stop_thick * 2;
             translate(body_offset + [0, 0, plate_z - stop_thick])
                 for (c = [0 : cols - 1])
