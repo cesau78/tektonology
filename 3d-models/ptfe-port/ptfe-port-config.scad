@@ -41,6 +41,10 @@ lip_depth  = 0.6;            // barb protrusion beyond clip face (PLA-safe)
 clip_reach = gap + flange_thick + lip_height; // tab extends through gap, flange, and barb flush with flange bottom
 clip_clearance = 0.2;        // clearance around clip in the flange slot
 
+// Stop plate — PTFE tube shoulder at top of shaft
+stop_thick    = 1.0;         // thin plate thickness
+filament_dia  = 2.0;         // filament passthrough hole (1.75mm filament + clearance)
+
 module rounded_rect(w, h, depth, r) {
     translate([r, r, 0])
         minkowski() {

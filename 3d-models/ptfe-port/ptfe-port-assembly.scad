@@ -2,9 +2,9 @@
 include <ptfe-port-config.scad>
 
 // Cross-section settings
-crosssection_view = false;
-crosssection_axis = "y";  // "x", "y", or "z"
-crosssection_pos  = 0;    // mm along chosen axis
+crosssection_view = true;
+crosssection_axis = "x";  // "x", "y", or "z"
+crosssection_pos  = 4.8;    // mm offset from center of model along chosen axis
 
 // Exploded view — set > 0 to separate parts for inspection
 explode = 0;
@@ -32,14 +32,18 @@ if (!crosssection_view) {
     intersection() {
         ptfe_port_assembly();
         half = flange_w + flange_h;
+        // Cut plane passes through the model center + offset
+        cx = flange_w / 2 + crosssection_pos;
+        cy = flange_h / 2 + crosssection_pos;
+        cz = (flange_thick + gap + flange_thick) / 2 + crosssection_pos;
         if (crosssection_axis == "x")
-            translate([crosssection_pos, -half, -half])
+            translate([cx, -half, -half])
                 cube([half * 2, half * 2, half * 2]);
         if (crosssection_axis == "y")
-            translate([-half, crosssection_pos, -half])
+            translate([-half, cy, -half])
                 cube([half * 2, half * 2, half * 2]);
         if (crosssection_axis == "z")
-            translate([-half, -half, crosssection_pos])
+            translate([-half, -half, cz])
                 cube([half * 2, half * 2, half * 2]);
     }
 }
