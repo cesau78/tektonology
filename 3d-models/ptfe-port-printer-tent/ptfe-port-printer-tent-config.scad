@@ -17,12 +17,13 @@ spacing   = 10;  // center-to-center distance between tubes
 
 // Body dimensions
 wall       = 2.0;  // minimum wall around outermost holes
-gap        = 0.3;  // space between flanges for tent fabric
+gap        = 1.0;  // space between flanges for tent fabric
 
 // Flange dimensions
 flange_thick = 2.0;
 flange_extra = 4.0; // how far flange extends beyond body on each side
 collar_clearance = 0.15; // clearance per side for collar fit around shaft
+collar_scale     = 2;    // collar outer diameter multiplier (relative to flange)
 
 // Derived
 grid_w = (cols - 1) * spacing;
@@ -31,11 +32,13 @@ body_w = grid_w + hole_dia + wall * 2;
 body_h = grid_h + hole_dia + wall * 2;
 flange_w = body_w + flange_extra * 2;
 flange_h = body_h + flange_extra * 2;
+collar_w = flange_w * collar_scale;
+collar_h = flange_h * collar_scale;
 corner_r = 3;
 
 // Snap-fit clip dimensions
 clip_width = spacing;        // width of each clip (distance between two holes)
-clip_thick = 0.8;            // tab thickness (thin for PLA flex)
+clip_thick = 1.6;            // tab thickness (doubled for stronger retention)
 lip_height = 1.5;            // barb height (catch edge)
 lip_depth  = 0.6;            // barb protrusion beyond clip face (PLA-safe)
 clip_reach = gap + flange_thick + lip_height; // tab extends through gap, flange, and barb flush with flange bottom

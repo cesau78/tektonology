@@ -5,18 +5,19 @@ include <ptfe-port-printer-tent-config.scad>
 module ptfe_port_collar() {
     shaft_w = body_w + collar_clearance * 2;
     shaft_h = body_h + collar_clearance * 2;
-    hole_y_min = (flange_h - shaft_h) / 2;
-    hole_y_max = (flange_h + shaft_h) / 2;
+    hole_x = (collar_w - shaft_w) / 2;
+    hole_y_min = (collar_h - shaft_h) / 2;
+    hole_y_max = (collar_h + shaft_h) / 2;
 
-    clip_x = (flange_w - clip_width) / 2;
+    clip_x = (collar_w - clip_width) / 2;
 
     union() {
         difference() {
-            // Outer body — matches flange outer diameter
-            rounded_rect(flange_w, flange_h, flange_thick, corner_r);
+            // Outer body — scaled collar diameter
+            rounded_rect(collar_w, collar_h, flange_thick, corner_r);
 
             // Hole sized to the shaft (body + clearance)
-            translate([(flange_w - shaft_w) / 2, hole_y_min, -1])
+            translate([hole_x, hole_y_min, -1])
                 rounded_rect(shaft_w, shaft_h, flange_thick + 2, corner_r);
         }
 
