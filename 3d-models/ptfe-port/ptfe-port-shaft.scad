@@ -14,9 +14,9 @@ module ptfe_port_shaft() {
     hole_y_max = (flange_h + shaft_h) / 2;
     clip_x = (flange_w - clip_width) / 2;
 
-    // Slot dimensions (wide enough for barb to pass through during assembly)
+    // Slot dimensions — sized to clip tab only, barb catches on flange surface
     slot_w = clip_width + clip_clearance * 2;
-    slot_d = clip_thick + lip_depth + clip_clearance * 2;
+    slot_d = clip_thick + clip_clearance * 2;
 
     body_offset = [(flange_w - body_w) / 2, (flange_h - body_h) / 2, 0];
     plate_z = flange_thick + shaft_height - stop_thick;
