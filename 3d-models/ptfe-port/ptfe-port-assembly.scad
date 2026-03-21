@@ -4,7 +4,7 @@ include <ptfe-port-config.scad>
 // Cross-section settings
 crosssection_view = true;
 crosssection_axis = "x";  // "x", "y", or "z"
-crosssection_pos  = 4.8;    // mm offset from center of model along chosen axis
+crosssection_pos  = 0;    // mm offset from center of model along chosen axis
 
 // Exploded view — set > 0 to separate parts for inspection
 explode = 0;

@@ -20,12 +20,12 @@ module ptfe_port_collar() {
                 rounded_rect(shaft_w, shaft_h, flange_thick + 2, corner_r);
         }
 
-        // Front clip — flush with outer edge (y=0), barb faces inward (+Y)
-        translate([clip_x, 0, flange_thick])
+        // Front clip — tab in collar material, flush with inner edge, barb faces inward (+Y)
+        translate([clip_x, hole_y_min - clip_thick, flange_thick])
             snap_clip();
 
-        // Back clip — flush with outer edge (y=flange_h), barb faces inward (-Y)
-        translate([clip_x, flange_h, flange_thick])
+        // Back clip — tab in collar material, flush with inner edge, barb faces inward (-Y)
+        translate([clip_x, hole_y_max + clip_thick, flange_thick])
             mirror([0, 1, 0])
                 snap_clip();
     }

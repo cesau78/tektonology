@@ -30,11 +30,11 @@ module ptfe_port_shaft() {
             translate(body_offset)
                 tube_holes(flange_thick);
 
-            // Clip slots
-            translate([clip_x - clip_clearance, -clip_clearance, -1])
-                cube([slot_w, slot_d, flange_thick + 2]);
-            translate([clip_x - clip_clearance, flange_h - clip_thick - clip_clearance, -1])
-                cube([slot_w, slot_d, flange_thick + 2]);
+            // Clip slots — 2x wide, extending toward outer edge for barb clearance
+            translate([clip_x - clip_clearance, hole_y_min - clip_thick - clip_clearance - slot_d, -1])
+                cube([slot_w, slot_d * 2, flange_thick + 2]);
+            translate([clip_x - clip_clearance, hole_y_max - clip_clearance, -1])
+                cube([slot_w, slot_d * 2, flange_thick + 2]);
         }
 
         // Primary shaft + stop plate
