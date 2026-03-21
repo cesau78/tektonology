@@ -16,6 +16,8 @@ function onRedirectCallback(appState?: AppState) {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const redirectUri = typeof window !== "undefined" ? window.location.origin : "";
+
   return (
     <Auth0Provider
       domain={DOMAIN}
@@ -24,7 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       useRefreshTokens={true}
       onRedirectCallback={onRedirectCallback}
       authorizationParams={{
-        redirect_uri: window.location.origin,
+        redirect_uri: redirectUri,
         audience: AUDIENCE,
       }}
     >
