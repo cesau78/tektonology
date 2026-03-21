@@ -18,4 +18,5 @@ export interface PrintJob {
   // Set by bookkeeping-agent after processing:
   cost?: number;       // usageG × (spool.cost / spool.weightG)
   processedAt?: string; // ISO 8601
+  deletedAt?: string;   // ISO 8601 — set on soft delete
 }

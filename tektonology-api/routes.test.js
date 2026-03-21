@@ -13,7 +13,7 @@ mock.module("./auth.js", {
 });
 
 const { default: express } = await import("express");
-const { MongoClient } = await import("mongodb");
+const { MongoClient, ObjectId } = await import("mongodb");
 const { createRoutes } = await import("./routes.js");
 
 // ---------------------------------------------------------------------------
@@ -722,21 +722,46 @@ describe("PUT /api/finance/accounts/:number", () => {
 // DELETE /api/finance/accounts/:number
 // ===========================================================================
 
-describe("DELETE /api/finance/accounts/:number", () => {
-  it("deletes an account with no journal entries", async () => {
+describe("DELETE /api/finance/accounts/:number (soft delete)", () => {
+  it("soft-deletes an account with no journal entries", async () => {
     await seedAccounts();
     const res = await DELETE("/api/finance/accounts/1000");
     assert.equal(res.status, 200);
     assert.equal(res.body.deleted, 1);
+    const doc = await db.collection("accounts").findOne({ number: 1000 });
+    assert.ok(doc);
+    assert.ok(doc.deletedAt);
   });
 
-  it("returns 409 when account has journal entries", async () => {
+  it("excludes soft-deleted from default GET", async () => {
+    await seedAccounts();
+    await DELETE("/api/finance/accounts/1000");
+    const res = await GET("/api/finance/accounts");
+    assert.equal(res.body.length, 4);
+  });
+
+  it("includes soft-deleted with ?includeDeleted=true", async () => {
+    await seedAccounts();
+    await DELETE("/api/finance/accounts/1000");
+    const res = await GET("/api/finance/accounts?includeDeleted=true");
+    assert.equal(res.body.length, 5);
+  });
+
+  it("returns 409 when account has active journal entries", async () => {
     await seedAccounts();
     await POST("/api/finance/journal", balancedEntry());
 
     const res = await DELETE("/api/finance/accounts/1000");
     assert.equal(res.status, 409);
     assert.match(res.body.error, /journal entries/);
+  });
+
+  it("returns 409 if already deleted", async () => {
+    await seedAccounts();
+    await DELETE("/api/finance/accounts/1000");
+    const res = await DELETE("/api/finance/accounts/1000");
+    assert.equal(res.status, 409);
+    assert.match(res.body.error, /already deleted/);
   });
 
   it("returns 404 for non-existent account", async () => {
@@ -748,6 +773,82 @@ describe("DELETE /api/finance/accounts/:number", () => {
     const res = await DELETE("/api/finance/accounts/abc");
     assert.equal(res.status, 400);
     assert.match(res.body.error, /[Ii]nvalid/);
+  });
+
+  it("rejects PUT on deleted account", async () => {
+    await seedAccounts();
+    await DELETE("/api/finance/accounts/1000");
+    const res = await PUT("/api/finance/accounts/1000", { name: "New Name" });
+    assert.equal(res.status, 409);
+  });
+});
+
+describe("DELETE /api/finance/accounts/:number/permanent", () => {
+  it("permanently deletes a soft-deleted account", async () => {
+    await seedAccounts();
+    await DELETE("/api/finance/accounts/1000");
+    const res = await DELETE("/api/finance/accounts/1000/permanent");
+    assert.equal(res.status, 200);
+    const doc = await db.collection("accounts").findOne({ number: 1000 });
+    assert.equal(doc, null);
+  });
+
+  it("returns 409 if not soft-deleted first", async () => {
+    await seedAccounts();
+    const res = await DELETE("/api/finance/accounts/1000/permanent");
+    assert.equal(res.status, 409);
+    assert.match(res.body.error, /soft-deleted first/);
+  });
+
+  it("returns 409 if account has journal entries", async () => {
+    await seedAccounts();
+    await POST("/api/finance/journal", balancedEntry());
+    // Soft-delete the journal entry first so the account can be soft-deleted
+    await DELETE("/api/finance/journal/1");
+    // Now soft-delete the account
+    await DELETE("/api/finance/accounts/1000");
+    // Permanent delete should still block because journal entries reference it
+    const res = await DELETE("/api/finance/accounts/1000/permanent");
+    assert.equal(res.status, 409);
+    assert.match(res.body.error, /journal entries/);
+  });
+
+  it("returns 404 for non-existent account", async () => {
+    const res = await DELETE("/api/finance/accounts/9999/permanent");
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid (NaN) account number", async () => {
+    const res = await DELETE("/api/finance/accounts/abc/permanent");
+    assert.equal(res.status, 400);
+  });
+});
+
+describe("POST /api/finance/accounts/:number/restore", () => {
+  it("restores a soft-deleted account", async () => {
+    await seedAccounts();
+    await DELETE("/api/finance/accounts/1000");
+    const res = await POST("/api/finance/accounts/1000/restore");
+    assert.equal(res.status, 200);
+    assert.equal(res.body.restored, 1);
+    const doc = await db.collection("accounts").findOne({ number: 1000 });
+    assert.equal(doc.deletedAt, undefined);
+  });
+
+  it("returns 409 if not deleted", async () => {
+    await seedAccounts();
+    const res = await POST("/api/finance/accounts/1000/restore");
+    assert.equal(res.status, 409);
+  });
+
+  it("returns 404 for non-existent account", async () => {
+    const res = await POST("/api/finance/accounts/9999/restore");
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid (NaN) account number", async () => {
+    const res = await POST("/api/finance/accounts/abc/restore");
+    assert.equal(res.status, 400);
   });
 });
 
@@ -878,6 +979,154 @@ describe("POST /api/procurement/spools", () => {
   });
 });
 
+describe("GET /api/procurement/spools/:spoolId", () => {
+  it("returns a single spool by ID", async () => {
+    await db.collection("spools").insertOne({ spoolId: 1, brand: "Bambu" });
+    const res = await GET("/api/procurement/spools/1");
+    assert.equal(res.status, 200);
+    assert.equal(res.body.brand, "Bambu");
+  });
+
+  it("returns 404 for non-existent ID", async () => {
+    const res = await GET("/api/procurement/spools/999");
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid ID", async () => {
+    const res = await GET("/api/procurement/spools/abc");
+    assert.equal(res.status, 400);
+  });
+});
+
+describe("PUT /api/procurement/spools/:spoolId", () => {
+  it("updates a spool", async () => {
+    await db.collection("spools").insertOne({ spoolId: 1, brand: "Bambu", material: "PLA" });
+    const res = await PUT("/api/procurement/spools/1", { brand: "Polymaker" });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.brand, "Polymaker");
+    assert.equal(res.body.material, "PLA");
+  });
+
+  it("returns 404 for non-existent ID", async () => {
+    const res = await PUT("/api/procurement/spools/999", { brand: "X" });
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid ID", async () => {
+    const res = await PUT("/api/procurement/spools/abc", { brand: "X" });
+    assert.equal(res.status, 400);
+  });
+
+  it("returns 400 for empty update", async () => {
+    await db.collection("spools").insertOne({ spoolId: 1, brand: "Bambu" });
+    const res = await PUT("/api/procurement/spools/1", {});
+    assert.equal(res.status, 400);
+  });
+
+  it("rejects edit on deleted spool", async () => {
+    await db.collection("spools").insertOne({ spoolId: 1, brand: "Bambu", deletedAt: "2025-01-01T00:00:00Z" });
+    const res = await PUT("/api/procurement/spools/1", { brand: "X" });
+    assert.equal(res.status, 409);
+  });
+});
+
+describe("DELETE /api/procurement/spools/:spoolId (soft delete)", () => {
+  it("soft-deletes a spool", async () => {
+    await db.collection("spools").insertOne({ spoolId: 1, brand: "Bambu" });
+    const res = await DELETE("/api/procurement/spools/1");
+    assert.equal(res.status, 200);
+    assert.equal(res.body.deleted, 1);
+    const doc = await db.collection("spools").findOne({ spoolId: 1 });
+    assert.ok(doc.deletedAt);
+  });
+
+  it("excludes soft-deleted from default GET", async () => {
+    await db.collection("spools").insertOne({ spoolId: 1, brand: "Bambu" });
+    await DELETE("/api/procurement/spools/1");
+    const res = await GET("/api/procurement/spools");
+    assert.equal(res.body.length, 0);
+  });
+
+  it("includes soft-deleted with ?includeDeleted=true", async () => {
+    await db.collection("spools").insertOne({ spoolId: 1, brand: "Bambu" });
+    await DELETE("/api/procurement/spools/1");
+    const res = await GET("/api/procurement/spools?includeDeleted=true");
+    assert.equal(res.body.length, 1);
+  });
+
+  it("returns 409 if already deleted", async () => {
+    await db.collection("spools").insertOne({ spoolId: 1, brand: "Bambu" });
+    await DELETE("/api/procurement/spools/1");
+    const res = await DELETE("/api/procurement/spools/1");
+    assert.equal(res.status, 409);
+  });
+
+  it("returns 404 for non-existent ID", async () => {
+    const res = await DELETE("/api/procurement/spools/999");
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid ID", async () => {
+    const res = await DELETE("/api/procurement/spools/abc");
+    assert.equal(res.status, 400);
+  });
+});
+
+describe("DELETE /api/procurement/spools/:spoolId/permanent", () => {
+  it("permanently deletes a soft-deleted spool", async () => {
+    await db.collection("spools").insertOne({ spoolId: 1, brand: "Bambu" });
+    await DELETE("/api/procurement/spools/1");
+    const res = await DELETE("/api/procurement/spools/1/permanent");
+    assert.equal(res.status, 200);
+    const doc = await db.collection("spools").findOne({ spoolId: 1 });
+    assert.equal(doc, null);
+  });
+
+  it("returns 409 if not soft-deleted first", async () => {
+    await db.collection("spools").insertOne({ spoolId: 1, brand: "Bambu" });
+    const res = await DELETE("/api/procurement/spools/1/permanent");
+    assert.equal(res.status, 409);
+  });
+
+  it("returns 404 for non-existent ID", async () => {
+    const res = await DELETE("/api/procurement/spools/999/permanent");
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid ID", async () => {
+    const res = await DELETE("/api/procurement/spools/abc/permanent");
+    assert.equal(res.status, 400);
+  });
+});
+
+describe("POST /api/procurement/spools/:spoolId/restore", () => {
+  it("restores a soft-deleted spool", async () => {
+    await db.collection("spools").insertOne({ spoolId: 1, brand: "Bambu" });
+    await DELETE("/api/procurement/spools/1");
+    const res = await POST("/api/procurement/spools/1/restore");
+    assert.equal(res.status, 200);
+    assert.equal(res.body.restored, 1);
+    const doc = await db.collection("spools").findOne({ spoolId: 1 });
+    assert.equal(doc.deletedAt, undefined);
+  });
+
+  it("returns 409 if not deleted", async () => {
+    await db.collection("spools").insertOne({ spoolId: 1, brand: "Bambu" });
+    const res = await POST("/api/procurement/spools/1/restore");
+    assert.equal(res.status, 409);
+  });
+
+  it("returns 404 for non-existent ID", async () => {
+    const res = await POST("/api/procurement/spools/999/restore");
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid ID", async () => {
+    const res = await POST("/api/procurement/spools/abc/restore");
+    assert.equal(res.status, 400);
+  });
+});
+
 // ===========================================================================
 // Procurement — Hardware
 // ===========================================================================
@@ -937,6 +1186,154 @@ describe("POST /api/procurement/hardware", () => {
   });
 });
 
+describe("GET /api/procurement/hardware/:hardwareId", () => {
+  it("returns a single hardware item by ID", async () => {
+    await db.collection("hardware").insertOne({ hardwareId: 1, item: "Bolt" });
+    const res = await GET("/api/procurement/hardware/1");
+    assert.equal(res.status, 200);
+    assert.equal(res.body.item, "Bolt");
+  });
+
+  it("returns 404 for non-existent ID", async () => {
+    const res = await GET("/api/procurement/hardware/999");
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid ID", async () => {
+    const res = await GET("/api/procurement/hardware/abc");
+    assert.equal(res.status, 400);
+  });
+});
+
+describe("PUT /api/procurement/hardware/:hardwareId", () => {
+  it("updates a hardware item", async () => {
+    await db.collection("hardware").insertOne({ hardwareId: 1, item: "Bolt", supplier: "McMaster" });
+    const res = await PUT("/api/procurement/hardware/1", { item: "Nut" });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.item, "Nut");
+    assert.equal(res.body.supplier, "McMaster");
+  });
+
+  it("returns 404 for non-existent ID", async () => {
+    const res = await PUT("/api/procurement/hardware/999", { item: "X" });
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid ID", async () => {
+    const res = await PUT("/api/procurement/hardware/abc", { item: "X" });
+    assert.equal(res.status, 400);
+  });
+
+  it("returns 400 for empty update", async () => {
+    await db.collection("hardware").insertOne({ hardwareId: 1, item: "Bolt" });
+    const res = await PUT("/api/procurement/hardware/1", {});
+    assert.equal(res.status, 400);
+  });
+
+  it("rejects edit on deleted hardware", async () => {
+    await db.collection("hardware").insertOne({ hardwareId: 1, item: "Bolt", deletedAt: "2025-01-01T00:00:00Z" });
+    const res = await PUT("/api/procurement/hardware/1", { item: "X" });
+    assert.equal(res.status, 409);
+  });
+});
+
+describe("DELETE /api/procurement/hardware/:hardwareId (soft delete)", () => {
+  it("soft-deletes a hardware item", async () => {
+    await db.collection("hardware").insertOne({ hardwareId: 1, item: "Bolt" });
+    const res = await DELETE("/api/procurement/hardware/1");
+    assert.equal(res.status, 200);
+    assert.equal(res.body.deleted, 1);
+    const doc = await db.collection("hardware").findOne({ hardwareId: 1 });
+    assert.ok(doc.deletedAt);
+  });
+
+  it("excludes soft-deleted from default GET", async () => {
+    await db.collection("hardware").insertOne({ hardwareId: 1, item: "Bolt" });
+    await DELETE("/api/procurement/hardware/1");
+    const res = await GET("/api/procurement/hardware");
+    assert.equal(res.body.length, 0);
+  });
+
+  it("includes soft-deleted with ?includeDeleted=true", async () => {
+    await db.collection("hardware").insertOne({ hardwareId: 1, item: "Bolt" });
+    await DELETE("/api/procurement/hardware/1");
+    const res = await GET("/api/procurement/hardware?includeDeleted=true");
+    assert.equal(res.body.length, 1);
+  });
+
+  it("returns 409 if already deleted", async () => {
+    await db.collection("hardware").insertOne({ hardwareId: 1, item: "Bolt" });
+    await DELETE("/api/procurement/hardware/1");
+    const res = await DELETE("/api/procurement/hardware/1");
+    assert.equal(res.status, 409);
+  });
+
+  it("returns 404 for non-existent ID", async () => {
+    const res = await DELETE("/api/procurement/hardware/999");
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid ID", async () => {
+    const res = await DELETE("/api/procurement/hardware/abc");
+    assert.equal(res.status, 400);
+  });
+});
+
+describe("DELETE /api/procurement/hardware/:hardwareId/permanent", () => {
+  it("permanently deletes a soft-deleted hardware item", async () => {
+    await db.collection("hardware").insertOne({ hardwareId: 1, item: "Bolt" });
+    await DELETE("/api/procurement/hardware/1");
+    const res = await DELETE("/api/procurement/hardware/1/permanent");
+    assert.equal(res.status, 200);
+    const doc = await db.collection("hardware").findOne({ hardwareId: 1 });
+    assert.equal(doc, null);
+  });
+
+  it("returns 409 if not soft-deleted first", async () => {
+    await db.collection("hardware").insertOne({ hardwareId: 1, item: "Bolt" });
+    const res = await DELETE("/api/procurement/hardware/1/permanent");
+    assert.equal(res.status, 409);
+  });
+
+  it("returns 404 for non-existent ID", async () => {
+    const res = await DELETE("/api/procurement/hardware/999/permanent");
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid ID", async () => {
+    const res = await DELETE("/api/procurement/hardware/abc/permanent");
+    assert.equal(res.status, 400);
+  });
+});
+
+describe("POST /api/procurement/hardware/:hardwareId/restore", () => {
+  it("restores a soft-deleted hardware item", async () => {
+    await db.collection("hardware").insertOne({ hardwareId: 1, item: "Bolt" });
+    await DELETE("/api/procurement/hardware/1");
+    const res = await POST("/api/procurement/hardware/1/restore");
+    assert.equal(res.status, 200);
+    assert.equal(res.body.restored, 1);
+    const doc = await db.collection("hardware").findOne({ hardwareId: 1 });
+    assert.equal(doc.deletedAt, undefined);
+  });
+
+  it("returns 409 if not deleted", async () => {
+    await db.collection("hardware").insertOne({ hardwareId: 1, item: "Bolt" });
+    const res = await POST("/api/procurement/hardware/1/restore");
+    assert.equal(res.status, 409);
+  });
+
+  it("returns 404 for non-existent ID", async () => {
+    const res = await POST("/api/procurement/hardware/999/restore");
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid ID", async () => {
+    const res = await POST("/api/procurement/hardware/abc/restore");
+    assert.equal(res.status, 400);
+  });
+});
+
 // ===========================================================================
 // Manufacturing — Print Jobs
 // ===========================================================================
@@ -993,6 +1390,172 @@ describe("POST /api/manufacturing/print-jobs", () => {
     const res = await POST("/api/manufacturing/print-jobs", []);
     assert.equal(res.status, 400);
     assert.match(res.body.error, /[Nn]o records/);
+  });
+});
+
+describe("GET /api/manufacturing/print-jobs/:id", () => {
+  it("returns a single print job by ID", async () => {
+    const { insertedId } = await db.collection("print_jobs").insertOne({ date: "2025-01-01", project: "Boot" });
+    const res = await GET(`/api/manufacturing/print-jobs/${insertedId}`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.project, "Boot");
+  });
+
+  it("returns 404 for non-existent ID", async () => {
+    const fakeId = new ObjectId();
+    const res = await GET(`/api/manufacturing/print-jobs/${fakeId}`);
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid ID", async () => {
+    const res = await GET("/api/manufacturing/print-jobs/not-an-id");
+    assert.equal(res.status, 400);
+  });
+});
+
+describe("PUT /api/manufacturing/print-jobs/:id", () => {
+  it("updates a print job", async () => {
+    const { insertedId } = await db.collection("print_jobs").insertOne({ date: "2025-01-01", project: "Boot", usageG: 10 });
+    const res = await PUT(`/api/manufacturing/print-jobs/${insertedId}`, { project: "Bushing", usageG: 20 });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.project, "Bushing");
+    assert.equal(res.body.usageG, 20);
+    assert.equal(res.body.date, "2025-01-01"); // unchanged field preserved
+  });
+
+  it("returns 404 for non-existent ID", async () => {
+    const fakeId = new ObjectId();
+    const res = await PUT(`/api/manufacturing/print-jobs/${fakeId}`, { project: "X" });
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid ID", async () => {
+    const res = await PUT("/api/manufacturing/print-jobs/not-an-id", { project: "X" });
+    assert.equal(res.status, 400);
+  });
+
+  it("returns 400 for empty update", async () => {
+    const { insertedId } = await db.collection("print_jobs").insertOne({ date: "2025-01-01", project: "Boot" });
+    const res = await PUT(`/api/manufacturing/print-jobs/${insertedId}`, {});
+    assert.equal(res.status, 400);
+    assert.match(res.body.error, /[Nn]othing to update/);
+  });
+
+  it("ignores _id in update body", async () => {
+    const { insertedId } = await db.collection("print_jobs").insertOne({ date: "2025-01-01", project: "Boot" });
+    const res = await PUT(`/api/manufacturing/print-jobs/${insertedId}`, { _id: "fake", project: "Bushing" });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.project, "Bushing");
+  });
+});
+
+describe("DELETE /api/manufacturing/print-jobs/:id (soft delete)", () => {
+  it("soft-deletes a print job by setting deletedAt", async () => {
+    const { insertedId } = await db.collection("print_jobs").insertOne({ date: "2025-01-01", project: "Boot" });
+    const res = await DELETE(`/api/manufacturing/print-jobs/${insertedId}`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.deleted, 1);
+    // still exists in DB with deletedAt
+    const doc = await db.collection("print_jobs").findOne({ _id: insertedId });
+    assert.ok(doc);
+    assert.ok(doc.deletedAt);
+  });
+
+  it("excludes soft-deleted from default GET list", async () => {
+    const { insertedId } = await db.collection("print_jobs").insertOne({ date: "2025-01-01", project: "Boot" });
+    await DELETE(`/api/manufacturing/print-jobs/${insertedId}`);
+    const res = await GET("/api/manufacturing/print-jobs");
+    assert.equal(res.body.length, 0);
+  });
+
+  it("includes soft-deleted with ?includeDeleted=true", async () => {
+    const { insertedId } = await db.collection("print_jobs").insertOne({ date: "2025-01-01", project: "Boot" });
+    await DELETE(`/api/manufacturing/print-jobs/${insertedId}`);
+    const res = await GET("/api/manufacturing/print-jobs?includeDeleted=true");
+    assert.equal(res.body.length, 1);
+  });
+
+  it("returns 409 if already soft-deleted", async () => {
+    const { insertedId } = await db.collection("print_jobs").insertOne({ date: "2025-01-01", project: "Boot" });
+    await DELETE(`/api/manufacturing/print-jobs/${insertedId}`);
+    const res = await DELETE(`/api/manufacturing/print-jobs/${insertedId}`);
+    assert.equal(res.status, 409);
+  });
+
+  it("returns 404 for non-existent ID", async () => {
+    const fakeId = new ObjectId();
+    const res = await DELETE(`/api/manufacturing/print-jobs/${fakeId}`);
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid ID", async () => {
+    const res = await DELETE("/api/manufacturing/print-jobs/not-an-id");
+    assert.equal(res.status, 400);
+  });
+
+  it("rejects PUT on soft-deleted print job", async () => {
+    const { insertedId } = await db.collection("print_jobs").insertOne({ date: "2025-01-01", project: "Boot" });
+    await DELETE(`/api/manufacturing/print-jobs/${insertedId}`);
+    const res = await PUT(`/api/manufacturing/print-jobs/${insertedId}`, { project: "X" });
+    assert.equal(res.status, 409);
+  });
+});
+
+describe("DELETE /api/manufacturing/print-jobs/:id/permanent", () => {
+  it("permanently deletes a soft-deleted print job", async () => {
+    const { insertedId } = await db.collection("print_jobs").insertOne({ date: "2025-01-01", project: "Boot" });
+    await DELETE(`/api/manufacturing/print-jobs/${insertedId}`);
+    const res = await DELETE(`/api/manufacturing/print-jobs/${insertedId}/permanent`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.deleted, 1);
+    const doc = await db.collection("print_jobs").findOne({ _id: insertedId });
+    assert.equal(doc, null);
+  });
+
+  it("returns 409 if not soft-deleted first", async () => {
+    const { insertedId } = await db.collection("print_jobs").insertOne({ date: "2025-01-01", project: "Boot" });
+    const res = await DELETE(`/api/manufacturing/print-jobs/${insertedId}/permanent`);
+    assert.equal(res.status, 409);
+  });
+
+  it("returns 404 for non-existent ID", async () => {
+    const fakeId = new ObjectId();
+    const res = await DELETE(`/api/manufacturing/print-jobs/${fakeId}/permanent`);
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid ID", async () => {
+    const res = await DELETE("/api/manufacturing/print-jobs/not-an-id/permanent");
+    assert.equal(res.status, 400);
+  });
+});
+
+describe("POST /api/manufacturing/print-jobs/:id/restore", () => {
+  it("restores a soft-deleted print job", async () => {
+    const { insertedId } = await db.collection("print_jobs").insertOne({ date: "2025-01-01", project: "Boot" });
+    await DELETE(`/api/manufacturing/print-jobs/${insertedId}`);
+    const res = await POST(`/api/manufacturing/print-jobs/${insertedId}/restore`);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.restored, 1);
+    const doc = await db.collection("print_jobs").findOne({ _id: insertedId });
+    assert.equal(doc.deletedAt, undefined);
+  });
+
+  it("returns 409 if not deleted", async () => {
+    const { insertedId } = await db.collection("print_jobs").insertOne({ date: "2025-01-01", project: "Boot" });
+    const res = await POST(`/api/manufacturing/print-jobs/${insertedId}/restore`);
+    assert.equal(res.status, 409);
+  });
+
+  it("returns 404 for non-existent ID", async () => {
+    const fakeId = new ObjectId();
+    const res = await POST(`/api/manufacturing/print-jobs/${fakeId}/restore`);
+    assert.equal(res.status, 404);
+  });
+
+  it("returns 400 for invalid ID", async () => {
+    const res = await POST("/api/manufacturing/print-jobs/not-an-id/restore");
+    assert.equal(res.status, 400);
   });
 });
 

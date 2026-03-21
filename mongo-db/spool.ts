@@ -7,4 +7,5 @@ export interface Spool {
   cost: number;      // fully-loaded cost (base + tax + shipping)
   weightG: number;   // starting weight in grams
   remainingG: number;
+  deletedAt?: string; // ISO 8601 — set on soft delete
 }

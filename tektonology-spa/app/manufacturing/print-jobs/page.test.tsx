@@ -187,7 +187,7 @@ describe("PrintJobsPage", () => {
       expect(passElements).toHaveLength(4);
     });
     const tbody = container.querySelector("tbody")!;
-    expect(tbody.querySelector(".text-red-600")?.textContent).toBe("Fail");
+    expect(tbody.querySelector("span.text-red-600")?.textContent).toBe("Fail");
     // The em-dash for null success
     const mutedSpans = tbody.querySelectorAll(".text-muted-foreground");
     const dashSpans = Array.from(mutedSpans).filter((el) => el.textContent === "\u2014");

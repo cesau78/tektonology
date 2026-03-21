@@ -1,3 +1,4 @@
+import { ObjectId } from "mongodb";
 import { requireEmailVerified, requireRole } from "./auth.js";
 import { parseCsv, negotiate, csvBodyParser } from "./csv.js";
 
@@ -25,7 +26,8 @@ export function createRoutes(app, db) {
 
   // -- Accounts --
   app.get("/api/finance/accounts", read, async (req, res) => {
-    const docs = await accounts.find().sort({ number: 1 }).toArray();
+    const filter = req.query.includeDeleted === "true" ? {} : { deletedAt: { $exists: false } };
+    const docs = await accounts.find(filter).sort({ number: 1 }).toArray();
     negotiate(req, res, docs, "accounts.csv");
   });
 
@@ -50,6 +52,7 @@ export function createRoutes(app, db) {
     if (Number.isNaN(num)) return res.status(400).json({ error: "Invalid account number" });
     const existing = await accounts.findOne({ number: num });
     if (!existing) return res.status(404).json({ error: "Account not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Cannot edit deleted account" });
     const { number: newNumber, name, type } = req.body;
     const update = {};
     if (name !== undefined) update.name = name;
@@ -81,11 +84,35 @@ export function createRoutes(app, db) {
   app.delete("/api/finance/accounts/:number", write, async (req, res) => {
     const num = parseInt(req.params.number, 10);
     if (Number.isNaN(num)) return res.status(400).json({ error: "Invalid account number" });
-    const hasEntries = await journalEntries.findOne({ "lines.accountNumber": num });
+    const existing = await accounts.findOne({ number: num });
+    if (!existing) return res.status(404).json({ error: "Account not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Account already deleted" });
+    const hasEntries = await journalEntries.findOne({ "lines.accountNumber": num, deletedAt: { $exists: false } });
     if (hasEntries) return res.status(409).json({ error: "Cannot delete account with journal entries" });
-    const result = await accounts.deleteOne({ number: num });
-    if (result.deletedCount === 0) return res.status(404).json({ error: "Account not found" });
+    await accounts.updateOne({ number: num }, { $set: { deletedAt: new Date().toISOString() } });
     res.json({ deleted: 1 });
+  });
+
+  app.delete("/api/finance/accounts/:number/permanent", write, async (req, res) => {
+    const num = parseInt(req.params.number, 10);
+    if (Number.isNaN(num)) return res.status(400).json({ error: "Invalid account number" });
+    const existing = await accounts.findOne({ number: num });
+    if (!existing) return res.status(404).json({ error: "Account not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Account must be soft-deleted first" });
+    const hasEntries = await journalEntries.findOne({ "lines.accountNumber": num });
+    if (hasEntries) return res.status(409).json({ error: "Cannot permanently delete account with journal entries" });
+    await accounts.deleteOne({ number: num });
+    res.json({ deleted: 1 });
+  });
+
+  app.post("/api/finance/accounts/:number/restore", write, async (req, res) => {
+    const num = parseInt(req.params.number, 10);
+    if (Number.isNaN(num)) return res.status(400).json({ error: "Invalid account number" });
+    const existing = await accounts.findOne({ number: num });
+    if (!existing) return res.status(404).json({ error: "Account not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Account is not deleted" });
+    await accounts.updateOne({ number: num }, { $unset: { deletedAt: "" } });
+    res.json({ restored: 1 });
   });
 
   // -- Journal Entries --
@@ -270,8 +297,17 @@ export function createRoutes(app, db) {
 
   // -- Spools --
   app.get("/api/procurement/spools", read, async (req, res) => {
-    const docs = await spools.find().sort({ spoolId: 1 }).toArray();
+    const filter = req.query.includeDeleted === "true" ? {} : { deletedAt: { $exists: false } };
+    const docs = await spools.find(filter).sort({ spoolId: 1 }).toArray();
     negotiate(req, res, docs, "spools.csv");
+  });
+
+  app.get("/api/procurement/spools/:spoolId", read, async (req, res) => {
+    const id = parseInt(req.params.spoolId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid spool ID" });
+    const doc = await spools.findOne({ spoolId: id });
+    if (!doc) return res.status(404).json({ error: "Spool not found" });
+    res.json(doc);
   });
 
   app.post("/api/procurement/spools", write, async (req, res) => {
@@ -282,10 +318,63 @@ export function createRoutes(app, db) {
     res.status(201).json({ inserted: result.insertedCount });
   });
 
+  app.put("/api/procurement/spools/:spoolId", write, async (req, res) => {
+    const id = parseInt(req.params.spoolId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid spool ID" });
+    const existing = await spools.findOne({ spoolId: id });
+    if (!existing) return res.status(404).json({ error: "Spool not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Cannot edit deleted spool" });
+    const update = { ...req.body };
+    delete update._id;
+    if (Object.keys(update).length === 0) return res.status(400).json({ error: "Nothing to update" });
+    await spools.updateOne({ spoolId: id }, { $set: update });
+    const doc = await spools.findOne({ spoolId: id });
+    res.json(doc);
+  });
+
+  app.delete("/api/procurement/spools/:spoolId", write, async (req, res) => {
+    const id = parseInt(req.params.spoolId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid spool ID" });
+    const existing = await spools.findOne({ spoolId: id });
+    if (!existing) return res.status(404).json({ error: "Spool not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Spool already deleted" });
+    await spools.updateOne({ spoolId: id }, { $set: { deletedAt: new Date().toISOString() } });
+    res.json({ deleted: 1 });
+  });
+
+  app.delete("/api/procurement/spools/:spoolId/permanent", write, async (req, res) => {
+    const id = parseInt(req.params.spoolId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid spool ID" });
+    const existing = await spools.findOne({ spoolId: id });
+    if (!existing) return res.status(404).json({ error: "Spool not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Spool must be soft-deleted first" });
+    await spools.deleteOne({ spoolId: id });
+    res.json({ deleted: 1 });
+  });
+
+  app.post("/api/procurement/spools/:spoolId/restore", write, async (req, res) => {
+    const id = parseInt(req.params.spoolId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid spool ID" });
+    const existing = await spools.findOne({ spoolId: id });
+    if (!existing) return res.status(404).json({ error: "Spool not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Spool is not deleted" });
+    await spools.updateOne({ spoolId: id }, { $unset: { deletedAt: "" } });
+    res.json({ restored: 1 });
+  });
+
   // -- Hardware --
   app.get("/api/procurement/hardware", read, async (req, res) => {
-    const docs = await hardware.find().sort({ hardwareId: 1 }).toArray();
+    const filter = req.query.includeDeleted === "true" ? {} : { deletedAt: { $exists: false } };
+    const docs = await hardware.find(filter).sort({ hardwareId: 1 }).toArray();
     negotiate(req, res, docs, "hardware.csv");
+  });
+
+  app.get("/api/procurement/hardware/:hardwareId", read, async (req, res) => {
+    const id = parseInt(req.params.hardwareId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid hardware ID" });
+    const doc = await hardware.findOne({ hardwareId: id });
+    if (!doc) return res.status(404).json({ error: "Hardware not found" });
+    res.json(doc);
   });
 
   app.post("/api/procurement/hardware", write, async (req, res) => {
@@ -296,14 +385,66 @@ export function createRoutes(app, db) {
     res.status(201).json({ inserted: result.insertedCount });
   });
 
+  app.put("/api/procurement/hardware/:hardwareId", write, async (req, res) => {
+    const id = parseInt(req.params.hardwareId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid hardware ID" });
+    const existing = await hardware.findOne({ hardwareId: id });
+    if (!existing) return res.status(404).json({ error: "Hardware not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Cannot edit deleted hardware" });
+    const update = { ...req.body };
+    delete update._id;
+    if (Object.keys(update).length === 0) return res.status(400).json({ error: "Nothing to update" });
+    await hardware.updateOne({ hardwareId: id }, { $set: update });
+    const doc = await hardware.findOne({ hardwareId: id });
+    res.json(doc);
+  });
+
+  app.delete("/api/procurement/hardware/:hardwareId", write, async (req, res) => {
+    const id = parseInt(req.params.hardwareId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid hardware ID" });
+    const existing = await hardware.findOne({ hardwareId: id });
+    if (!existing) return res.status(404).json({ error: "Hardware not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Hardware already deleted" });
+    await hardware.updateOne({ hardwareId: id }, { $set: { deletedAt: new Date().toISOString() } });
+    res.json({ deleted: 1 });
+  });
+
+  app.delete("/api/procurement/hardware/:hardwareId/permanent", write, async (req, res) => {
+    const id = parseInt(req.params.hardwareId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid hardware ID" });
+    const existing = await hardware.findOne({ hardwareId: id });
+    if (!existing) return res.status(404).json({ error: "Hardware not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Hardware must be soft-deleted first" });
+    await hardware.deleteOne({ hardwareId: id });
+    res.json({ deleted: 1 });
+  });
+
+  app.post("/api/procurement/hardware/:hardwareId/restore", write, async (req, res) => {
+    const id = parseInt(req.params.hardwareId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid hardware ID" });
+    const existing = await hardware.findOne({ hardwareId: id });
+    if (!existing) return res.status(404).json({ error: "Hardware not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Hardware is not deleted" });
+    await hardware.updateOne({ hardwareId: id }, { $unset: { deletedAt: "" } });
+    res.json({ restored: 1 });
+  });
+
   // =========================================================================
   // Manufacturing
   // =========================================================================
 
   // -- Print Jobs --
   app.get("/api/manufacturing/print-jobs", read, async (req, res) => {
-    const docs = await printJobs.find().sort({ date: -1, batchId: -1 }).toArray();
+    const filter = req.query.includeDeleted === "true" ? {} : { deletedAt: { $exists: false } };
+    const docs = await printJobs.find(filter).sort({ date: -1, batchId: -1 }).toArray();
     negotiate(req, res, docs, "print-jobs.csv");
+  });
+
+  app.get("/api/manufacturing/print-jobs/:id", read, async (req, res) => {
+    if (!ObjectId.isValid(req.params.id)) return res.status(400).json({ error: "Invalid print job ID" });
+    const doc = await printJobs.findOne({ _id: new ObjectId(req.params.id) });
+    if (!doc) return res.status(404).json({ error: "Print job not found" });
+    res.json(doc);
   });
 
   app.post("/api/manufacturing/print-jobs", write, async (req, res) => {
@@ -314,16 +455,58 @@ export function createRoutes(app, db) {
     res.status(201).json({ inserted: result.insertedCount });
   });
 
+  app.put("/api/manufacturing/print-jobs/:id", write, async (req, res) => {
+    if (!ObjectId.isValid(req.params.id)) return res.status(400).json({ error: "Invalid print job ID" });
+    const oid = new ObjectId(req.params.id);
+    const existing = await printJobs.findOne({ _id: oid });
+    if (!existing) return res.status(404).json({ error: "Print job not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Cannot edit deleted print job" });
+    const update = { ...req.body };
+    delete update._id;
+    if (Object.keys(update).length === 0) return res.status(400).json({ error: "Nothing to update" });
+    await printJobs.updateOne({ _id: oid }, { $set: update });
+    const doc = await printJobs.findOne({ _id: oid });
+    res.json(doc);
+  });
+
+  app.delete("/api/manufacturing/print-jobs/:id", write, async (req, res) => {
+    if (!ObjectId.isValid(req.params.id)) return res.status(400).json({ error: "Invalid print job ID" });
+    const existing = await printJobs.findOne({ _id: new ObjectId(req.params.id) });
+    if (!existing) return res.status(404).json({ error: "Print job not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Print job already deleted" });
+    await printJobs.updateOne({ _id: new ObjectId(req.params.id) }, { $set: { deletedAt: new Date().toISOString() } });
+    res.json({ deleted: 1 });
+  });
+
+  app.delete("/api/manufacturing/print-jobs/:id/permanent", write, async (req, res) => {
+    if (!ObjectId.isValid(req.params.id)) return res.status(400).json({ error: "Invalid print job ID" });
+    const existing = await printJobs.findOne({ _id: new ObjectId(req.params.id) });
+    if (!existing) return res.status(404).json({ error: "Print job not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Print job must be soft-deleted first" });
+    await printJobs.deleteOne({ _id: new ObjectId(req.params.id) });
+    res.json({ deleted: 1 });
+  });
+
+  app.post("/api/manufacturing/print-jobs/:id/restore", write, async (req, res) => {
+    if (!ObjectId.isValid(req.params.id)) return res.status(400).json({ error: "Invalid print job ID" });
+    const existing = await printJobs.findOne({ _id: new ObjectId(req.params.id) });
+    if (!existing) return res.status(404).json({ error: "Print job not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Print job is not deleted" });
+    await printJobs.updateOne({ _id: new ObjectId(req.params.id) }, { $unset: { deletedAt: "" } });
+    res.json({ restored: 1 });
+  });
+
   // =========================================================================
   // Dashboard (aggregation — JSON only)
   // =========================================================================
 
   app.get("/api/dashboard", read, async (_req, res) => {
+    const active = { deletedAt: { $exists: false } };
     const [accts, entries, spoolDocs, jobDocs] = await Promise.all([
-      accounts.find().toArray(),
-      journalEntries.find().toArray(),
-      spools.find().toArray(),
-      printJobs.find().toArray(),
+      accounts.find(active).toArray(),
+      journalEntries.find(active).toArray(),
+      spools.find(active).toArray(),
+      printJobs.find(active).toArray(),
     ]);
 
     const byType = {};

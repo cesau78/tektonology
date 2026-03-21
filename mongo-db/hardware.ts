@@ -17,4 +17,5 @@ export interface Hardware {
   cost: number;      // fully-loaded cost (base + tax + shipping)
   quantity: number;
   remaining: number;
+  deletedAt?: string; // ISO 8601 — set on soft delete
 }

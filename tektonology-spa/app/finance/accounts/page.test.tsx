@@ -377,8 +377,7 @@ describe("ChartOfAccountsPage", () => {
 
   // -- Delete flow --
 
-  it("deletes account after confirmation", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
+  it("deletes account after inline confirmation", async () => {
     mockApiFetch.mockImplementation((url: string, opts?: RequestInit) => {
       if (opts?.method === "DELETE") return Promise.resolve({});
       return Promise.resolve(sampleAccounts);
@@ -387,37 +386,46 @@ describe("ChartOfAccountsPage", () => {
     const view = within(container);
     await waitFor(() => expect(view.getByText("Cash")).toBeInTheDocument());
 
+    // Click Delete to show inline confirmation
     await act(async () => {
       fireEvent.click(view.getAllByText("Delete")[0]);
     });
-    expect(window.confirm).toHaveBeenCalledWith("Delete account 1000: Cash?");
+    expect(view.getByText("Delete?")).toBeInTheDocument();
+
+    // Click Yes to confirm
+    await act(async () => {
+      fireEvent.click(view.getByText("Yes"));
+    });
     expect(mockApiFetch).toHaveBeenCalledWith(
       "/api/finance/accounts/1000",
       expect.objectContaining({ method: "DELETE" }),
     );
-    vi.restoreAllMocks();
   });
 
-  it("cancels delete when confirm is declined", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(false);
+  it("cancels delete when No is clicked", async () => {
     mockApiFetch.mockResolvedValue(sampleAccounts);
     const { container } = render(<ChartOfAccountsPage />);
     const view = within(container);
     await waitFor(() => expect(view.getByText("Cash")).toBeInTheDocument());
 
+    // Click Delete to show inline confirmation
     await act(async () => {
       fireEvent.click(view.getAllByText("Delete")[0]);
+    });
+    expect(view.getByText("Delete?")).toBeInTheDocument();
+
+    // Click No to cancel
+    await act(async () => {
+      fireEvent.click(view.getByText("No"));
     });
     // Should not have called DELETE
     expect(mockApiFetch).not.toHaveBeenCalledWith(
       expect.stringContaining("/api/finance/accounts/1000"),
       expect.objectContaining({ method: "DELETE" }),
     );
-    vi.restoreAllMocks();
   });
 
   it("shows API error on delete failure", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     mockApiFetch.mockImplementation((url: string, opts?: RequestInit) => {
       if (opts?.method === "DELETE") return Promise.reject(new Error("Cannot delete"));
       return Promise.resolve(sampleAccounts);
@@ -426,15 +434,17 @@ describe("ChartOfAccountsPage", () => {
     const view = within(container);
     await waitFor(() => expect(view.getByText("Cash")).toBeInTheDocument());
 
+    // Click Delete then Yes
     await act(async () => {
       fireEvent.click(view.getAllByText("Delete")[0]);
     });
+    await act(async () => {
+      fireEvent.click(view.getByText("Yes"));
+    });
     expect(view.getByText("Cannot delete")).toBeInTheDocument();
-    vi.restoreAllMocks();
   });
 
   it("shows generic error on delete failure with non-Error", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     mockApiFetch.mockImplementation((url: string, opts?: RequestInit) => {
       if (opts?.method === "DELETE") return Promise.reject("oops");
       return Promise.resolve(sampleAccounts);
@@ -443,11 +453,14 @@ describe("ChartOfAccountsPage", () => {
     const view = within(container);
     await waitFor(() => expect(view.getByText("Cash")).toBeInTheDocument());
 
+    // Click Delete then Yes
     await act(async () => {
       fireEvent.click(view.getAllByText("Delete")[0]);
     });
+    await act(async () => {
+      fireEvent.click(view.getByText("Yes"));
+    });
     expect(view.getByText("Failed to delete")).toBeInTheDocument();
-    vi.restoreAllMocks();
   });
 
   // -- Add account flow --

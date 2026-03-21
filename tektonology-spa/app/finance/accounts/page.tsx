@@ -15,6 +15,7 @@ interface Account {
   name: string;
   type: string;
   balance: number;
+  deletedAt?: string;
 }
 
 type SortField = "number" | "name" | "type" | "balance";
@@ -59,15 +60,19 @@ export default function ChartOfAccountsPage() {
   const [addingRow, setAddingRow] = useState(false);
   const [newRow, setNewRow] = useState({ number: "", name: "", type: "asset" });
   const [actionError, setActionError] = useState<string | null>(null);
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [confirmPermanentDeleteId, setConfirmPermanentDeleteId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const { role } = useRole();
   const apiFetch = useApiFetch();
   const writable = canWrite(role);
 
   const load = useCallback(() => {
-    apiFetch<Account[]>("/api/finance/accounts")
+    apiFetch<Account[]>(`/api/finance/accounts${showDeleted ? "?includeDeleted=true" : ""}`)
       .then(setAccounts)
       .catch((e) => setError(e.message));
-  }, [apiFetch]);
+  }, [apiFetch, showDeleted]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -134,14 +139,41 @@ export default function ChartOfAccountsPage() {
     }
   };
 
-  const deleteAccount = async (num: number, name: string) => {
-    if (!confirm(`Delete account ${num}: ${name}?`)) return;
+  const handleDelete = async (num: number) => {
+    setDeletingId(num);
     setActionError(null);
     try {
       await apiFetch(`/api/finance/accounts/${num}`, { method: "DELETE" });
+      setConfirmDeleteId(null);
       load();
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "Failed to delete");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleRestore = async (num: number) => {
+    setActionError(null);
+    try {
+      await apiFetch(`/api/finance/accounts/${num}/restore`, { method: "POST" });
+      load();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Failed to restore");
+    }
+  };
+
+  const handlePermanentDelete = async (num: number) => {
+    setDeletingId(num);
+    setActionError(null);
+    try {
+      await apiFetch(`/api/finance/accounts/${num}/permanent`, { method: "DELETE" });
+      setConfirmPermanentDeleteId(null);
+      load();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Failed to permanently delete");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -195,14 +227,30 @@ export default function ChartOfAccountsPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground mb-1">Chart of Accounts</h1>
           {accounts && (
-            <p className="text-muted-foreground text-sm">{accounts.length} accounts. Click column headers to sort.</p>
+            <p className="text-muted-foreground text-sm">
+              {accounts.filter((a) => !a.deletedAt).length} accounts.{" "}
+              {showDeleted && accounts.some((a) => a.deletedAt) && (
+                <span className="text-gray-400">({accounts.filter((a) => a.deletedAt).length} deleted)</span>
+              )}
+              {" "}Click column headers to sort.
+            </p>
           )}
         </div>
-        {writable && !addingRow && (
-          <Button variant="outline" size="sm" onClick={() => { setAddingRow(true); setActionError(null); }}>
-            + Add Account
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDeleted((v) => !v)}
+            className={showDeleted ? "border-gray-400" : ""}
+          >
+            {showDeleted ? "Hide Deleted" : "Show Deleted"}
           </Button>
-        )}
+          {writable && !addingRow && (
+            <Button variant="outline" size="sm" onClick={() => { setAddingRow(true); setActionError(null); }}>
+              + Add Account
+            </Button>
+          )}
+        </div>
       </div>
 
       {error && <ErrorState message={error} />}
@@ -275,8 +323,10 @@ export default function ChartOfAccountsPage() {
                     </td>
                   </tr>
                 )}
-                {sorted.map((a) => (
-                  <tr key={a.number} className="border-t border-border/50 hover:bg-muted/20 transition-colors">
+                {sorted.map((a) => {
+                  const isDeleted = !!a.deletedAt;
+                  return (
+                  <tr key={a.number} className={`border-t border-border/50 hover:bg-muted/20 transition-colors ${isDeleted ? "opacity-50" : ""}`}>
                     <td className="py-2 font-mono text-muted-foreground">
                       {editingRow === a.number ? (
                         <input
@@ -327,16 +377,68 @@ export default function ChartOfAccountsPage() {
                             <Button variant="ghost" size="xs" onClick={() => saveEdit(a.number)}>Save</Button>
                             <Button variant="ghost" size="xs" onClick={cancelEdit}>Cancel</Button>
                           </div>
+                        ) : isDeleted ? (
+                          <div className="flex justify-end gap-1 items-center">
+                            <Button variant="ghost" size="xs" onClick={() => handleRestore(a.number)}>Restore</Button>
+                            {confirmPermanentDeleteId === a.number ? (
+                              <>
+                                <span className="text-xs text-red-600">Purge?</span>
+                                <Button
+                                  variant="ghost"
+                                  size="xs"
+                                  className="text-red-600 hover:text-red-700"
+                                  onClick={() => handlePermanentDelete(a.number)}
+                                  disabled={deletingId === a.number}
+                                >
+                                  {deletingId === a.number ? "..." : "Yes"}
+                                </Button>
+                                <Button variant="ghost" size="xs" onClick={() => setConfirmPermanentDeleteId(null)}>No</Button>
+                              </>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="xs"
+                                className="text-red-600 hover:text-red-700"
+                                onClick={() => setConfirmPermanentDeleteId(a.number)}
+                              >
+                                Purge
+                              </Button>
+                            )}
+                          </div>
                         ) : (
-                          <div className="flex justify-end gap-1">
+                          <div className="flex justify-end gap-1 items-center">
                             <Button variant="ghost" size="xs" onClick={() => startEdit(a)}>Edit</Button>
-                            <Button variant="ghost" size="xs" className="text-red-600 hover:text-red-700" onClick={() => deleteAccount(a.number, a.name)}>Delete</Button>
+                            {confirmDeleteId === a.number ? (
+                              <>
+                                <span className="text-xs text-red-600">Delete?</span>
+                                <Button
+                                  variant="ghost"
+                                  size="xs"
+                                  className="text-red-600 hover:text-red-700"
+                                  onClick={() => handleDelete(a.number)}
+                                  disabled={deletingId === a.number}
+                                >
+                                  {deletingId === a.number ? "..." : "Yes"}
+                                </Button>
+                                <Button variant="ghost" size="xs" onClick={() => setConfirmDeleteId(null)}>No</Button>
+                              </>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="xs"
+                                className="text-red-600 hover:text-red-700"
+                                onClick={() => setConfirmDeleteId(a.number)}
+                              >
+                                Delete
+                              </Button>
+                            )}
                           </div>
                         )}
                       </td>
                     )}
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </CardContent>

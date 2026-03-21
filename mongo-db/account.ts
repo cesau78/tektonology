@@ -5,4 +5,5 @@ export interface Account {
   name: string;     // e.g. "Chase Checking 5371"
   type: AccountType;
   balance: number;
+  deletedAt?: string; // ISO 8601 — set on soft delete
 }

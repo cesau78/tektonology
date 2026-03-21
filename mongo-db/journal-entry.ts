@@ -20,4 +20,5 @@ export interface JournalEntry {
   date: string;         // ISO date: YYYY-MM-DD
   description: string;
   lines: JournalLine[];
+  deletedAt?: string; // ISO 8601 — set on soft delete
 }
