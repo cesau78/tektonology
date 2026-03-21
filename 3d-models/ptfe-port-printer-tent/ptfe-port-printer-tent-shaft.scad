@@ -1,7 +1,7 @@
 // PTFE Port — Shaft: flange + dual shaft with stop plates meeting in the middle
 // Push shaft through tent, then slide collar on from the other side.
 // Flange has slots for the collar's snap-fit clips.
-include <ptfe-port-config.scad>
+include <ptfe-port-printer-tent-config.scad>
 
 module ptfe_port_shaft() {
     shaft_height = gap + flange_thick + socket_depth_top; // through gap, collar, + socket grip

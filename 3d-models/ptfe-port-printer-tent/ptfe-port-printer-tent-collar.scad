@@ -1,6 +1,6 @@
 // PTFE Port — Collar: wraps the shaft and clamps against tent fabric
 // Includes snap-fit clips that lock through slots in the shaft flange.
-include <ptfe-port-config.scad>
+include <ptfe-port-printer-tent-config.scad>
 
 module ptfe_port_collar() {
     shaft_w = body_w + collar_clearance * 2;

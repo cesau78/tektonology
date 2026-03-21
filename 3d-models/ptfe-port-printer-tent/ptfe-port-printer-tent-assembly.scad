@@ -1,5 +1,5 @@
 // PTFE Port — Assembly View
-include <ptfe-port-config.scad>
+include <ptfe-port-printer-tent-config.scad>
 
 // Cross-section settings
 crosssection_view = false;
@@ -9,8 +9,8 @@ crosssection_pos  = 0;    // mm offset from center of model along chosen axis
 // Exploded view — set > 0 to separate parts for inspection
 explode = 0;
 
-use <ptfe-port-shaft.scad>
-use <ptfe-port-collar.scad>
+use <ptfe-port-printer-tent-shaft.scad>
+use <ptfe-port-printer-tent-collar.scad>
 
 module ptfe_port_assembly() {
     // Port: flange + shaft
