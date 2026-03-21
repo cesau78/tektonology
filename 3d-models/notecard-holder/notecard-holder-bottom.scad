@@ -1,24 +1,14 @@
 include <notecard-holder-config.scad>
-include <perforated-plate.scad>
-
 module bottom() {
-    bottom_width = width + 2 * (plate_thick + tolerance);
+    bottom_width = width + (4 * (plate_thick + tolerance));
     rail_height = plate_thick * 2;
 
     gap_width = (width - plates * plate_thick - plate_thick * 2) / (plates) + plate_thick;
     cut_width = 3 * plate_thick + tolerance * 2;
 
     union() {
-        // Base plate
-        perforated_plate(
-            p_length    = bottom_width,
-            p_width     = length,
-            p_thickness = plate_thick,
-            p_hole_size = hole_dia,
-            p_spacing   = spacing,
-            p_length_margin = edge_margin,
-            p_width_margin  = edge_margin
-        );
+        // Base plate — solid slab; use slicer infill to control material usage
+        cube([bottom_width, length, plate_thick]);
 
         // Rail channels along both long (Y) edges for side plates to slot into.
         // Each channel is two rails with a gap of plate_thick + 2*tolerance between them.
