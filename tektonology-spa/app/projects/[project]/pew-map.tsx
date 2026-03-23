@@ -171,7 +171,7 @@ export function PewMap({
 
           {/* Altar */}
           <div className="flex justify-center mb-4">
-            <div className="bg-amber-50 dark:bg-amber-950 border border-amber-300 dark:border-amber-700 rounded-lg px-12 py-2 text-xs font-medium text-amber-800 dark:text-amber-200 text-center">
+            <div className="text-xs text-muted-foreground text-center">
               Altar
             </div>
           </div>
