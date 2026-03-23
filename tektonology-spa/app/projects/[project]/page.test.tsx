@@ -20,6 +20,12 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+vi.mock("./pew-map", () => ({
+  PewMap: ({ churchName, partNames }: { churchName: string; partNames: string[] }) => (
+    <div data-testid="pew-map" data-church={churchName} data-parts={partNames.join(",")} />
+  ),
+}));
+
 function makeHardware(overrides: Partial<HardwareItem> = {}): HardwareItem {
   return { partId: "foot", name: "Kneeler Foot", quantity: 3, status: "needed", ...overrides };
 }
@@ -116,16 +122,42 @@ describe("ProjectDetailPage", () => {
     expect(mockNotFound).toHaveBeenCalled();
   });
 
-  it("renders compass rose with orientation labels", async () => {
-    const project = makeProject();
+  it("passes church name and part names to PewMap", async () => {
+    const project = makeProject({
+      layout: {
+        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
+        aisles: [],
+        sections: [
+          makeSection({
+            id: "s1",
+            rows: [
+              {
+                id: "r1",
+                label: "Row 1",
+                frontType: "pew",
+                kneelers: [
+                  makeKneeler({
+                    hardware: [
+                      makeHardware({ name: "Collar" }),
+                      makeHardware({ name: "Kneeler Foot" }),
+                    ],
+                  }),
+                ],
+              },
+            ],
+          }),
+        ],
+      },
+    });
     mockReadFileSync.mockReturnValue(JSON.stringify(project));
     mockReaddirSync.mockReturnValue(["test-project.json"]);
 
     const { default: Page } = await import("./page");
     const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
 
-    expect(container).toHaveTextContent("North");
-    expect(container).toHaveTextContent("South");
+    const pewMap = container.querySelector("[data-testid='pew-map']")!;
+    expect(pewMap.getAttribute("data-church")).toBe("Test Church");
+    expect(pewMap.getAttribute("data-parts")).toBe("Collar,Kneeler Foot");
   });
 
   it("renders legend with all statuses", async () => {
@@ -140,100 +172,6 @@ describe("ProjectDetailPage", () => {
     expect(container).toHaveTextContent("Parts Needed");
     expect(container).toHaveTextContent("In Progress");
     expect(container).toHaveTextContent("Installed");
-  });
-
-  it("renders nave-aligned paired sections with nave divider", async () => {
-    const project = makeProject();
-    mockReadFileSync.mockReturnValue(JSON.stringify(project));
-    mockReaddirSync.mockReturnValue(["test-project.json"]);
-
-    const { default: Page } = await import("./page");
-    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
-
-    expect(container).toHaveTextContent("West");
-    expect(container).toHaveTextContent("East");
-  });
-
-  it("renders outer-aligned sections with center gap", async () => {
-    const project = makeProject({
-      layout: {
-        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
-        aisles: [],
-        sections: [
-          makeSection({ id: "cw", label: "Communion West", side: "west", alignment: "outer", group: 0 }),
-          makeSection({ id: "ce", label: "Communion East", side: "east", alignment: "outer", group: 0 }),
-        ],
-      },
-    });
-    mockReadFileSync.mockReturnValue(JSON.stringify(project));
-    mockReaddirSync.mockReturnValue(["test-project.json"]);
-
-    const { default: Page } = await import("./page");
-    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
-
-    expect(container).toHaveTextContent("Communion West");
-    expect(container).toHaveTextContent("Communion East");
-  });
-
-  it("renders cross aisle (transept) as full-width divider", async () => {
-    const project = makeProject({
-      layout: {
-        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
-        aisles: [],
-        sections: [
-          { id: "transept", label: "Transept", type: "crossAisle", side: "full", alignment: "full", group: 0, rows: [] },
-        ],
-      },
-    });
-    mockReadFileSync.mockReturnValue(JSON.stringify(project));
-    mockReaddirSync.mockReturnValue(["test-project.json"]);
-
-    const { default: Page } = await import("./page");
-    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
-
-    expect(container).toHaveTextContent("Transept");
-  });
-
-  it("renders full-width pew section (non-crossAisle)", async () => {
-    const project = makeProject({
-      layout: {
-        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
-        aisles: [],
-        sections: [
-          makeSection({ id: "full-sec", label: "Full Section", side: "full", alignment: "full", group: 0 }),
-        ],
-      },
-    });
-    mockReadFileSync.mockReturnValue(JSON.stringify(project));
-    mockReaddirSync.mockReturnValue(["test-project.json"]);
-
-    const { default: Page } = await import("./page");
-    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
-
-    expect(container).toHaveTextContent("Full Section");
-  });
-
-  it("renders outer sections (westOuter / eastOuter)", async () => {
-    const project = makeProject({
-      layout: {
-        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
-        aisles: [],
-        sections: [
-          makeSection({ id: "wo", label: "West Outer", side: "westOuter", alignment: "nave", group: 0 }),
-          makeSection({ id: "wr", label: "West Rear", side: "west", alignment: "nave", group: 0 }),
-          makeSection({ id: "er", label: "East Rear", side: "east", alignment: "nave", group: 0 }),
-          makeSection({ id: "eo", label: "East Outer", side: "eastOuter", alignment: "nave", group: 0 }),
-        ],
-      },
-    });
-    mockReadFileSync.mockReturnValue(JSON.stringify(project));
-    mockReaddirSync.mockReturnValue(["test-project.json"]);
-
-    const { default: Page } = await import("./page");
-    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
-
-    expect(container).toHaveTextContent("West Outer");
-    expect(container).toHaveTextContent("East Outer");
   });
 
   it("does not render crossAisle sections in detail cards", async () => {
@@ -253,7 +191,6 @@ describe("ProjectDetailPage", () => {
     const { default: Page } = await import("./page");
     const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
 
-    // Transept appears in map but not as a detail card with id attribute
     const transeptCard = container.querySelector("#transept");
     expect(transeptCard).toBeNull();
   });
@@ -335,7 +272,7 @@ describe("ProjectDetailPage", () => {
     expect(container).toHaveTextContent("Pew");
   });
 
-  it("renders rows without kneelers (pew bar only)", async () => {
+  it("renders rows without kneelers", async () => {
     const project = makeProject({
       layout: {
         orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
@@ -344,9 +281,7 @@ describe("ProjectDetailPage", () => {
           makeSection({
             id: "s1",
             label: "Section",
-            rows: [
-              { id: "r1", label: "Row 9", frontType: "pew", kneelers: [] },
-            ],
+            rows: [{ id: "r1", label: "Row 9", frontType: "pew", kneelers: [] }],
           }),
         ],
       },
@@ -361,7 +296,7 @@ describe("ProjectDetailPage", () => {
     expect(container).toHaveTextContent("0 kneelers");
   });
 
-  it("renders kneeler hardware status badges correctly", async () => {
+  it("renders kneeler hardware status badges", async () => {
     const project = makeProject({
       layout: {
         orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
@@ -369,7 +304,6 @@ describe("ProjectDetailPage", () => {
         sections: [
           makeSection({
             id: "s1",
-            label: "Section",
             rows: [
               {
                 id: "r1",
@@ -377,7 +311,6 @@ describe("ProjectDetailPage", () => {
                 frontType: "pew",
                 kneelers: [
                   makeKneeler({
-                    id: "k1",
                     hardware: [
                       makeHardware({ name: "Foot", quantity: 3, status: "installed" }),
                       makeHardware({ name: "Collar", quantity: 2, status: "printed" }),
@@ -410,7 +343,6 @@ describe("ProjectDetailPage", () => {
         sections: [
           makeSection({
             id: "s1",
-            label: "Section",
             rows: [
               {
                 id: "r1",
@@ -418,7 +350,6 @@ describe("ProjectDetailPage", () => {
                 frontType: "pew",
                 kneelers: [
                   makeKneeler({
-                    id: "k1",
                     hardware: [
                       makeHardware({ status: "installed" }),
                       makeHardware({ status: "installed" }),
@@ -437,7 +368,6 @@ describe("ProjectDetailPage", () => {
     const { default: Page } = await import("./page");
     const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
 
-    // The kneeler segment should have the green/installed color class
     const segments = container.querySelectorAll(".bg-green-100");
     expect(segments.length).toBeGreaterThan(0);
   });
@@ -450,7 +380,6 @@ describe("ProjectDetailPage", () => {
         sections: [
           makeSection({
             id: "s1",
-            label: "Section",
             rows: [
               {
                 id: "r1",
@@ -458,7 +387,6 @@ describe("ProjectDetailPage", () => {
                 frontType: "pew",
                 kneelers: [
                   makeKneeler({
-                    id: "k1",
                     hardware: [
                       makeHardware({ status: "printed" }),
                       makeHardware({ status: "needed" }),
@@ -489,7 +417,6 @@ describe("ProjectDetailPage", () => {
         sections: [
           makeSection({
             id: "s1",
-            label: "Section",
             rows: [
               {
                 id: "r1",
@@ -530,7 +457,6 @@ describe("ProjectDetailPage", () => {
         sections: [
           makeSection({
             id: "s1",
-            label: "Section",
             rows: [
               {
                 id: "r1",
@@ -560,7 +486,6 @@ describe("ProjectDetailPage", () => {
         sections: [
           makeSection({
             id: "s1",
-            label: "Section",
             rows: [
               {
                 id: "r1",
@@ -582,27 +507,6 @@ describe("ProjectDetailPage", () => {
     expect(container).toHaveTextContent("Custom Label");
   });
 
-  it("renders multiple groups in correct order", async () => {
-    const project = makeProject({
-      layout: {
-        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
-        aisles: [],
-        sections: [
-          makeSection({ id: "s2", label: "Group Two", group: 2, side: "west" }),
-          makeSection({ id: "s0", label: "Group Zero", group: 0, side: "west" }),
-        ],
-      },
-    });
-    mockReadFileSync.mockReturnValue(JSON.stringify(project));
-    mockReaddirSync.mockReturnValue(["test-project.json"]);
-
-    const { default: Page } = await import("./page");
-    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
-
-    const text = container.textContent ?? "";
-    expect(text.indexOf("Group Zero")).toBeLessThan(text.indexOf("Group Two"));
-  });
-
   it("renders inventory row without badges when count is zero", async () => {
     const project = makeProject({
       layout: {
@@ -611,7 +515,6 @@ describe("ProjectDetailPage", () => {
         sections: [
           makeSection({
             id: "s1",
-            label: "Section",
             rows: [
               {
                 id: "r1",
@@ -634,60 +537,7 @@ describe("ProjectDetailPage", () => {
     const { default: Page } = await import("./page");
     const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
 
-    // Printed and installed counts are 0 — no badges for those columns
     expect(container).toHaveTextContent("Parts Inventory");
-  });
-
-  it("shows section stats in map blocks", async () => {
-    const project = makeProject();
-    mockReadFileSync.mockReturnValue(JSON.stringify(project));
-    mockReaddirSync.mockReturnValue(["test-project.json"]);
-
-    const { default: Page } = await import("./page");
-    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
-
-    // Section map blocks show row count, kneeler count, and percentage
-    expect(container).toHaveTextContent("1r");
-    expect(container).toHaveTextContent("1k");
-    expect(container).toHaveTextContent("0%");
-  });
-
-  it("falls back to nave alignment when group has only outer sections", async () => {
-    const project = makeProject({
-      layout: {
-        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
-        aisles: [],
-        sections: [
-          makeSection({ id: "wo", label: "West Outer Only", side: "westOuter", alignment: "nave", group: 0 }),
-        ],
-      },
-    });
-    mockReadFileSync.mockReturnValue(JSON.stringify(project));
-    mockReaddirSync.mockReturnValue(["test-project.json"]);
-
-    const { default: Page } = await import("./page");
-    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
-
-    expect(container).toHaveTextContent("West Outer Only");
-  });
-
-  it("renders section with only west side (no east)", async () => {
-    const project = makeProject({
-      layout: {
-        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
-        aisles: [],
-        sections: [
-          makeSection({ id: "w-only", label: "West Only", side: "west", group: 0 }),
-        ],
-      },
-    });
-    mockReadFileSync.mockReturnValue(JSON.stringify(project));
-    mockReaddirSync.mockReturnValue(["test-project.json"]);
-
-    const { default: Page } = await import("./page");
-    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
-
-    expect(container).toHaveTextContent("West Only");
   });
 });
 

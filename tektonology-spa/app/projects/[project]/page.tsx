@@ -4,13 +4,12 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type {
   Project,
-  PewSection,
-  PewRow,
   Kneeler,
   HardwareStatus,
 } from "@/data/types";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PewMap } from "./pew-map";
 
 function getProject(id: string): Project | undefined {
   const filePath = join(process.cwd(), "data", "projects", `${id}.json`);
@@ -57,24 +56,6 @@ const frontTypeLabels: Record<string, string> = {
   pew: "Pew",
 };
 
-const compassFull: Record<string, string> = {
-  N: "North",
-  S: "South",
-  E: "East",
-  W: "West",
-};
-
-function sectionStats(section: PewSection) {
-  const allKneelers = section.rows.flatMap((r) => r.kneelers);
-  const allHardware = allKneelers.flatMap((k) => k.hardware);
-  const total = allHardware.reduce((s, h) => s + h.quantity, 0);
-  const installed = allHardware
-    .filter((h) => h.status === "installed")
-    .reduce((s, h) => s + h.quantity, 0);
-  const pct = total > 0 ? Math.round((installed / total) * 100) : 0;
-  return { kneelers: allKneelers.length, total, installed, pct };
-}
-
 function getInventorySummary(project: Project) {
   const allHardware = project.layout.sections
     .flatMap((s) => s.rows)
@@ -100,75 +81,7 @@ function getInventorySummary(project: Project) {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-// Group sections by their group number for side-by-side rendering
-function groupSections(sections: PewSection[]) {
-  const groups = new Map<number, PewSection[]>();
-  for (const s of sections) {
-    const arr = groups.get(s.group) ?? [];
-    arr.push(s);
-    groups.set(s.group, arr);
-  }
-  return Array.from(groups.entries())
-    .sort(([a], [b]) => a - b)
-    .map(([, secs]) => secs);
-}
-
 // --- components ---
-
-function KneelerSegments({ kneelers }: { kneelers: Kneeler[] }) {
-  return (
-    <div className="flex gap-px">
-      {kneelers.map((k) => {
-        const status = kneelerStatus(k);
-        return (
-          <div
-            key={k.id}
-            className={`rounded-sm h-2 border ${kneelerColors[status]}`}
-            style={{ flex: k.capacity }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-function RowStrip({ row }: { row: PewRow }) {
-  return (
-    <div className="flex flex-col gap-0">
-      <div className={`bg-neutral-600 dark:bg-neutral-400 h-[5px] ${row.kneelers.length > 0 ? "rounded-t-sm" : "rounded-sm"}`} />
-      {row.kneelers.length > 0 && <KneelerSegments kneelers={row.kneelers} />}
-    </div>
-  );
-}
-
-
-function SectionMapBlock({
-  section,
-  projectId,
-}: {
-  section: PewSection;
-  projectId: string;
-}) {
-  const stats = sectionStats(section);
-  return (
-    <a href={`#${section.id}`} className="block group flex-1 min-w-0">
-      <div className="border rounded-lg p-1.5 group-hover:border-amber-300 transition-colors h-full">
-        <div className="text-[9px] text-muted-foreground mb-1 truncate">
-          {section.label}{" "}
-          <span className="text-[8px]">
-            {section.rows.length}r &middot; {stats.kneelers}k &middot;{" "}
-            {stats.pct}%
-          </span>
-        </div>
-        <div className="flex flex-col gap-0.5">
-          {section.rows.map((row) => (
-            <RowStrip key={row.id} row={row} />
-          ))}
-        </div>
-      </div>
-    </a>
-  );
-}
 
 function KneelerHardwareTable({ kneeler }: { kneeler: Kneeler }) {
   return (
@@ -219,8 +132,16 @@ export default async function ProjectDetailPage({
   if (!project) notFound();
 
   const inventory = getInventorySummary(project);
-  const { orientation, aisles, sections } = project.layout;
-  const sectionGroups = groupSections(sections);
+  const { orientation, sections } = project.layout;
+  const partNames = Array.from(
+    new Set(
+      sections
+        .flatMap((s) => s.rows)
+        .flatMap((r) => r.kneelers)
+        .flatMap((k) => k.hardware)
+        .map((h) => h.name),
+    ),
+  ).sort();
 
   return (
     <div>
@@ -261,148 +182,12 @@ export default async function ProjectDetailPage({
       </div>
 
       {/* Pew Map */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-base">Pew Map</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="relative">
-            {/* Compass Rose */}
-            <div className="absolute top-0 right-0 w-16 h-16 flex items-center justify-center">
-              <div className="relative w-12 h-12 text-[10px] font-medium text-muted-foreground">
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 text-foreground font-bold">
-                  {orientation.altar}
-                </span>
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2">
-                  {orientation.entrance}
-                </span>
-                <span className="absolute left-0 top-1/2 -translate-y-1/2">
-                  {orientation.left}
-                </span>
-                <span className="absolute right-0 top-1/2 -translate-y-1/2">
-                  {orientation.right}
-                </span>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-px h-full bg-neutral-300 dark:bg-neutral-600 absolute" />
-                  <div className="h-px w-full bg-neutral-300 dark:bg-neutral-600 absolute" />
-                </div>
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-neutral-400" />
-              </div>
-            </div>
-
-            {/* Altar */}
-            <div className="flex justify-center mb-4">
-              <div className="bg-amber-50 dark:bg-amber-950 border border-amber-300 dark:border-amber-700 rounded-lg px-12 py-2 text-xs font-medium text-amber-800 dark:text-amber-200 text-center">
-                Altar ({compassFull[orientation.altar]})
-              </div>
-            </div>
-
-            {/* Church body — rendered group by group */}
-            <div className="flex flex-col gap-3">
-              {sectionGroups.map((group, gi) => {
-                const fullSection = group.find((s) => s.side === "full");
-
-                // Cross aisle (transept) — spans full width including outer columns
-                if (fullSection?.type === "crossAisle") {
-                  return (
-                    <div
-                      key={`group-${gi}`}
-                      className="h-6 border-y border-dashed border-neutral-300 dark:border-neutral-600 flex items-center justify-center"
-                    >
-                      <span className="text-[9px] text-muted-foreground">
-                        {fullSection.label}
-                      </span>
-                    </div>
-                  );
-                }
-
-                // Full-width pew section
-                if (fullSection) {
-                  return (
-                    <div key={`group-${gi}`} className="flex items-stretch gap-0">
-                      <div className="w-6 shrink-0" />
-                      <div className="w-6 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <SectionMapBlock section={fullSection} projectId={projectId} />
-                      </div>
-                      <div className="w-6 shrink-0" />
-                      <div className="w-6 shrink-0" />
-                    </div>
-                  );
-                }
-
-                const westOuter = group.find((s) => s.side === "westOuter");
-                const westSection = group.find((s) => s.side === "west");
-                const eastSection = group.find((s) => s.side === "east");
-                const eastOuter = group.find((s) => s.side === "eastOuter");
-                const alignment = westSection?.alignment ?? eastSection?.alignment ?? "nave";
-                const hasOuter = westOuter || eastOuter;
-
-                return (
-                  <div key={`group-${gi}`} className="flex items-stretch gap-0">
-                    {/* West Outer — or spacer to keep alignment */}
-                    <div className="min-w-0" style={{ flex: 0.4 }}>
-                      {westOuter && (
-                        <SectionMapBlock section={westOuter} projectId={projectId} />
-                      )}
-                    </div>
-
-                    {/* West Aisle */}
-                    <div className="w-6 shrink-0 border-x border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center">
-                      {gi === 0 && <span className="text-[8px] text-muted-foreground mt-1">W</span>}
-                    </div>
-
-                    {/* Center — west/east pair with nave or gap */}
-                    <div className="flex-[3] flex items-stretch gap-0 min-w-0">
-                      {alignment === "outer" ? (
-                        <>
-                          {westSection && (
-                            <SectionMapBlock section={westSection} projectId={projectId} />
-                          )}
-                          <div className="w-16 shrink-0" />
-                          {eastSection && (
-                            <SectionMapBlock section={eastSection} projectId={projectId} />
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          {westSection && (
-                            <SectionMapBlock section={westSection} projectId={projectId} />
-                          )}
-                          {/* Nave */}
-                          <div className="w-6 shrink-0 border-x border-dashed border-neutral-300 dark:border-neutral-600" />
-                          {eastSection && (
-                            <SectionMapBlock section={eastSection} projectId={projectId} />
-                          )}
-                        </>
-                      )}
-                    </div>
-
-                    {/* East Aisle */}
-                    <div className="w-6 shrink-0 border-x border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center">
-                      {gi === 0 && <span className="text-[8px] text-muted-foreground mt-1">E</span>}
-                    </div>
-
-                    {/* East Outer — or spacer to keep alignment */}
-                    <div className="min-w-0" style={{ flex: 0.4 }}>
-                      {eastOuter && (
-                        <SectionMapBlock section={eastOuter} projectId={projectId} />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Entrance */}
-            <div className="flex justify-center mt-4">
-              <div className="text-xs text-muted-foreground">
-                &darr; Entrance ({compassFull[orientation.entrance]})
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <PewMap
+        churchName={project.church}
+        orientation={orientation}
+        sections={sections}
+        partNames={partNames}
+      />
 
       {/* Section Details */}
       {sections.filter((s) => s.type !== "crossAisle").map((section) => (
@@ -447,7 +232,7 @@ export default async function ProjectDetailPage({
                   <div className="px-3 pb-3 space-y-3">
                     {/* Proportional row map */}
                     <div className="flex items-center gap-px border rounded p-2">
-                      {row.kneelers.map((kneeler, ki) => {
+                      {row.kneelers.map((kneeler) => {
                         const status = kneelerStatus(kneeler);
                         const total = kneeler.hardware.reduce(
                           (s, h) => s + h.quantity,
