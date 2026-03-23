@@ -13,7 +13,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 const kneelerColors: Record<HardwareStatus | "none", string> = {
   needed:
     "bg-neutral-200 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600",
-  printed:
+  upcoming:
     "bg-amber-100 dark:bg-amber-900 border-amber-300 dark:border-amber-700",
   installed:
     "bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700",
@@ -27,7 +27,7 @@ function kneelerStatus(kneeler: Kneeler, partFilter: string | null): HardwareSta
   if (items.length === 0) return partFilter ? "none" : "needed";
   const statuses = items.map((h) => h.status);
   if (statuses.every((s) => s === "installed")) return "installed";
-  if (statuses.some((s) => s === "installed" || s === "printed")) return "printed";
+  if (statuses.some((s) => s === "installed" || s === "upcoming")) return "upcoming";
   return "needed";
 }
 

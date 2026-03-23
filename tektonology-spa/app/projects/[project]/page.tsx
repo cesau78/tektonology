@@ -32,14 +32,14 @@ export function generateStaticParams() {
 function kneelerStatus(kneeler: Kneeler): HardwareStatus {
   const statuses = kneeler.hardware.map((h) => h.status);
   if (statuses.every((s) => s === "installed")) return "installed";
-  if (statuses.some((s) => s === "installed" || s === "printed")) return "printed";
+  if (statuses.some((s) => s === "installed" || s === "upcoming")) return "upcoming";
   return "needed";
 }
 
 const kneelerColors: Record<HardwareStatus, string> = {
   needed:
     "bg-neutral-200 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600",
-  printed:
+  upcoming:
     "bg-amber-100 dark:bg-amber-900 border-amber-300 dark:border-amber-700",
   installed:
     "bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700",
@@ -47,7 +47,7 @@ const kneelerColors: Record<HardwareStatus, string> = {
 
 const statusLabels: Record<HardwareStatus, string> = {
   needed: "Parts Needed",
-  printed: "In Progress",
+  upcoming: "Upcoming",
   installed: "Installed",
 };
 
@@ -64,10 +64,10 @@ function getInventorySummary(project: Project) {
 
   const byPart = new Map<
     string,
-    { needed: number; printed: number; installed: number }
+    { needed: number; upcoming: number; installed: number }
   >();
   for (const h of allHardware) {
-    const entry = byPart.get(h.name) ?? { needed: 0, printed: 0, installed: 0 };
+    const entry = byPart.get(h.name) ?? { needed: 0, upcoming: 0, installed: 0 };
     entry[h.status] += h.quantity;
     byPart.set(h.name, entry);
   }
@@ -76,7 +76,7 @@ function getInventorySummary(project: Project) {
     .map(([name, counts]) => ({
       name,
       ...counts,
-      total: counts.needed + counts.printed + counts.installed,
+      total: counts.needed + counts.upcoming + counts.installed,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -104,12 +104,12 @@ function KneelerHardwareTable({ kneeler }: { kneeler: Kneeler }) {
                   className={`text-[10px] ${
                     h.status === "installed"
                       ? "bg-green-100 text-green-900 border-green-300 hover:bg-green-100"
-                      : h.status === "printed"
+                      : h.status === "upcoming"
                         ? "bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-100"
                         : "bg-neutral-100 text-neutral-700 border-neutral-300 hover:bg-neutral-100"
                   }`}
                 >
-                  {h.status}
+                  {h.status}{h.date && ` ${h.date}`}
                 </Badge>
               </td>
             </tr>
@@ -166,7 +166,7 @@ export default async function ProjectDetailPage({
           <div className="w-8 h-3 rounded-sm bg-neutral-600 dark:bg-neutral-400" />
           Pew / Rail
         </div>
-        {(["needed", "printed", "installed"] as HardwareStatus[]).map(
+        {(["needed", "upcoming", "installed"] as HardwareStatus[]).map(
           (status) => (
             <div
               key={status}
@@ -308,7 +308,7 @@ export default async function ProjectDetailPage({
                   <th className="pb-2 font-medium">Part</th>
                   <th className="pb-2 font-medium text-right">Total</th>
                   <th className="pb-2 font-medium text-right">Needed</th>
-                  <th className="pb-2 font-medium text-right">Printed</th>
+                  <th className="pb-2 font-medium text-right">Upcoming</th>
                   <th className="pb-2 font-medium text-right">Installed</th>
                 </tr>
               </thead>
@@ -325,9 +325,9 @@ export default async function ProjectDetailPage({
                       )}
                     </td>
                     <td className="py-2 text-right">
-                      {row.printed > 0 && (
+                      {row.upcoming > 0 && (
                         <Badge className="bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-100 text-xs">
-                          {row.printed}
+                          {row.upcoming}
                         </Badge>
                       )}
                     </td>

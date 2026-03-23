@@ -136,7 +136,7 @@ describe("PewMap", () => {
       />,
     );
 
-    // Default "All Parts" — kneeler has mixed statuses so should be "printed" (amber)
+    // Default "All Parts" — kneeler has mixed statuses so should be "upcoming" (amber)
     expect(container.querySelectorAll(".bg-amber-100").length).toBeGreaterThan(0);
 
     // Select "Kneeler Foot" — should show green (installed)
@@ -334,7 +334,7 @@ describe("PewMap", () => {
     expect(container.querySelectorAll(".bg-neutral-200").length).toBeGreaterThan(0);
   });
 
-  it("renders kneeler with printed status when some hardware installed", () => {
+  it("renders kneeler with upcoming status when some hardware installed", () => {
     const sections = [
       makeSection({
         id: "s1",

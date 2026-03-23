@@ -170,7 +170,7 @@ describe("ProjectDetailPage", () => {
 
     expect(container).toHaveTextContent("Pew / Rail");
     expect(container).toHaveTextContent("Parts Needed");
-    expect(container).toHaveTextContent("In Progress");
+    expect(container).toHaveTextContent("Upcoming");
     expect(container).toHaveTextContent("Installed");
   });
 
@@ -313,7 +313,7 @@ describe("ProjectDetailPage", () => {
                   makeKneeler({
                     hardware: [
                       makeHardware({ name: "Foot", quantity: 3, status: "installed" }),
-                      makeHardware({ name: "Collar", quantity: 2, status: "printed" }),
+                      makeHardware({ name: "Collar", quantity: 2, status: "upcoming" }),
                       makeHardware({ name: "Spacer", quantity: 2, status: "needed" }),
                     ],
                   }),
@@ -372,7 +372,7 @@ describe("ProjectDetailPage", () => {
     expect(segments.length).toBeGreaterThan(0);
   });
 
-  it("computes kneeler status as printed when some are printed or installed", async () => {
+  it("computes kneeler status as upcoming when some are upcoming or installed", async () => {
     const project = makeProject({
       layout: {
         orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
@@ -388,7 +388,7 @@ describe("ProjectDetailPage", () => {
                 kneelers: [
                   makeKneeler({
                     hardware: [
-                      makeHardware({ status: "printed" }),
+                      makeHardware({ status: "upcoming" }),
                       makeHardware({ status: "needed" }),
                     ],
                   }),
@@ -426,7 +426,7 @@ describe("ProjectDetailPage", () => {
                   makeKneeler({
                     hardware: [
                       makeHardware({ name: "Kneeler Foot", quantity: 3, status: "needed" }),
-                      makeHardware({ name: "Collar", quantity: 2, status: "printed" }),
+                      makeHardware({ name: "Collar", quantity: 2, status: "upcoming" }),
                       makeHardware({ name: "Spacer", quantity: 1, status: "installed" }),
                     ],
                   }),
@@ -505,6 +505,39 @@ describe("ProjectDetailPage", () => {
     const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
 
     expect(container).toHaveTextContent("Custom Label");
+  });
+
+  it("renders date next to status when date is set", async () => {
+    const project = makeProject({
+      layout: {
+        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
+        aisles: [],
+        sections: [
+          makeSection({
+            id: "s1",
+            rows: [
+              {
+                id: "r1",
+                label: "Row 1",
+                frontType: "pew",
+                kneelers: [
+                  makeKneeler({
+                    hardware: [makeHardware({ status: "installed", date: "2026-03-15" })],
+                  }),
+                ],
+              },
+            ],
+          }),
+        ],
+      },
+    });
+    mockReadFileSync.mockReturnValue(JSON.stringify(project));
+    mockReaddirSync.mockReturnValue(["test-project.json"]);
+
+    const { default: Page } = await import("./page");
+    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
+
+    expect(container).toHaveTextContent("installed 2026-03-15");
   });
 
   it("renders inventory row without badges when count is zero", async () => {

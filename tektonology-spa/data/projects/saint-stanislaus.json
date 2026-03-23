@@ -45,7 +45,8 @@
                     "partId": "kneeler-boot-compound-fastened",
                     "name": "Kneeler Foot",
                     "quantity": 3,
-                    "status": "needed"
+                    "status": "installed",
+                    "date": "2026-03-15"
                   },
                   {
                     "partId": "kneeler-bushing",
@@ -81,7 +82,8 @@
                     "partId": "kneeler-boot-compound-fastened",
                     "name": "Kneeler Foot",
                     "quantity": 3,
-                    "status": "needed"
+                    "status": "installed",
+                    "date": "2026-03-15"
                   },
                   {
                     "partId": "kneeler-bushing",
@@ -117,7 +119,8 @@
                     "partId": "kneeler-boot-compound-fastened",
                     "name": "Kneeler Foot",
                     "quantity": 3,
-                    "status": "needed"
+                    "status": "installed",
+                    "date": "2026-03-15"
                   },
                   {
                     "partId": "kneeler-bushing",
@@ -170,7 +173,8 @@
                     "partId": "kneeler-boot-compound-fastened",
                     "name": "Kneeler Foot",
                     "quantity": 3,
-                    "status": "needed"
+                    "status": "installed",
+                    "date": "2026-03-15"
                   },
                   {
                     "partId": "kneeler-bushing",
@@ -206,7 +210,8 @@
                     "partId": "kneeler-boot-compound-fastened",
                     "name": "Kneeler Foot",
                     "quantity": 3,
-                    "status": "needed"
+                    "status": "installed",
+                    "date": "2026-03-15"
                   },
                   {
                     "partId": "kneeler-bushing",
@@ -242,7 +247,8 @@
                     "partId": "kneeler-boot-compound-fastened",
                     "name": "Kneeler Foot",
                     "quantity": 3,
-                    "status": "needed"
+                    "status": "installed",
+                    "date": "2026-03-15"
                   },
                   {
                     "partId": "kneeler-bushing",

@@ -29,13 +29,14 @@ export interface Batch {
   quantity: number;
 }
 
-export type HardwareStatus = "needed" | "printed" | "installed";
+export type HardwareStatus = "needed" | "upcoming" | "installed";
 
 export interface HardwareItem {
   partId: string;
   name: string;
   quantity: number;
   status: HardwareStatus;
+  date?: string;
 }
 
 export interface Kneeler {
