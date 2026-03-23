@@ -118,6 +118,34 @@ describe("PewMap", () => {
     expect(container).toHaveTextContent("0 / 2 installed (0%)");
   });
 
+  it("includes upcoming in summary total", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            kneelers: [
+              makeKneeler({
+                hardware: [
+                  makeHardware({ name: "Foot", quantity: 3, status: "installed" }),
+                  makeHardware({ name: "Foot", quantity: 2, status: "upcoming" }),
+                  makeHardware({ name: "Foot", quantity: 1, status: "needed" }),
+                ],
+              }),
+            ],
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={[]} />,
+    );
+    expect(container).toHaveTextContent("3 / 6 installed (50%)");
+  });
+
   it("shows 0% when no trackable parts exist", () => {
     const sections = [
       makeSection({

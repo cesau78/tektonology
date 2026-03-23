@@ -136,7 +136,10 @@ export function PewMap({
   const neededCount = allHardware
     .filter((h) => h.status === "needed")
     .reduce((s, h) => s + h.quantity, 0);
-  const trackable = installedCount + neededCount;
+  const upcomingCount = allHardware
+    .filter((h) => h.status === "upcoming")
+    .reduce((s, h) => s + h.quantity, 0);
+  const trackable = installedCount + neededCount + upcomingCount;
   const pct = trackable > 0 ? Math.round((installedCount / trackable) * 100) : 0;
 
   return (
