@@ -23,8 +23,10 @@ module hex_nut_pocket(z_pos, y_pos) {
 // 30° flared entrance on X axis widens toward shell exit.
 module hex_nut_slot(z_pos, y_pos) {
     slot_width = nut_af + nut_clearance;
-    pocket_depth = nut_thickness + 0.2;
-    slot_h = total_h;
+    pocket_depth = nut_thickness + tolerance;
+    // Slot length: pocket center to shell wall along the 45° path, +1mm overshoot
+    shell_y = sole_plate_w / 2 + wall;
+    slot_h = (shell_y - abs(y_pos)) / sin(45) + 1;
     angle = (y_pos > 0) ? -45 : 45;
 
     // Flare starts at nut pocket edge, not center
