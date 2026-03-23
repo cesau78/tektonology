@@ -49,13 +49,13 @@ describe("PewMap", () => {
   it("renders church name as title", () => {
     const { container } = render(
       <PewMap
-        churchName="Saint Stanislaus Kostka"
+        churchName="The Shrine Church of Saint Stanislaus"
         orientation={orientation}
         sections={[makeSection()]}
         partNames={["Kneeler Foot"]}
       />,
     );
-    expect(container).toHaveTextContent("Saint Stanislaus Kostka");
+    expect(container).toHaveTextContent("The Shrine Church of Saint Stanislaus");
   });
 
   it("renders Altar and Entrance labels without direction", () => {
