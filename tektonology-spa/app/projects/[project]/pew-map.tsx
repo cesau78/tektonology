@@ -159,7 +159,7 @@ export function PewMap({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-sm text-muted-foreground mb-3">
+        <div className="text-sm text-muted-foreground mb-3 text-center">
           {installedCount} / {trackable} installed ({pct}%)
         </div>
         <div className="relative">
