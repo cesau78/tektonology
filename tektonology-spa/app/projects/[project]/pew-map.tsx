@@ -125,6 +125,20 @@ export function PewMap({
   const [partFilter, setPartFilter] = useState<string | null>(null);
   const sectionGroups = groupSections(sections);
 
+  const allHardware = sections
+    .flatMap((s) => s.rows)
+    .flatMap((r) => r.kneelers)
+    .flatMap((k) => k.hardware)
+    .filter((h) => partFilter === null || h.name === partFilter);
+  const installedCount = allHardware
+    .filter((h) => h.status === "installed")
+    .reduce((s, h) => s + h.quantity, 0);
+  const neededCount = allHardware
+    .filter((h) => h.status === "needed")
+    .reduce((s, h) => s + h.quantity, 0);
+  const trackable = installedCount + neededCount;
+  const pct = trackable > 0 ? Math.round((installedCount / trackable) * 100) : 0;
+
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -145,6 +159,9 @@ export function PewMap({
         </div>
       </CardHeader>
       <CardContent>
+        <div className="text-sm text-muted-foreground mb-3">
+          {installedCount} / {trackable} installed ({pct}%)
+        </div>
         <div className="relative">
           {/* Compass Rose */}
           <div className="absolute top-0 right-0 w-16 h-16 flex items-center justify-center">

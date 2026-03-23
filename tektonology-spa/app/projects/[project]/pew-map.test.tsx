@@ -58,6 +58,90 @@ describe("PewMap", () => {
     expect(container).toHaveTextContent("The Shrine Church of Saint Stanislaus");
   });
 
+  it("renders summary with installed count and percentage", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            kneelers: [
+              makeKneeler({
+                hardware: [
+                  makeHardware({ name: "Kneeler Foot", quantity: 3, status: "installed" }),
+                  makeHardware({ name: "Collar", quantity: 2, status: "needed" }),
+                ],
+              }),
+            ],
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Collar", "Kneeler Foot"]} />,
+    );
+    expect(container).toHaveTextContent("3 / 5 installed (60%)");
+  });
+
+  it("updates summary when part filter is selected", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            kneelers: [
+              makeKneeler({
+                hardware: [
+                  makeHardware({ name: "Kneeler Foot", quantity: 3, status: "installed" }),
+                  makeHardware({ name: "Collar", quantity: 2, status: "needed" }),
+                ],
+              }),
+            ],
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Collar", "Kneeler Foot"]} />,
+    );
+
+    const select = container.querySelector("select")!;
+    fireEvent.change(select, { target: { value: "Kneeler Foot" } });
+    expect(container).toHaveTextContent("3 / 3 installed (100%)");
+
+    fireEvent.change(select, { target: { value: "Collar" } });
+    expect(container).toHaveTextContent("0 / 2 installed (0%)");
+  });
+
+  it("shows 0% when no trackable parts exist", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            kneelers: [
+              makeKneeler({
+                hardware: [makeHardware({ status: "unknown" })],
+              }),
+            ],
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={[]} />,
+    );
+    expect(container).toHaveTextContent("0 / 0 installed (0%)");
+  });
+
   it("renders Altar and Entrance labels without direction", () => {
     const { container } = render(
       <PewMap
