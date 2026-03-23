@@ -159,9 +159,10 @@ export function PewMap({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-sm text-muted-foreground mb-3 text-center">
+        <div className="text-sm text-muted-foreground mb-4 text-center">
           {installedCount} / {trackable} installed ({pct}%)
         </div>
+        <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4" />
         <div className="relative">
           {/* Compass Rose */}
           <div className="absolute top-0 right-0 w-16 h-16 flex items-center justify-center">
