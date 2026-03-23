@@ -16,6 +16,12 @@ export function Header() {
           Tektonology
         </Link>
         <div className="relative flex items-center gap-4">
+          <Link
+            href="/projects"
+            className="text-xs text-neutral-400 hover:text-white transition-colors"
+          >
+            Projects
+          </Link>
           {isAuthenticated && user && !user.email_verified && canAccessFinance(role) && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-amber-400 whitespace-nowrap">
