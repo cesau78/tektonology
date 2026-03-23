@@ -11,10 +11,12 @@ import type {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 const kneelerColors: Record<HardwareStatus | "none", string> = {
-  needed:
+  unknown:
     "bg-neutral-200 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600",
-  upcoming:
+  needed:
     "bg-amber-100 dark:bg-amber-900 border-amber-300 dark:border-amber-700",
+  upcoming:
+    "bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700",
   installed:
     "bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700",
   none: "bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700",
@@ -24,11 +26,12 @@ function kneelerStatus(kneeler: Kneeler, partFilter: string | null): HardwareSta
   const items = partFilter
     ? kneeler.hardware.filter((h) => h.name === partFilter)
     : kneeler.hardware;
-  if (items.length === 0) return partFilter ? "none" : "needed";
+  if (items.length === 0) return partFilter ? "none" : "unknown";
   const statuses = items.map((h) => h.status);
   if (statuses.every((s) => s === "installed")) return "installed";
   if (statuses.some((s) => s === "installed" || s === "upcoming")) return "upcoming";
-  return "needed";
+  if (statuses.some((s) => s === "needed")) return "needed";
+  return "unknown";
 }
 
 function sectionStats(section: PewSection) {

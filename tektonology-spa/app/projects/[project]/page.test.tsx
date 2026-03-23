@@ -169,6 +169,7 @@ describe("ProjectDetailPage", () => {
     const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
 
     expect(container).toHaveTextContent("Pew / Rail");
+    expect(container).toHaveTextContent("Unknown");
     expect(container).toHaveTextContent("Parts Needed");
     expect(container).toHaveTextContent("Upcoming");
     expect(container).toHaveTextContent("Installed");
@@ -405,7 +406,41 @@ describe("ProjectDetailPage", () => {
     const { default: Page } = await import("./page");
     const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
 
-    const segments = container.querySelectorAll(".bg-amber-100");
+    const segments = container.querySelectorAll(".bg-blue-100");
+    expect(segments.length).toBeGreaterThan(0);
+  });
+
+  it("computes kneeler status as unknown when all hardware is unknown", async () => {
+    const project = makeProject({
+      layout: {
+        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
+        aisles: [],
+        sections: [
+          makeSection({
+            id: "s1",
+            rows: [
+              {
+                id: "r1",
+                label: "Row 1",
+                frontType: "pew",
+                kneelers: [
+                  makeKneeler({
+                    hardware: [makeHardware({ status: "unknown" })],
+                  }),
+                ],
+              },
+            ],
+          }),
+        ],
+      },
+    });
+    mockReadFileSync.mockReturnValue(JSON.stringify(project));
+    mockReaddirSync.mockReturnValue(["test-project.json"]);
+
+    const { default: Page } = await import("./page");
+    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
+
+    const segments = container.querySelectorAll(".bg-neutral-200");
     expect(segments.length).toBeGreaterThan(0);
   });
 
@@ -537,7 +572,8 @@ describe("ProjectDetailPage", () => {
     const { default: Page } = await import("./page");
     const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
 
-    expect(container).toHaveTextContent("installed 2026-03-15");
+    expect(container).toHaveTextContent("Installed");
+    expect(container).toHaveTextContent("2026-03-15");
   });
 
   it("renders inventory row without badges when count is zero", async () => {

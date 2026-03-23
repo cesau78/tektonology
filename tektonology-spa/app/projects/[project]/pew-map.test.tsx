@@ -136,21 +136,21 @@ describe("PewMap", () => {
       />,
     );
 
-    // Default "All Parts" — kneeler has mixed statuses so should be "upcoming" (amber)
-    expect(container.querySelectorAll(".bg-amber-100").length).toBeGreaterThan(0);
+    // Default "All Parts" — kneeler has mixed statuses so should be "upcoming" (blue)
+    expect(container.querySelectorAll(".bg-blue-100").length).toBeGreaterThan(0);
 
     // Select "Kneeler Foot" — should show green (installed)
     const select = container.querySelector("select")!;
     fireEvent.change(select, { target: { value: "Kneeler Foot" } });
     expect(container.querySelectorAll(".bg-green-100").length).toBeGreaterThan(0);
 
-    // Select "Collar" — should show neutral (needed)
+    // Select "Collar" — should show amber (needed)
     fireEvent.change(select, { target: { value: "Collar" } });
-    expect(container.querySelectorAll(".bg-neutral-200").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".bg-amber-100").length).toBeGreaterThan(0);
 
     // Switch back to All Parts
     fireEvent.change(select, { target: { value: "" } });
-    expect(container.querySelectorAll(".bg-amber-100").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".bg-blue-100").length).toBeGreaterThan(0);
   });
 
   it("shows none color for kneelers missing the selected part", () => {
@@ -330,8 +330,8 @@ describe("PewMap", () => {
     const { container } = render(
       <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={[]} />,
     );
-    // Kneeler segment should have the needed color
-    expect(container.querySelectorAll(".bg-neutral-200").length).toBeGreaterThan(0);
+    // Kneeler segment should have the needed color (amber)
+    expect(container.querySelectorAll(".bg-amber-100").length).toBeGreaterThan(0);
   });
 
   it("renders kneeler with upcoming status when some hardware installed", () => {
@@ -358,10 +358,10 @@ describe("PewMap", () => {
     const { container } = render(
       <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={[]} />,
     );
-    expect(container.querySelectorAll(".bg-amber-100").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".bg-blue-100").length).toBeGreaterThan(0);
   });
 
-  it("shows needed for empty kneeler hardware with no filter", () => {
+  it("shows unknown for empty kneeler hardware with no filter", () => {
     const sections = [
       makeSection({
         id: "s1",
@@ -371,6 +371,30 @@ describe("PewMap", () => {
             label: "Row 1",
             frontType: "pew",
             kneelers: [makeKneeler({ hardware: [] })],
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={[]} />,
+    );
+    expect(container.querySelectorAll(".bg-neutral-200").length).toBeGreaterThan(0);
+  });
+
+  it("shows unknown when all hardware is unknown", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            kneelers: [
+              makeKneeler({
+                hardware: [makeHardware({ status: "unknown" })],
+              }),
+            ],
           },
         ],
       }),

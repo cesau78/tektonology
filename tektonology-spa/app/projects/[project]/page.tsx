@@ -33,19 +33,23 @@ function kneelerStatus(kneeler: Kneeler): HardwareStatus {
   const statuses = kneeler.hardware.map((h) => h.status);
   if (statuses.every((s) => s === "installed")) return "installed";
   if (statuses.some((s) => s === "installed" || s === "upcoming")) return "upcoming";
-  return "needed";
+  if (statuses.some((s) => s === "needed")) return "needed";
+  return "unknown";
 }
 
 const kneelerColors: Record<HardwareStatus, string> = {
-  needed:
+  unknown:
     "bg-neutral-200 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600",
-  upcoming:
+  needed:
     "bg-amber-100 dark:bg-amber-900 border-amber-300 dark:border-amber-700",
+  upcoming:
+    "bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700",
   installed:
     "bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700",
 };
 
 const statusLabels: Record<HardwareStatus, string> = {
+  unknown: "Unknown",
   needed: "Parts Needed",
   upcoming: "Upcoming",
   installed: "Installed",
@@ -64,10 +68,10 @@ function getInventorySummary(project: Project) {
 
   const byPart = new Map<
     string,
-    { needed: number; upcoming: number; installed: number }
+    { unknown: number; needed: number; upcoming: number; installed: number }
   >();
   for (const h of allHardware) {
-    const entry = byPart.get(h.name) ?? { needed: 0, upcoming: 0, installed: 0 };
+    const entry = byPart.get(h.name) ?? { unknown: 0, needed: 0, upcoming: 0, installed: 0 };
     entry[h.status] += h.quantity;
     byPart.set(h.name, entry);
   }
@@ -76,7 +80,7 @@ function getInventorySummary(project: Project) {
     .map(([name, counts]) => ({
       name,
       ...counts,
-      total: counts.needed + counts.upcoming + counts.installed,
+      total: counts.unknown + counts.needed + counts.upcoming + counts.installed,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -105,12 +109,17 @@ function KneelerHardwareTable({ kneeler }: { kneeler: Kneeler }) {
                     h.status === "installed"
                       ? "bg-green-100 text-green-900 border-green-300 hover:bg-green-100"
                       : h.status === "upcoming"
-                        ? "bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-100"
-                        : "bg-neutral-100 text-neutral-700 border-neutral-300 hover:bg-neutral-100"
+                        ? "bg-blue-100 text-blue-900 border-blue-300 hover:bg-blue-100"
+                        : h.status === "needed"
+                          ? "bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-100"
+                          : "bg-neutral-100 text-neutral-700 border-neutral-300 hover:bg-neutral-100"
                   }`}
                 >
-                  {h.status}{h.date && ` ${h.date}`}
+                  {statusLabels[h.status]}
                 </Badge>
+                {h.date && (
+                  <span className="text-[9px] text-muted-foreground ml-1">{h.date}</span>
+                )}
               </td>
             </tr>
           ))}
@@ -166,7 +175,7 @@ export default async function ProjectDetailPage({
           <div className="w-8 h-3 rounded-sm bg-neutral-600 dark:bg-neutral-400" />
           Pew / Rail
         </div>
-        {(["needed", "upcoming", "installed"] as HardwareStatus[]).map(
+        {(["unknown", "needed", "upcoming", "installed"] as HardwareStatus[]).map(
           (status) => (
             <div
               key={status}
@@ -307,6 +316,7 @@ export default async function ProjectDetailPage({
                 <tr className="border-b text-left">
                   <th className="pb-2 font-medium">Part</th>
                   <th className="pb-2 font-medium text-right">Total</th>
+                  <th className="pb-2 font-medium text-right">Unknown</th>
                   <th className="pb-2 font-medium text-right">Needed</th>
                   <th className="pb-2 font-medium text-right">Upcoming</th>
                   <th className="pb-2 font-medium text-right">Installed</th>
@@ -318,15 +328,22 @@ export default async function ProjectDetailPage({
                     <td className="py-2">{row.name}</td>
                     <td className="py-2 text-right">{row.total}</td>
                     <td className="py-2 text-right">
-                      {row.needed > 0 && (
+                      {row.unknown > 0 && (
                         <Badge variant="outline" className="text-xs">
+                          {row.unknown}
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="py-2 text-right">
+                      {row.needed > 0 && (
+                        <Badge className="bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-100 text-xs">
                           {row.needed}
                         </Badge>
                       )}
                     </td>
                     <td className="py-2 text-right">
                       {row.upcoming > 0 && (
-                        <Badge className="bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-100 text-xs">
+                        <Badge className="bg-blue-100 text-blue-900 border-blue-300 hover:bg-blue-100 text-xs">
                           {row.upcoming}
                         </Badge>
                       )}

@@ -29,7 +29,7 @@ export interface Batch {
   quantity: number;
 }
 
-export type HardwareStatus = "needed" | "upcoming" | "installed";
+export type HardwareStatus = "unknown" | "needed" | "upcoming" | "installed";
 
 export interface HardwareItem {
   partId: string;
