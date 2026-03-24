@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { readdirSync, readFileSync } from "fs";
 import { join } from "path";
 import { notFound } from "next/navigation";
@@ -192,12 +193,14 @@ export default async function ProjectDetailPage({
       </div>
 
       {/* Pew Map */}
-      <PewMap
-        churchName={project.church}
-        orientation={orientation}
-        sections={sections}
-        partNames={partNames}
-      />
+      <Suspense fallback={null}>
+        <PewMap
+          churchName={project.church}
+          orientation={orientation}
+          sections={sections}
+          partNames={partNames}
+        />
+      </Suspense>
 
       {/* Section Details */}
       {sections.filter((s) => s.type !== "crossAisle").map((section) => (

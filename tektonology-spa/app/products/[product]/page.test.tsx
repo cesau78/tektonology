@@ -130,6 +130,71 @@ describe("ProductPage", () => {
     expect(link).toHaveTextContent("Boot STL");
   });
 
+  it("renders assembly viewer when product has assemblyView", async () => {
+    const product = makeProduct({
+      assemblyView: {
+        label: "Full Assembly",
+        parts: [{ url: "/a.stl", color: "#ff0000" }],
+        rotation: [90, 0, 0],
+      },
+    });
+    mockReadFileSync.mockReturnValue(JSON.stringify(product));
+    mockReaddirSync.mockReturnValue([]);
+
+    const { default: ProductPage } = await import("./page");
+    const { container } = render(await ProductPage({ params: Promise.resolve({ product: "kneeler-boot" }) }));
+
+    expect(container.querySelector("[data-testid='stl-assembly-viewer']")).toHaveTextContent("Full Assembly");
+  });
+
+  it("renders two-column grid for two STL downloads", async () => {
+    const product = makeProduct({
+      stlDownloadUrls: [
+        { label: "Part A", url: "/a.stl" },
+        { label: "Part B", url: "/b.stl" },
+      ],
+    });
+    mockReadFileSync.mockReturnValue(JSON.stringify(product));
+    mockReaddirSync.mockReturnValue([]);
+
+    const { default: ProductPage } = await import("./page");
+    const { container } = render(await ProductPage({ params: Promise.resolve({ product: "kneeler-boot" }) }));
+
+    const grid = container.querySelector(".grid-cols-2");
+    expect(grid).toBeInTheDocument();
+  });
+
+  it("renders three-column grid for three or more STL downloads", async () => {
+    const product = makeProduct({
+      stlDownloadUrls: [
+        { label: "Part A", url: "/a.stl" },
+        { label: "Part B", url: "/b.stl" },
+        { label: "Part C", url: "/c.stl" },
+      ],
+    });
+    mockReadFileSync.mockReturnValue(JSON.stringify(product));
+    mockReaddirSync.mockReturnValue([]);
+
+    const { default: ProductPage } = await import("./page");
+    const { container } = render(await ProductPage({ params: Promise.resolve({ product: "kneeler-boot" }) }));
+
+    const grid = container.querySelector(".grid-cols-3");
+    expect(grid).toBeInTheDocument();
+  });
+
+  it("does not render stl viewer for non-stl download", async () => {
+    const product = makeProduct({
+      stlDownloadUrls: [{ label: "PDF Guide", url: "/guide.pdf" }],
+    });
+    mockReadFileSync.mockReturnValue(JSON.stringify(product));
+    mockReaddirSync.mockReturnValue([]);
+
+    const { default: ProductPage } = await import("./page");
+    const { container } = render(await ProductPage({ params: Promise.resolve({ product: "kneeler-boot" }) }));
+
+    expect(container.querySelector("[data-testid='stl-viewer']")).toBeNull();
+  });
+
   it("renders purchase links when present", async () => {
     const product = makeProduct({
       purchaseLinks: [{ label: "Etsy", url: "https://etsy.com/boot" }],

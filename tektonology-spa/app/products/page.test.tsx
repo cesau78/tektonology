@@ -123,6 +123,28 @@ describe("ProductsPage", () => {
     expect(links[1]).toHaveTextContent("Charlie");
   });
 
+  it("sorts Tools category last", async () => {
+    const productA = makeProduct({ id: "a", name: "Alpha", category: "Furniture" });
+    const productB = makeProduct({ id: "b", name: "Beta", category: "Tools" });
+    const productC = makeProduct({ id: "c", name: "Charlie", category: "Pest Control" });
+
+    mockReaddirSync.mockReturnValue(["a.json", "b.json", "c.json"]);
+    mockReadFileSync
+      .mockReturnValueOnce(JSON.stringify(productA))
+      .mockReturnValueOnce(JSON.stringify(productB))
+      .mockReturnValueOnce(JSON.stringify(productC));
+
+    const { default: ProductsPage } = await import("./page");
+    const { container } = render(<ProductsPage />);
+
+    const allText = container.textContent || "";
+    const furnitureIdx = allText.indexOf("Furniture");
+    const pestIdx = allText.indexOf("Pest Control");
+    const toolsIdx = allText.indexOf("Tools");
+    expect(furnitureIdx).toBeLessThan(toolsIdx);
+    expect(pestIdx).toBeLessThan(toolsIdx);
+  });
+
   it("groups multiple products under the same category", async () => {
     const productA = makeProduct({ id: "a", name: "Alpha", category: "Furniture" });
     const productB = makeProduct({ id: "b", name: "Beta", category: "Furniture" });

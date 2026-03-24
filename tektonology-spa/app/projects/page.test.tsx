@@ -251,6 +251,43 @@ describe("ProjectsPage", () => {
     expect(container.querySelector('[data-testid="thumbnail-Kneeler Boot"]')).toBeTruthy();
   });
 
+  it("handles zero-total part gracefully (0%)", async () => {
+    const project = makeProject({
+      layout: {
+        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
+        aisles: [],
+        sections: [
+          {
+            id: "s1",
+            label: "S1",
+            type: "pews",
+            side: "full",
+            alignment: "full",
+            group: 0,
+            rows: [{
+              id: "r1", label: "R1", frontType: "pew",
+              kneelers: [{
+                id: "k1", capacity: 2,
+                hardware: [
+                  { partId: "spacer", name: "Spacer", quantity: 0, status: "needed" },
+                ],
+              }],
+            }],
+          },
+        ],
+      },
+    });
+    mockReaddirSync.mockReturnValue(["test.json"]);
+    mockReadFileSync.mockReturnValue(JSON.stringify(project));
+
+    const { default: ProjectsPage } = await import("./page");
+    const { container } = render(ProjectsPage());
+
+    expect(container).toHaveTextContent("Spacer");
+    expect(container).toHaveTextContent("0%");
+    expect(container).toHaveTextContent("0 / 0 units installed");
+  });
+
   it("renders installation map links with tokenized part filter", async () => {
     const project = makeProject();
     mockReaddirSync.mockReturnValue(["test.json"]);

@@ -496,6 +496,63 @@ describe("PewMap", () => {
     expect(container.querySelectorAll(".bg-neutral-100").length).toBeGreaterThan(0);
   });
 
+  it("falls back to default when URL param does not match any part name", () => {
+    vi.spyOn(navigation, "useSearchParams").mockReturnValue(
+      new URLSearchParams("part=nonexistent-part") as ReturnType<typeof navigation.useSearchParams>,
+    );
+
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            kneelers: [
+              makeKneeler({
+                hardware: [
+                  makeHardware({ name: "Kneeler Foot", quantity: 3, status: "needed" }),
+                ],
+              }),
+            ],
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+    );
+
+    const select = container.querySelector("select")!;
+    expect(select.value).toBe("Kneeler Foot");
+
+    vi.restoreAllMocks();
+  });
+
+  it("handles empty partNames array", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            kneelers: [makeKneeler({ hardware: [] })],
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={[]} />,
+    );
+
+    expect(container).toHaveTextContent("Test");
+    const select = container.querySelector("select")!;
+    expect(select.querySelectorAll("option")).toHaveLength(0);
+  });
+
   it("initializes filter from URL search params", () => {
     vi.spyOn(navigation, "useSearchParams").mockReturnValue(
       new URLSearchParams("part=kneeler-foot") as ReturnType<typeof navigation.useSearchParams>,
