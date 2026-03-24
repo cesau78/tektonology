@@ -11,7 +11,12 @@ vi.mock("@react-three/fiber", () => ({
 }));
 
 vi.mock("@react-three/drei", () => ({
-  OrbitControls: () => null,
+  OrbitControls: (props: any) => (
+    <div
+      data-testid="orbit-controls"
+      data-enable-zoom={props.enableZoom ? "true" : "false"}
+    />
+  ),
 }));
 
 vi.mock("three/examples/jsm/loaders/STLLoader.js", () => ({
@@ -41,14 +46,29 @@ describe("StlViewer", () => {
     expect(screen.getByText("Test Part")).toBeInTheDocument();
   });
 
-  it("renders the canvas container", () => {
+  it("renders the canvas container and lights", () => {
     render(<StlViewer url="/test.stl" label="Test Part" />);
     expect(screen.getByTestId("canvas")).toBeInTheDocument();
+    // Verify Lights component renders (custom elements in JSDOM)
+    expect(document.querySelector("ambientlight")).toBeInTheDocument();
+    expect(document.querySelectorAll("directionallight")).toHaveLength(3);
   });
 
   it("hides label in compact mode", () => {
     render(<StlViewer url="/test.stl" label="Test Part" compact />);
     expect(screen.queryByText("Test Part")).not.toBeInTheDocument();
+  });
+
+  it("disables zoom in compact mode", () => {
+    render(<StlViewer url="/test.stl" label="Test Part" compact />);
+    const controls = screen.getByTestId("orbit-controls");
+    expect(controls).toHaveAttribute("data-enable-zoom", "false");
+  });
+
+  it("enables zoom in normal mode", () => {
+    render(<StlViewer url="/test.stl" label="Test Part" />);
+    const controls = screen.getByTestId("orbit-controls");
+    expect(controls).toHaveAttribute("data-enable-zoom", "true");
   });
 
   it("hides label when label is empty", () => {
