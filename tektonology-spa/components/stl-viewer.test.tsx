@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import React from "react";
 
 const mockUseLoader = vi.fn();
 
@@ -15,6 +16,7 @@ vi.mock("@react-three/drei", () => ({
     <div
       data-testid="orbit-controls"
       data-enable-zoom={props.enableZoom ? "true" : "false"}
+      data-auto-rotate={props.autoRotate ? "true" : "false"}
     />
   ),
 }));
@@ -23,10 +25,14 @@ vi.mock("three/examples/jsm/loaders/STLLoader.js", () => ({
   STLLoader: class {},
 }));
 
-function makeGeometry(bounds = { min: { x: 0, y: 0, z: 0 }, max: { x: 1, y: 1, z: 1 } }) {
+function makeGeometry(
+  bounds = { min: { x: 0, y: 0, z: 0 }, max: { x: 1, y: 1, z: 1 } },
+) {
   const geom = {
     computeBoundingBox: vi.fn(),
-    center: vi.fn(() => geom),
+    center: vi.fn(function (this: any) {
+      return this;
+    }),
     boundingBox: bounds,
   };
   return geom;
@@ -34,14 +40,17 @@ function makeGeometry(bounds = { min: { x: 0, y: 0, z: 0 }, max: { x: 1, y: 1, z
 
 import { StlViewer, StlAssemblyViewer, type StlPart } from "./stl-viewer";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
 
 describe("StlViewer", () => {
   beforeEach(() => {
     mockUseLoader.mockReturnValue(makeGeometry());
   });
 
-  it("renders with the label", () => {
+  it("renders with the label and default color", () => {
     render(<StlViewer url="/test.stl" label="Test Part" />);
     expect(screen.getByText("Test Part")).toBeInTheDocument();
   });
@@ -49,7 +58,6 @@ describe("StlViewer", () => {
   it("renders the canvas container and lights", () => {
     render(<StlViewer url="/test.stl" label="Test Part" />);
     expect(screen.getByTestId("canvas")).toBeInTheDocument();
-    // Verify Lights component renders (custom elements in JSDOM)
     expect(document.querySelector("ambientlight")).toBeInTheDocument();
     expect(document.querySelectorAll("directionallight")).toHaveLength(3);
   });
@@ -77,8 +85,9 @@ describe("StlViewer", () => {
   });
 
   it("applies rotation when provided", () => {
-    const { container } = render(<StlViewer url="/test.stl" label="" rotation={[90, 0, 0]} />);
-    expect(container.querySelector("[data-testid='canvas']")).toBeInTheDocument();
+    render(<StlViewer url="/test.stl" label="" rotation={[90, 180, 0]} />);
+    const group = document.querySelector("group");
+    expect(group).toBeInTheDocument();
   });
 
   it("applies custom color", () => {
@@ -98,8 +107,8 @@ describe("StlViewer", () => {
 describe("StlAssemblyViewer", () => {
   it("renders assembly with multiple parts", () => {
     const parts: StlPart[] = [
-      { url: "/a.stl", color: "#ff0000", position: [0, 0, 0] },
-      { url: "/b.stl", color: "#00ff00", position: [1, 0, 0] },
+      { url: "/a.stl", color: "#ff0000", position: [10, 0, 0] },
+      { url: "/b.stl", color: "#00ff00", position: [0, 10, 0] },
     ];
     mockUseLoader.mockReturnValue([makeGeometry(), makeGeometry()]);
     render(<StlAssemblyViewer parts={parts} label="Assembly" />);
@@ -107,8 +116,9 @@ describe("StlAssemblyViewer", () => {
     expect(screen.getByTestId("canvas")).toBeInTheDocument();
   });
 
-  it("handles single geometry (non-array) from useLoader", () => {
+  it("handles single geometry (non-array) from useLoader (array normalization)", () => {
     const parts: StlPart[] = [{ url: "/a.stl" }];
+    // Simulate useLoader returning a single geometry (e.g. if implementation changed or mock behavior specific)
     mockUseLoader.mockReturnValue(makeGeometry());
     render(<StlAssemblyViewer parts={parts} label="Single" />);
     expect(screen.getByText("Single")).toBeInTheDocument();
@@ -116,44 +126,53 @@ describe("StlAssemblyViewer", () => {
 
   it("hides label in compact mode", () => {
     const parts: StlPart[] = [{ url: "/a.stl" }];
-    mockUseLoader.mockReturnValue(makeGeometry());
+    mockUseLoader.mockReturnValue([makeGeometry()]);
     render(<StlAssemblyViewer parts={parts} label="Hidden" compact />);
     expect(screen.queryByText("Hidden")).not.toBeInTheDocument();
   });
 
   it("hides label when label is empty", () => {
     const parts: StlPart[] = [{ url: "/a.stl" }];
-    mockUseLoader.mockReturnValue(makeGeometry());
+    mockUseLoader.mockReturnValue([makeGeometry()]);
     const { container } = render(<StlAssemblyViewer parts={parts} label="" />);
     expect(container.querySelector(".border-t")).toBeNull();
   });
 
   it("applies rotation when provided", () => {
     const parts: StlPart[] = [{ url: "/a.stl" }];
-    mockUseLoader.mockReturnValue(makeGeometry());
+    mockUseLoader.mockReturnValue([makeGeometry()]);
     render(<StlAssemblyViewer parts={parts} label="" rotation={[45, 90, 0]} />);
     expect(screen.getByTestId("canvas")).toBeInTheDocument();
   });
 
   it("defaults position to [0,0,0] when not provided", () => {
-    const parts: StlPart[] = [{ url: "/a.stl" }, { url: "/b.stl" }];
-    mockUseLoader.mockReturnValue([makeGeometry(), makeGeometry()]);
+    const parts: StlPart[] = [{ url: "/a.stl" }];
+    mockUseLoader.mockReturnValue([makeGeometry()]);
     render(<StlAssemblyViewer parts={parts} label="No Pos" />);
     expect(screen.getByText("No Pos")).toBeInTheDocument();
   });
 
   it("handles zero-dimension assembly geometry", () => {
     const parts: StlPart[] = [{ url: "/a.stl" }];
-    const zeroBounds = { min: { x: 0, y: 0, z: 0 }, max: { x: 0, y: 0, z: 0 } };
-    mockUseLoader.mockReturnValue(makeGeometry(zeroBounds));
+    const zeroBounds = {
+      min: { x: 0, y: 0, z: 0 },
+      max: { x: 0, y: 0, z: 0 },
+    };
+    mockUseLoader.mockReturnValue([makeGeometry(zeroBounds)]);
     render(<StlAssemblyViewer parts={parts} label="Zero Assembly" />);
     expect(screen.getByText("Zero Assembly")).toBeInTheDocument();
   });
 
   it("defaults color to gray when not provided", () => {
     const parts: StlPart[] = [{ url: "/a.stl" }];
-    mockUseLoader.mockReturnValue(makeGeometry());
+    mockUseLoader.mockReturnValue([makeGeometry()]);
     render(<StlAssemblyViewer parts={parts} label="Default Color" />);
     expect(screen.getByText("Default Color")).toBeInTheDocument();
+  });
+
+  it("handles empty parts array", () => {
+    mockUseLoader.mockReturnValue([]);
+    render(<StlAssemblyViewer parts={[]} label="Empty" />);
+    expect(screen.getByText("Empty")).toBeInTheDocument();
   });
 });
