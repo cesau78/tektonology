@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type {
   PewSection,
   PewRow,
@@ -22,11 +23,9 @@ const kneelerColors: Record<HardwareStatus | "none", string> = {
   none: "bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700",
 };
 
-function kneelerStatus(kneeler: Kneeler, partFilter: string | null): HardwareStatus | "none" {
-  const items = partFilter
-    ? kneeler.hardware.filter((h) => h.name === partFilter)
-    : kneeler.hardware;
-  if (items.length === 0) return partFilter ? "none" : "unknown";
+function kneelerStatus(kneeler: Kneeler, partFilter: string): HardwareStatus | "none" {
+  const items = kneeler.hardware.filter((h) => h.name === partFilter);
+  if (items.length === 0) return "none";
   const statuses = items.map((h) => h.status);
   if (statuses.every((s) => s === "installed")) return "installed";
   if (statuses.some((s) => s === "installed" || s === "upcoming")) return "upcoming";
@@ -34,9 +33,11 @@ function kneelerStatus(kneeler: Kneeler, partFilter: string | null): HardwareSta
   return "unknown";
 }
 
-function sectionStats(section: PewSection) {
+function sectionStats(section: PewSection, partFilter: string) {
   const allKneelers = section.rows.flatMap((r) => r.kneelers);
-  const allHardware = allKneelers.flatMap((k) => k.hardware);
+  const allHardware = allKneelers
+    .flatMap((k) => k.hardware)
+    .filter((h) => h.name === partFilter);
   const total = allHardware.reduce((s, h) => s + h.quantity, 0);
   const installed = allHardware
     .filter((h) => h.status === "installed")
@@ -57,7 +58,7 @@ function groupSections(sections: PewSection[]) {
     .map(([, secs]) => secs);
 }
 
-function KneelerSegments({ kneelers, partFilter }: { kneelers: Kneeler[]; partFilter: string | null }) {
+function KneelerSegments({ kneelers, partFilter }: { kneelers: Kneeler[]; partFilter: string }) {
   return (
     <div className="flex gap-px">
       {kneelers.map((k) => {
@@ -74,7 +75,7 @@ function KneelerSegments({ kneelers, partFilter }: { kneelers: Kneeler[]; partFi
   );
 }
 
-function RowStrip({ row, partFilter }: { row: PewRow; partFilter: string | null }) {
+function RowStrip({ row, partFilter }: { row: PewRow; partFilter: string }) {
   return (
     <div className="flex flex-col gap-0">
       <div className={`bg-neutral-600 dark:bg-neutral-400 h-[5px] ${row.kneelers.length > 0 ? "rounded-t-sm" : "rounded-sm"}`} />
@@ -88,9 +89,9 @@ function SectionMapBlock({
   partFilter,
 }: {
   section: PewSection;
-  partFilter: string | null;
+  partFilter: string;
 }) {
-  const stats = sectionStats(section);
+  const stats = sectionStats(section, partFilter);
   return (
     <a href={`#${section.id}`} className="block group flex-1 min-w-0">
       <div className="border rounded-lg p-1.5 group-hover:border-amber-300 transition-colors h-full">
@@ -122,14 +123,45 @@ export function PewMap({
   sections: PewSection[];
   partNames: string[];
 }) {
-  const [partFilter, setPartFilter] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const initialPart = searchParams.get("part");
+
+  function defaultPart(): string {
+    if (initialPart) {
+      const match = partNames.find(
+        (n) => n === initialPart || n.toLowerCase().replace(/\s+/g, "-") === initialPart,
+      );
+      if (match) return match;
+    }
+    const allHw = sections
+      .flatMap((s) => s.rows)
+      .flatMap((r) => r.kneelers)
+      .flatMap((k) => k.hardware);
+    const counts: Record<string, number> = {};
+    for (const h of allHw) {
+      if (h.status === "needed" || h.status === "upcoming") {
+        counts[h.name] = (counts[h.name] ?? 0) + h.quantity;
+      }
+    }
+    let best = partNames[0] ?? "";
+    let bestCount = -1;
+    for (const name of partNames) {
+      if ((counts[name] ?? 0) > bestCount) {
+        best = name;
+        bestCount = counts[name] ?? 0;
+      }
+    }
+    return best;
+  }
+
+  const [partFilter, setPartFilter] = useState<string>(defaultPart);
   const sectionGroups = groupSections(sections);
 
   const allHardware = sections
     .flatMap((s) => s.rows)
     .flatMap((r) => r.kneelers)
     .flatMap((k) => k.hardware)
-    .filter((h) => partFilter === null || h.name === partFilter);
+    .filter((h) => h.name === partFilter);
   const installedCount = allHardware
     .filter((h) => h.status === "installed")
     .reduce((s, h) => s + h.quantity, 0);
@@ -149,10 +181,9 @@ export function PewMap({
           <CardTitle className="text-base">{churchName}</CardTitle>
           <select
             className="text-xs border rounded px-2 py-1 bg-background text-foreground"
-            value={partFilter ?? ""}
-            onChange={(e) => setPartFilter(e.target.value || null)}
+            value={partFilter}
+            onChange={(e) => setPartFilter(e.target.value)}
           >
-            <option value="">All Parts</option>
             {partNames.map((name) => (
               <option key={name} value={name}>
                 {name}
@@ -162,8 +193,16 @@ export function PewMap({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-sm text-muted-foreground mb-4 text-center">
-          {installedCount} / {trackable} installed ({pct}%)
+        <div className="mb-4 max-w-xs mx-auto">
+          <div className="text-sm text-muted-foreground text-center mb-1">
+            {installedCount} / {trackable} Installed ({pct}%)
+          </div>
+          <div className="h-2 rounded-full bg-neutral-200 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-green-500 transition-all"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
         </div>
         <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4" />
         <div className="relative">

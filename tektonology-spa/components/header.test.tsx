@@ -44,7 +44,16 @@ describe("Header", () => {
     expect(screen.getByText("Tektonology").closest("a")).toHaveAttribute("href", "/");
   });
 
-  it("shows sign in button when not loading and not authenticated", () => {
+  it("renders Projects and Products links in the nav bar", () => {
+    setAuth0({});
+    render(<Header />);
+    expect(screen.getByText("Projects")).toBeInTheDocument();
+    expect(screen.getByText("Projects").closest("a")).toHaveAttribute("href", "/projects");
+    expect(screen.getByText("Products")).toBeInTheDocument();
+    expect(screen.getByText("Products").closest("a")).toHaveAttribute("href", "/products");
+  });
+
+  it("shows sign in icon button when not loading and not authenticated", () => {
     setAuth0({ isLoading: false, isAuthenticated: false });
     render(<Header />);
     expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
@@ -57,11 +66,10 @@ describe("Header", () => {
     expect(mockLoginWithRedirect).toHaveBeenCalled();
   });
 
-  it("shows profile link and sign out button when authenticated", () => {
+  it("shows profile icon link and sign out icon button when authenticated", () => {
     setAuth0({ isLoading: false, isAuthenticated: true, user: { email_verified: true } });
     render(<Header />);
-    expect(screen.getByText("Profile")).toBeInTheDocument();
-    expect(screen.getByText("Profile").closest("a")).toHaveAttribute("href", "/profile");
+    expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute("href", "/profile");
     expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sign in" })).not.toBeInTheDocument();
   });
@@ -80,7 +88,7 @@ describe("Header", () => {
     render(<Header />);
     expect(screen.queryByRole("button", { name: "Sign in" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Profile")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Profile" })).not.toBeInTheDocument();
   });
 
   it("shows finance/procurement/manufacturing links for owner with verified email", () => {
@@ -103,8 +111,6 @@ describe("Header", () => {
     render(<Header />);
     expect(screen.getByText("Verify Email to Access:")).toBeInTheDocument();
     expect(screen.getByText("Finance, Procurement & Manufacturing")).toBeInTheDocument();
-    expect(screen.getByText(/Finance/)).toBeInTheDocument(); // substring appears in the warning text
-    // The nav links for finance/procurement/manufacturing should NOT appear since email not verified
     expect(screen.queryByRole("link", { name: "Finance" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Procurement" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Manufacturing" })).not.toBeInTheDocument();
@@ -140,13 +146,10 @@ describe("Header", () => {
   });
 
   it("does not show finance links when user is undefined and canAccessFinance is true", () => {
-    // isAuthenticated true but user undefined — user?.email_verified is undefined (falsy)
     setAuth0({ isLoading: false, isAuthenticated: true, user: undefined });
     vi.mocked(canAccessFinance).mockReturnValue(true);
     render(<Header />);
-    // canAccessFinance(role) && user?.email_verified => false (user is undefined)
     expect(screen.queryByRole("link", { name: "Finance" })).not.toBeInTheDocument();
-    // isAuthenticated && user && !user.email_verified => false (user is falsy)
     expect(screen.queryByText("Verify Email to Access:")).not.toBeInTheDocument();
   });
 });

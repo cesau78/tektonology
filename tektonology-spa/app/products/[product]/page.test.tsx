@@ -6,6 +6,15 @@ const mockReaddirSync = vi.fn();
 const mockReadFileSync = vi.fn();
 const mockNotFound = vi.fn();
 
+vi.mock("@/components/stl-viewer", () => ({
+  StlViewer: ({ url, label }: { url: string; label: string }) => (
+    <div data-testid="stl-viewer" data-url={url}>{label}</div>
+  ),
+  StlAssemblyViewer: ({ label }: { label: string }) => (
+    <div data-testid="stl-assembly-viewer">{label}</div>
+  ),
+}));
+
 vi.mock("fs", () => ({
   default: { readFileSync: (...args: unknown[]) => mockReadFileSync(...args), readdirSync: (...args: unknown[]) => mockReaddirSync(...args) },
   readFileSync: (...args: unknown[]) => mockReadFileSync(...args),
@@ -73,7 +82,7 @@ describe("ProductPage", () => {
     const { container } = render(await ProductPage({ params: Promise.resolve({ product: "kneeler-boot" }) }));
 
     const nav = container.querySelector("nav")!;
-    const productsLink = nav.querySelector('a[href="/"]');
+    const productsLink = nav.querySelector('a[href="/products"]');
     expect(productsLink).toHaveTextContent("Products");
   });
 

@@ -542,7 +542,7 @@ describe("ProjectDetailPage", () => {
     expect(container).toHaveTextContent("Custom Label");
   });
 
-  it("renders date next to status when date is set", async () => {
+  it("renders date in separate column when date is set", async () => {
     const project = makeProject({
       layout: {
         orientation: { altar: "N", entrance: "S", left: "W", right: "E" },

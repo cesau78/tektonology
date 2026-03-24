@@ -1,0 +1,39 @@
+{
+  "id": "bolt-drying-rack",
+  "name": "Bolt Drying Rack",
+  "category": "Tools",
+  "description": "A two-plate hanging rack for applying Loctite 243 (medium-strength, blue) threadlocker to M3x20 socket head cap screws. Bolts hang head-down through staggered holes — the top plate captures the head while the bottom plate shields the lower shaft, exposing only the threads that need coating. Holds 50 bolts per rack. Print 2 plates and 2 legs.",
+  "printSettings": {
+    "plate": "PLA or PETG | 4 Wall Loops | 35% Gyroid Infill | Print Qty: 2",
+    "leg": "PLA or PETG | 4 Wall Loops | 35% Gyroid Infill | Print Qty: 2"
+  },
+  "assemblyGuide": [
+    "Print 2 plates and 2 legs.",
+    "Slide each plate into the leg channel slots — bottom plate first, then top plate.",
+    "The end-stop flange prevents the plates from sliding through.",
+    "Hang bolts head-down through the top plate holes — shafts pass through both plates."
+  ],
+  "stlDownloadUrls": [
+    {
+      "label": "Plate (print 2)",
+      "url": "/stl/bolt-drying-rack-plate.stl",
+      "color": "#800000",
+      "rotation": [270, 0, 0]
+    },
+    {
+      "label": "Leg (print 2)",
+      "url": "/stl/bolt-drying-rack-leg.stl",
+      "color": "#800000",
+      "rotation": [0, 0, 270]
+    }
+  ],
+  "purchaseLinks": [],
+  "assemblyView": {
+    "label": "Assembled Rack",
+    "rotation": [270, 0, 0],
+    "parts": [
+      { "url": "/stl/bolt-drying-rack-assembly.stl", "color": "#800000" },
+      { "url": "/stl/bolt-drying-rack-bolts.stl", "color": "#c0c0c0" }
+    ]
+  }
+}

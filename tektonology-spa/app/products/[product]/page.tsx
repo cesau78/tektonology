@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { StlViewer, StlAssemblyViewer } from "@/components/stl-viewer";
 
 function camelToLabel(key: string): string {
   return key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
@@ -51,7 +52,7 @@ export default async function ProductPage({
     <div>
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/" className="hover:text-foreground transition-colors">Products</Link>
+        <Link href="/products" className="hover:text-foreground transition-colors">Products</Link>
         <span>›</span>
         <span className="text-foreground">{product.name}</span>
       </nav>
@@ -107,11 +108,23 @@ export default async function ProductPage({
             <CardTitle className="text-base">Downloads</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-2">
+            {product.assemblyView && (
+              <div className="mb-4">
+                <StlAssemblyViewer parts={product.assemblyView.parts} label={product.assemblyView.label} rotation={product.assemblyView.rotation} />
+              </div>
+            )}
+            <div className={`grid gap-4 ${product.stlDownloadUrls.length === 2 ? "grid-cols-2" : product.stlDownloadUrls.length >= 3 ? "grid-cols-3" : ""}`}>
               {product.stlDownloadUrls.map((dl) => (
-                <Button key={dl.url} asChild>
-                  <a href={dl.url}>↓ {dl.label}</a>
-                </Button>
+                <div key={dl.url} className="flex flex-col">
+                  {dl.url.endsWith(".stl") && (
+                    <div className="mb-2">
+                      <StlViewer url={dl.url} label={dl.label} color={dl.color} rotation={dl.rotation} />
+                    </div>
+                  )}
+                  <Button asChild size="sm">
+                    <a href={dl.url}>↓ {dl.label}</a>
+                  </Button>
+                </div>
               ))}
             </div>
           </CardContent>

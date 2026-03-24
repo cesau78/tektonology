@@ -1,7 +1,9 @@
 // --- TEKTONOLOGY BOLT DRYING RACK ASSEMBLY ---
-// Two views controlled by the `view` variable:
+// Views controlled by the `view` variable:
 //   "assembled"  — assembled rack with bolts shown in slots (default)
 //   "overlap"    — assembled rack; only overlapping volumes are shown (red)
+//   "rack"       — rack only (plates + legs, no bolts) — export as STL for web
+//   "bolts"      — bolts only — export as STL for web
 // Print parts from separate files:
 //   bolt-drying-rack-plate.scad  (print 2)
 //   bolt-drying-rack-leg.scad    (print 2)
@@ -10,7 +12,11 @@ use <bolt-drying-rack-plate.scad>
 use <bolt-drying-rack-leg.scad>
 
 // --- View selector ---
-view = "assembled"; // "assembled" or "overlap"
+//   "assembled"  — rack + bolts (default)
+//   "rack"       — rack only (plates + legs) — export as STL
+//   "bolts"      — bolts only — export as STL
+//   "overlap"    — interference highlight
+view = "bolts";
 
 // --- Bolt module: M3 socket head cap screw hanging head-down through top plate ---
 module bolt() {
@@ -110,6 +116,10 @@ module overlap_view() {
 // --- Render selected view ---
 if (view == "overlap") {
     overlap_view();
+} else if (view == "rack") {
+    rack_assembly();
+} else if (view == "bolts") {
+    all_bolts();
 } else {
     assembled_view();
 }

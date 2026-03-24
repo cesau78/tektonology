@@ -4,8 +4,9 @@
   "category": "Kneeler Replacement Parts",
   "description": "A three-piece boot system with a rigid PLA upper shell, a soft TPU floor pad, and a mechanical fastener to secure the boot to the kneeler leg — no glue required.",
   "printSettings": {
-    "upperBoot": "Polymaker PLA Pro (Black) | 4 Wall Loops | 35% Gyroid Infill",
-    "floorPad": "TPU 90A | 4 Wall Loops | 35% Gyroid Infill | Print Speed < 40mm/s"
+    "bootCap": "Polymaker PLA Pro (Burgundy) | 4 Wall Loops | 35% Gyroid Infill",
+    "bootSlipper": "Polymaker PLA Pro (Burgundy) | 4 Wall Loops | 35% Gyroid Infill",
+    "bootInsert": "TPU 90A (Black) | 4 Wall Loops | 35% Gyroid Infill | Print Speed < 40mm/s"
   },
   "assemblyGuide": [
     "Clean surfaces: remove any stringing from the internal wedge cavity.",
@@ -15,13 +16,29 @@
   ],
   "stlDownloadUrls": [
     {
-      "label": "Upper Boot (PLA)",
-      "url": "https://github.com/cesau78/tektonology/raw/main/3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened/kneeler-boot-coupler.stl"
+      "label": "Boot Cap (PLA)",
+      "url": "/stl/kneeler-boot-cap.stl",
+      "color": "#800000"
     },
     {
-      "label": "Floor Pad (TPU)",
-      "url": "https://github.com/cesau78/tektonology/raw/main/3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened/kneeler-boot-insert.stl"
+      "label": "Boot Insert (TPU)",
+      "url": "/stl/kneeler-boot-insert.stl",
+      "color": "#1a1a1a"
+    },
+    {
+      "label": "Boot Slipper (PLA)",
+      "url": "/stl/kneeler-boot-slipper.stl",
+      "color": "#800000"
     }
   ],
-  "purchaseLinks": []
+  "purchaseLinks": [],
+  "assemblyView": {
+    "label": "Assembled Boot",
+    "rotation": [270, 75, 0],
+    "parts": [
+      { "url": "/stl/kneeler-boot-cap.stl", "color": "#800000" },
+      { "url": "/stl/kneeler-boot-insert.stl", "color": "#1a1a1a", "position": [0, 0, -6.075] },
+      { "url": "/stl/kneeler-boot-slipper.stl", "color": "#800000" }
+    ]
+  }
 }

@@ -1,0 +1,22 @@
+{
+  "id": "kneeler-spacer",
+  "name": "Kneeler Spacer",
+  "category": "Kneeler Replacement Parts",
+  "description": "A thin ring spacer that fills the gap between the kneeler bushing collar and the frame. Sits flush against the bushing to prevent lateral play in the hardware.",
+  "printSettings": {
+    "spacer": "Polymaker PLA Pro (Burgundy) | 4 Wall Loops | 35% Gyroid Infill"
+  },
+  "assemblyGuide": [
+    "Install the kneeler bushing into the frame hole first.",
+    "Slide the spacer over the hardware and seat it against the bushing collar.",
+    "The spacer fills the remaining gap between the collar and the frame surface."
+  ],
+  "stlDownloadUrls": [
+    {
+      "label": "Kneeler Spacer",
+      "url": "/stl/kneeler-spacer.stl",
+      "color": "#800000"
+    }
+  ],
+  "purchaseLinks": []
+}

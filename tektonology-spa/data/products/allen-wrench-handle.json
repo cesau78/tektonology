@@ -1,8 +1,8 @@
 {
   "id": "allen-wrench-handle",
-  "name": "Ergonomic Allen Wrench T-Handle",
+  "name": "Ergonomic Allen Wrench Knob Handle",
   "category": "Tools",
-  "description": "A 3D-printable T-handle grip for a 2.5mm L-shaped allen wrench. Eliminates hand pain during repetitive M3 socket head cap screw assembly. Slide the L-key in from one side — the snug slot holds it in place.",
+  "description": "A 3D-printable door-knob style grip for a 2.5mm L-shaped allen wrench. Eliminates hand pain during repetitive M3 socket head cap screw assembly. Slide the L-key in from one side — the snug slot holds it in place.",
   "printSettings": {
     "handle": "PLA or PETG | 4 Wall Loops | 40% Gyroid Infill | 0.16mm Layer Height"
   },
@@ -15,8 +15,9 @@
   ],
   "stlDownloadUrls": [
     {
-      "label": "T-Handle (PLA/PETG)",
-      "url": "https://github.com/cesau78/tektonology/raw/main/3d-models/tools/allen-wrench-handle/allen-wrench-handle.stl"
+      "label": "Knob Handle (PLA/PETG)",
+      "url": "/stl/allen-wrench-handle.stl",
+      "color": "#800000"
     }
   ],
   "purchaseLinks": []

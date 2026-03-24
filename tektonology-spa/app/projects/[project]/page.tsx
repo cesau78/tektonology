@@ -96,6 +96,7 @@ function KneelerHardwareTable({ kneeler }: { kneeler: Kneeler }) {
             <th className="text-left pb-1 font-medium">Part</th>
             <th className="text-right pb-1 font-medium">Qty</th>
             <th className="text-right pb-1 font-medium">Status</th>
+            <th className="text-right pb-1 font-medium">Date</th>
           </tr>
         </thead>
         <tbody>
@@ -105,7 +106,7 @@ function KneelerHardwareTable({ kneeler }: { kneeler: Kneeler }) {
               <td className="py-1 text-right">{h.quantity}</td>
               <td className="py-1 text-right">
                 <Badge
-                  className={`text-[10px] ${
+                  className={`text-[10px] w-20 justify-center ${
                     h.status === "installed"
                       ? "bg-green-100 text-green-900 border-green-300 hover:bg-green-100"
                       : h.status === "upcoming"
@@ -117,9 +118,9 @@ function KneelerHardwareTable({ kneeler }: { kneeler: Kneeler }) {
                 >
                   {statusLabels[h.status]}
                 </Badge>
-                {h.date && (
-                  <span className="text-[9px] text-muted-foreground ml-1">{h.date}</span>
-                )}
+              </td>
+              <td className="py-1 text-right text-muted-foreground">
+                {h.date ?? ""}
               </td>
             </tr>
           ))}
@@ -216,10 +217,6 @@ export default async function ProjectDetailPage({
               const totalParts = row.kneelers
                 .flatMap((k) => k.hardware)
                 .reduce((s, h) => s + h.quantity, 0);
-              const installedParts = row.kneelers
-                .flatMap((k) => k.hardware)
-                .filter((h) => h.status === "installed")
-                .reduce((s, h) => s + h.quantity, 0);
 
               return (
                 <details
@@ -234,8 +231,7 @@ export default async function ProjectDetailPage({
                       </span>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {row.kneelers.length} kneelers &middot; {installedParts}/
-                      {totalParts} parts
+                      {row.kneelers.length} kneelers &middot; {totalParts} parts
                     </span>
                   </summary>
                   <div className="px-3 pb-3 space-y-3">
@@ -255,7 +251,7 @@ export default async function ProjectDetailPage({
                             key={kneeler.id}
                             className={`rounded border ${kneelerColors[status]} flex items-center justify-center py-1`}
                             style={{ flex: kneeler.capacity }}
-                            title={`${kneeler.capacity}p — ${inst}/${total} parts`}
+                            title={`${kneeler.capacity}p — ${inst} of ${total} parts`}
                           >
                             <span className="text-[8px] text-muted-foreground">
                               {kneeler.capacity}p
@@ -268,13 +264,7 @@ export default async function ProjectDetailPage({
                     {/* Kneeler details */}
                     <div className="space-y-1">
                       {row.kneelers.map((kneeler, ki) => {
-                        const total = kneeler.hardware.reduce(
-                          (s, h) => s + h.quantity,
-                          0,
-                        );
-                        const inst = kneeler.hardware
-                          .filter((h) => h.status === "installed")
-                          .reduce((s, h) => s + h.quantity, 0);
+                        const partCount = kneeler.hardware.reduce((s, h) => s + h.quantity, 0);
                         return (
                           <details
                             key={kneeler.id}
@@ -288,7 +278,7 @@ export default async function ProjectDetailPage({
                                 </span>
                               </span>
                               <span className="text-muted-foreground">
-                                {inst}/{total}
+                                {partCount} parts
                               </span>
                             </summary>
                             <KneelerHardwareTable kneeler={kneeler} />

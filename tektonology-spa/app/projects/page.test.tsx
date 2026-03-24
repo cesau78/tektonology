@@ -4,11 +4,17 @@ import type { Project } from "@/data/types";
 
 const mockReaddirSync = vi.fn();
 const mockReadFileSync = vi.fn();
+const mockExistsSync = vi.fn();
 
 vi.mock("fs", () => ({
-  default: { readFileSync: (...args: unknown[]) => mockReadFileSync(...args), readdirSync: (...args: unknown[]) => mockReaddirSync(...args) },
+  default: { readFileSync: (...args: unknown[]) => mockReadFileSync(...args), readdirSync: (...args: unknown[]) => mockReaddirSync(...args), existsSync: (...args: unknown[]) => mockExistsSync(...args) },
   readFileSync: (...args: unknown[]) => mockReadFileSync(...args),
   readdirSync: (...args: unknown[]) => mockReaddirSync(...args),
+  existsSync: (...args: unknown[]) => mockExistsSync(...args),
+}));
+
+vi.mock("@/components/product-thumbnail", () => ({
+  ProductThumbnail: ({ product }: { product: { name: string } }) => <div data-testid={`thumbnail-${product.name}`} />,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -45,8 +51,10 @@ const makeProject = (overrides: Partial<Project> = {}): Project => ({
                 id: "k1",
                 capacity: 3,
                 hardware: [
-                  { partId: "foot", name: "Kneeler Foot", quantity: 3, status: "installed" },
-                  { partId: "collar", name: "Collar", quantity: 2, status: "needed" },
+                  { partId: "foot", name: "Kneeler Foot", quantity: 3, status: "installed", date: "2026-03-15" },
+                  { partId: "foot", name: "Kneeler Foot", quantity: 2, status: "needed" },
+                  { partId: "kneeler-bushing", name: "Kneeler Bushing", quantity: 2, status: "upcoming", date: "2026-03-31" },
+                  { partId: "kneeler-bushing", name: "Kneeler Bushing", quantity: 1, status: "needed" },
                 ],
               },
             ],
@@ -65,6 +73,8 @@ describe("ProjectsPage", () => {
     vi.resetModules();
     mockReaddirSync.mockReset();
     mockReadFileSync.mockReset();
+    mockExistsSync.mockReset();
+    mockExistsSync.mockReturnValue(false);
   });
 
   it("renders project list heading", async () => {
@@ -74,7 +84,7 @@ describe("ProjectsPage", () => {
     expect(container.querySelector("h1")).toHaveTextContent("Projects");
   });
 
-  it("renders project cards with stats", async () => {
+  it("renders project name, church, and layout stats", async () => {
     const project = makeProject();
     mockReaddirSync.mockReturnValue(["test-project.json"]);
     mockReadFileSync.mockReturnValue(JSON.stringify(project));
@@ -87,8 +97,25 @@ describe("ProjectsPage", () => {
     expect(container).toHaveTextContent("1 sections");
     expect(container).toHaveTextContent("1 rows");
     expect(container).toHaveTextContent("1 kneelers");
-    expect(container).toHaveTextContent("5 parts");
-    expect(container).toHaveTextContent("3 installed");
+  });
+
+  it("renders per-part progress bars with correct percentages", async () => {
+    const project = makeProject();
+    mockReaddirSync.mockReturnValue(["test-project.json"]);
+    mockReadFileSync.mockReturnValue(JSON.stringify(project));
+
+    const { default: ProjectsPage } = await import("./page");
+    const { container } = render(ProjectsPage());
+
+    // Foot: 3 installed / 5 total = 60%
+    expect(container).toHaveTextContent("Kneeler Foot");
+    expect(container).toHaveTextContent("3 / 5 units installed");
+    expect(container).toHaveTextContent("60%");
+
+    // Collar: 0 installed / 3 total = 0%
+    expect(container).toHaveTextContent("Kneeler Bushing");
+    expect(container).toHaveTextContent("0 / 3 units installed");
+    expect(container).toHaveTextContent("0%");
   });
 
   it("links to project detail page", async () => {
@@ -114,9 +141,12 @@ describe("ProjectsPage", () => {
     const { default: ProjectsPage } = await import("./page");
     const { container } = render(ProjectsPage());
 
-    const cards = container.querySelectorAll("a");
-    expect(cards[0]).toHaveAttribute("href", "/projects/a");
-    expect(cards[1]).toHaveAttribute("href", "/projects/b");
+    const text = container.textContent ?? "";
+    const alphaIdx = text.indexOf("Alpha");
+    const betaIdx = text.indexOf("Beta");
+    expect(alphaIdx).toBeGreaterThan(-1);
+    expect(betaIdx).toBeGreaterThan(-1);
+    expect(alphaIdx).toBeLessThan(betaIdx);
   });
 
   it("filters non-json files from directory listing", async () => {
@@ -127,10 +157,19 @@ describe("ProjectsPage", () => {
     const { default: ProjectsPage } = await import("./page");
     render(ProjectsPage());
 
+    // 1 project file + 0 product files (existsSync returns false)
     expect(mockReadFileSync).toHaveBeenCalledTimes(1);
   });
 
-  it("shows 0% installed when project has no parts", async () => {
+  it("renders empty list when no projects exist", async () => {
+    mockReaddirSync.mockReturnValue([]);
+    const { default: ProjectsPage } = await import("./page");
+    const { container } = render(ProjectsPage());
+
+    expect(container.querySelectorAll("a")).toHaveLength(0);
+  });
+
+  it("does not show part section when no parts have needed status", async () => {
     const project = makeProject({
       layout: {
         orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
@@ -143,25 +182,102 @@ describe("ProjectsPage", () => {
             side: "full",
             alignment: "full",
             group: 0,
-            rows: [{ id: "r1", label: "R1", frontType: "pew", kneelers: [] }],
+            rows: [{
+              id: "r1", label: "R1", frontType: "pew",
+              kneelers: [{
+                id: "k1", capacity: 3,
+                hardware: [
+                  { partId: "foot", name: "Kneeler Foot", quantity: 3, status: "installed", date: "2026-03-15" },
+                ],
+              }],
+            }],
           },
         ],
       },
     });
-    mockReaddirSync.mockReturnValue(["empty.json"]);
+    mockReaddirSync.mockReturnValue(["test.json"]);
     mockReadFileSync.mockReturnValue(JSON.stringify(project));
 
     const { default: ProjectsPage } = await import("./page");
     const { container } = render(ProjectsPage());
 
-    expect(container).toHaveTextContent("0%");
+    expect(container).not.toHaveTextContent("Kneeler Foot");
+    expect(container).not.toHaveTextContent("installed");
   });
 
-  it("renders empty list when no projects exist", async () => {
-    mockReaddirSync.mockReturnValue([]);
+  it("shows product thumbnail and link when product exists", async () => {
+    const project = makeProject({
+      layout: {
+        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
+        aisles: [],
+        sections: [
+          {
+            id: "s1",
+            label: "S1",
+            type: "pews",
+            side: "full",
+            alignment: "full",
+            group: 0,
+            rows: [{
+              id: "r1", label: "R1", frontType: "pew",
+              kneelers: [{
+                id: "k1", capacity: 2,
+                hardware: [
+                  { partId: "kneeler-boot", name: "Kneeler Boot", quantity: 2, status: "needed" },
+                ],
+              }],
+            }],
+          },
+        ],
+      },
+    });
+    const productJson = JSON.stringify({
+      id: "kneeler-boot", name: "Kneeler Boot", category: "Parts",
+      description: "", printSettings: {}, assemblyGuide: [],
+      stlDownloadUrls: [{ label: "Boot", url: "/stl/boot.stl" }], purchaseLinks: [],
+    });
+    mockReaddirSync.mockReturnValue(["test.json"]);
+    mockExistsSync.mockReturnValue(true);
+    mockReadFileSync.mockImplementation((path: string) => {
+      if (path.includes("kneeler-boot.json")) return productJson;
+      return JSON.stringify(project);
+    });
+
     const { default: ProjectsPage } = await import("./page");
     const { container } = render(ProjectsPage());
 
-    expect(container.querySelectorAll("a")).toHaveLength(0);
+    const productLink = container.querySelector('a[href="/products/kneeler-boot"]');
+    expect(productLink).toBeTruthy();
+    expect(container.querySelector('[data-testid="thumbnail-Kneeler Boot"]')).toBeTruthy();
+  });
+
+  it("renders installation map links with tokenized part filter", async () => {
+    const project = makeProject();
+    mockReaddirSync.mockReturnValue(["test.json"]);
+    mockReadFileSync.mockReturnValue(JSON.stringify(project));
+
+    const { default: ProjectsPage } = await import("./page");
+    const { container } = render(ProjectsPage());
+
+    const mapLinks = container.querySelectorAll('a[href="/projects/test-project?part=kneeler-foot"]');
+    // Part name link + Installation Map link
+    expect(mapLinks.length).toBe(2);
+    expect(mapLinks[0]).toHaveTextContent("Kneeler Foot");
+    expect(mapLinks[1]).toHaveTextContent("Installation Map");
+  });
+
+  it("renders separate sections for each part with needed items", async () => {
+    const project = makeProject();
+    mockReaddirSync.mockReturnValue(["test.json"]);
+    mockReadFileSync.mockReturnValue(JSON.stringify(project));
+
+    const { default: ProjectsPage } = await import("./page");
+    const { container } = render(ProjectsPage());
+
+    // Both parts should have their own progress info
+    expect(container).toHaveTextContent("Kneeler Foot");
+    expect(container).toHaveTextContent("3 / 5 units installed");
+    expect(container).toHaveTextContent("Kneeler Bushing");
+    expect(container).toHaveTextContent("0 / 3 units installed");
   });
 });

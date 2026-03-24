@@ -3,11 +3,26 @@ export type PrintSettings = Record<string, string>;
 export interface DownloadLink {
   label: string;
   url: string;
+  color?: string;
+  rotation?: [number, number, number];
 }
 
 export interface PurchaseLink {
   label: string;
   url: string;
+}
+
+export interface AssemblyPart {
+  url: string;
+  color?: string;
+  position?: [number, number, number];
+  rotation?: [number, number, number];
+}
+
+export interface AssemblyView {
+  label: string;
+  parts: AssemblyPart[];
+  rotation?: [number, number, number];
 }
 
 export interface Product {
@@ -19,6 +34,7 @@ export interface Product {
   assemblyGuide: string[];
   stlDownloadUrls: DownloadLink[];
   purchaseLinks: PurchaseLink[];
+  assemblyView?: AssemblyView;
 }
 
 export interface Batch {
