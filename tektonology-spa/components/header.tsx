@@ -3,13 +3,17 @@
 import Link from "next/link";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useRole, canAccessFinance } from "@/lib/auth";
+import { isFeatureEnabled } from "@/lib/features";
 import { Button } from "@/components/ui/button";
-import { User, LogIn, LogOut } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 
 export function Header() {
   const { isAuthenticated, isLoading, loginWithRedirect, logout, user } = useAuth0();
   const { role } = useRole();
   const showFinance = canAccessFinance(role) && user?.email_verified;
+  const showNewProducts = isFeatureEnabled("newProducts", role) && user?.email_verified;
+  const showNewProjects = isFeatureEnabled("newProjects", role) && user?.email_verified;
+  const showSales = isFeatureEnabled("sales", role) && user?.email_verified;
 
   return (
     <header className="bg-black border-b border-neutral-800">
@@ -47,7 +51,7 @@ export function Header() {
               aria-label="Sign in"
               onClick={() => loginWithRedirect()}
             >
-              <LogIn className="size-4" />
+              <User className="size-4" />
             </Button>
           )}
           {!isLoading && isAuthenticated && (
@@ -72,33 +76,61 @@ export function Header() {
             >
               Products
             </Link>
+            {showNewProducts && (
+              <Link
+                href="/new-products"
+                className="text-xs text-neutral-400 hover:text-white transition-colors"
+              >
+                NEW Products
+              </Link>
+            )}
             <Link
               href="/projects"
               className="text-xs text-neutral-400 hover:text-white transition-colors"
             >
               Projects
             </Link>
+            {showNewProjects && (
+              <Link
+                href="/new-projects"
+                className="text-xs text-neutral-400 hover:text-white transition-colors"
+              >
+                NEW Projects
+              </Link>
+            )}
           </div>
-          {showFinance && (
+          {(showFinance || showSales) && (
             <div className="flex items-center gap-4">
-              <Link
-                href="/finance"
-                className="text-xs text-neutral-400 hover:text-white transition-colors"
-              >
-                Finance
-              </Link>
-              <Link
-                href="/procurement"
-                className="text-xs text-neutral-400 hover:text-white transition-colors"
-              >
-                Procurement
-              </Link>
-              <Link
-                href="/manufacturing"
-                className="text-xs text-neutral-400 hover:text-white transition-colors"
-              >
-                Manufacturing
-              </Link>
+              {showSales && (
+                <Link
+                  href="/sales"
+                  className="text-xs text-neutral-400 hover:text-white transition-colors"
+                >
+                  Sales
+                </Link>
+              )}
+              {showFinance && (
+                <>
+                  <Link
+                    href="/finance"
+                    className="text-xs text-neutral-400 hover:text-white transition-colors"
+                  >
+                    Finance
+                  </Link>
+                  <Link
+                    href="/procurement"
+                    className="text-xs text-neutral-400 hover:text-white transition-colors"
+                  >
+                    Procurement
+                  </Link>
+                  <Link
+                    href="/manufacturing"
+                    className="text-xs text-neutral-400 hover:text-white transition-colors"
+                  >
+                    Manufacturing
+                  </Link>
+                </>
+              )}
             </div>
           )}
         </div>

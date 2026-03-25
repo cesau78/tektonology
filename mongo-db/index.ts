@@ -8,5 +8,7 @@ export type { Nozzle } from "./nozzle.js";
 export type { Plate } from "./plate.js";
 export type { Printer } from "./printer.js";
 export type { Inventory, InventoryComponent, InventoryHardware } from "./inventory.js";
+export type { Product, ProductOrigin, ProductVersion, ProductStl } from "./product.js";
 export type { Project, ProjectItem } from "./project.js";
 export type { Sale, SaleItem } from "./sale.js";
+export type { ComponentStock } from "./component-stock.js";

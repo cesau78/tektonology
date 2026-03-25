@@ -9,15 +9,19 @@ import { LoadingState, ErrorState } from "@/components/api-error";
 import { useApiFetch } from "@/lib/api";
 import { RequireRole } from "@/components/auth-guard";
 import { useRole, canWrite } from "@/lib/auth";
+import { JournalSelect } from "@/components/journal-select";
+import { FormField, inputClass, monoInputClass } from "@/components/form-field";
 
 interface SpoolData {
   spoolId: number;
   brand: string;
   material: string;
   color: string;
+  effective: string;
   cost: number;
   weightG: number;
   remainingG: number;
+  journalId?: number;
   deletedAt?: string;
 }
 
@@ -35,9 +39,9 @@ export default function SpoolsPage() {
   const [spools, setSpools] = useState<SpoolData[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editingRow, setEditingRow] = useState<number | null>(null);
-  const [editValues, setEditValues] = useState<{ brand: string; material: string; color: string; cost: string; weightG: string; remainingG: string }>({ brand: "", material: "", color: "", cost: "", weightG: "", remainingG: "" });
+  const [editValues, setEditValues] = useState<Record<string, string>>({ brand: "", material: "", color: "", effective: "", cost: "", weightG: "", remainingG: "", journalId: "" });
   const [addingRow, setAddingRow] = useState(false);
-  const [newRow, setNewRow] = useState({ brand: "", material: "", color: "", cost: "", weightG: "", remainingG: "" });
+  const [newRow, setNewRow] = useState<Record<string, string>>({ brand: "", material: "", color: "", effective: "", cost: "", weightG: "", remainingG: "", journalId: "" });
   const [actionError, setActionError] = useState<string | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
@@ -75,9 +79,11 @@ export default function SpoolsPage() {
       brand: spool.brand,
       material: spool.material,
       color: spool.color,
+      effective: spool.effective ?? "",
       cost: String(spool.cost),
       weightG: String(spool.weightG),
       remainingG: String(spool.remainingG),
+      journalId: spool.journalId ? String(spool.journalId) : "",
     });
     setActionError(null);
   };
@@ -106,9 +112,11 @@ export default function SpoolsPage() {
           brand: editValues.brand.trim(),
           material: editValues.material.trim(),
           color: editValues.color.trim(),
+          effective: editValues.effective,
           cost,
           weightG,
           remainingG,
+          ...(editValues.journalId ? { journalId: parseInt(editValues.journalId) } : {}),
         }),
       });
       setEditingRow(null);
@@ -175,13 +183,15 @@ export default function SpoolsPage() {
           brand: newRow.brand.trim(),
           material: newRow.material.trim(),
           color: newRow.color.trim(),
+          effective: newRow.effective,
           cost,
           weightG,
           remainingG,
+          ...(newRow.journalId ? { journalId: parseInt(newRow.journalId) } : {}),
         }),
       });
       setAddingRow(false);
-      setNewRow({ brand: "", material: "", color: "", cost: "", weightG: "", remainingG: "" });
+      setNewRow({ brand: "", material: "", color: "", effective: "", cost: "", weightG: "", remainingG: "", journalId: "" });
       load();
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "Failed to add");
@@ -241,54 +251,73 @@ export default function SpoolsPage() {
             <Card className="shadow-sm border-dashed">
               <CardContent className="pt-4">
                 <div className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-2">New Spool</div>
-                <div className="grid grid-cols-6 gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={newRow.brand}
-                    onChange={(e) => setNewRow({ ...newRow, brand: e.target.value })}
-                    placeholder="Brand"
-                    className="border border-border rounded px-2 py-1 text-sm bg-background"
-                    autoFocus
-                  />
-                  <input
-                    type="text"
-                    value={newRow.material}
-                    onChange={(e) => setNewRow({ ...newRow, material: e.target.value })}
-                    placeholder="Material"
-                    className="border border-border rounded px-2 py-1 text-sm bg-background"
-                  />
-                  <input
-                    type="text"
-                    value={newRow.color}
-                    onChange={(e) => setNewRow({ ...newRow, color: e.target.value })}
-                    placeholder="Color"
-                    className="border border-border rounded px-2 py-1 text-sm bg-background"
-                  />
-                  <input
-                    type="number"
-                    value={newRow.cost}
-                    onChange={(e) => setNewRow({ ...newRow, cost: e.target.value })}
-                    placeholder="Cost"
-                    className="border border-border rounded px-2 py-1 text-sm bg-background font-mono"
-                  />
-                  <input
-                    type="number"
-                    value={newRow.weightG}
-                    onChange={(e) => setNewRow({ ...newRow, weightG: e.target.value })}
-                    placeholder="Weight (g)"
-                    className="border border-border rounded px-2 py-1 text-sm bg-background font-mono"
-                  />
-                  <input
-                    type="number"
-                    value={newRow.remainingG}
-                    onChange={(e) => setNewRow({ ...newRow, remainingG: e.target.value })}
-                    placeholder="Remaining (g)"
-                    className="border border-border rounded px-2 py-1 text-sm bg-background font-mono"
-                  />
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <FormField label="Brand">
+                    <input type="text" value={newRow.brand} onChange={(e) => setNewRow({ ...newRow, brand: e.target.value })} placeholder="e.g. Bambu" className={inputClass} autoFocus />
+                  </FormField>
+                  <FormField label="Material">
+                    <input type="text" value={newRow.material} onChange={(e) => setNewRow({ ...newRow, material: e.target.value })} placeholder="e.g. PLA Pro" className={inputClass} />
+                  </FormField>
+                  <FormField label="Color">
+                    <input type="text" value={newRow.color} onChange={(e) => setNewRow({ ...newRow, color: e.target.value })} placeholder="e.g. Black" className={inputClass} />
+                  </FormField>
+                  <FormField label="Date Purchased">
+                    <input type="date" value={newRow.effective} onChange={(e) => setNewRow({ ...newRow, effective: e.target.value })} className={inputClass} />
+                  </FormField>
+                  <FormField label="Cost">
+                    <input type="number" step="0.01" value={newRow.cost} onChange={(e) => setNewRow({ ...newRow, cost: e.target.value })} placeholder="0.00" className={monoInputClass} />
+                  </FormField>
+                  <FormField label="Weight (g)">
+                    <input type="number" value={newRow.weightG} onChange={(e) => setNewRow({ ...newRow, weightG: e.target.value })} placeholder="1000" className={monoInputClass} />
+                  </FormField>
+                  <FormField label="Remaining (g)">
+                    <input type="number" value={newRow.remainingG} onChange={(e) => setNewRow({ ...newRow, remainingG: e.target.value })} placeholder="1000" className={monoInputClass} />
+                  </FormField>
+                  <FormField label="Journal Entry" className="col-span-2">
+                    <JournalSelect value={newRow.journalId} onChange={(v) => setNewRow({ ...newRow, journalId: v })} />
+                  </FormField>
                 </div>
-                <div className="flex justify-end gap-1">
+                <div className="flex justify-end gap-1 mt-3">
                   <Button variant="ghost" size="xs" onClick={addSpool}>Save</Button>
                   <Button variant="ghost" size="xs" onClick={() => { setAddingRow(false); setActionError(null); }}>Cancel</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {editingRow != null && (
+            <Card className="shadow-sm border-amber-300">
+              <CardContent className="pt-4">
+                <div className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-2">Edit Spool #{editingRow}</div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <FormField label="Brand">
+                    <input type="text" value={editValues.brand} onChange={(e) => setEditValues({ ...editValues, brand: e.target.value })} className={inputClass} autoFocus />
+                  </FormField>
+                  <FormField label="Material">
+                    <input type="text" value={editValues.material} onChange={(e) => setEditValues({ ...editValues, material: e.target.value })} className={inputClass} />
+                  </FormField>
+                  <FormField label="Color">
+                    <input type="text" value={editValues.color} onChange={(e) => setEditValues({ ...editValues, color: e.target.value })} className={inputClass} />
+                  </FormField>
+                  <FormField label="Date Purchased">
+                    <input type="date" value={editValues.effective} onChange={(e) => setEditValues({ ...editValues, effective: e.target.value })} className={inputClass} />
+                  </FormField>
+                  <FormField label="Cost">
+                    <input type="number" step="0.01" value={editValues.cost} onChange={(e) => setEditValues({ ...editValues, cost: e.target.value })} className={monoInputClass} />
+                  </FormField>
+                  <FormField label="Weight (g)">
+                    <input type="number" value={editValues.weightG} onChange={(e) => setEditValues({ ...editValues, weightG: e.target.value })} className={monoInputClass} />
+                  </FormField>
+                  <FormField label="Remaining (g)">
+                    <input type="number" value={editValues.remainingG} onChange={(e) => setEditValues({ ...editValues, remainingG: e.target.value })} className={monoInputClass} />
+                  </FormField>
+                  <FormField label="Journal Entry" className="col-span-2">
+                    <JournalSelect value={editValues.journalId} onChange={(v) => setEditValues({ ...editValues, journalId: v })} />
+                  </FormField>
+                </div>
+                <div className="flex justify-end gap-1 mt-3">
+                  <Button variant="ghost" size="xs" onClick={() => saveEdit(editingRow)}>Save</Button>
+                  <Button variant="ghost" size="xs" onClick={cancelEdit}>Cancel</Button>
                 </div>
               </CardContent>
             </Card>
@@ -345,56 +374,11 @@ export default function SpoolsPage() {
                             return (
                               <tr key={s.spoolId} className={`border-t border-border/50 ${isDeleted ? "opacity-50" : ""}`}>
                                 <td className="py-1.5 font-mono text-xs text-muted-foreground">{s.spoolId}</td>
-                                <td className="py-1.5">
-                                  {editingRow === s.spoolId ? (
-                                    <input
-                                      type="text"
-                                      value={editValues.brand}
-                                      onChange={(e) => setEditValues({ ...editValues, brand: e.target.value })}
-                                      className="w-full border border-border rounded px-2 py-1 text-sm bg-background"
-                                      autoFocus
-                                    />
-                                  ) : (
-                                    s.brand
-                                  )}
-                                </td>
-                                <td className="py-1.5">
-                                  {editingRow === s.spoolId ? (
-                                    <input
-                                      type="text"
-                                      value={editValues.color}
-                                      onChange={(e) => setEditValues({ ...editValues, color: e.target.value })}
-                                      className="w-full border border-border rounded px-2 py-1 text-sm bg-background"
-                                    />
-                                  ) : (
-                                    s.color
-                                  )}
-                                </td>
-                                <td className="py-1.5 text-right font-mono">
-                                  {editingRow === s.spoolId ? (
-                                    <input
-                                      type="number"
-                                      value={editValues.cost}
-                                      onChange={(e) => setEditValues({ ...editValues, cost: e.target.value })}
-                                      className="w-20 border border-border rounded px-2 py-1 text-sm bg-background font-mono text-right"
-                                    />
-                                  ) : (
-                                    fmt(s.cost)
-                                  )}
-                                </td>
+                                <td className="py-1.5">{s.brand}</td>
+                                <td className="py-1.5">{s.color}</td>
+                                <td className="py-1.5 text-right font-mono">{fmt(s.cost)}</td>
                                 <td className="py-1.5 text-right font-mono text-xs">{costPerG.toFixed(3)}</td>
-                                <td className="py-1.5 text-right font-mono">
-                                  {editingRow === s.spoolId ? (
-                                    <input
-                                      type="number"
-                                      value={editValues.remainingG}
-                                      onChange={(e) => setEditValues({ ...editValues, remainingG: e.target.value })}
-                                      className="w-20 border border-border rounded px-2 py-1 text-sm bg-background font-mono text-right"
-                                    />
-                                  ) : (
-                                    `${s.remainingG.toFixed(0)}g`
-                                  )}
-                                </td>
+                                <td className="py-1.5 text-right font-mono">{s.remainingG.toFixed(0)}g</td>
                                 <td className="py-1.5 text-right">
                                   <div className="inline-flex items-center gap-1.5">
                                     <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -408,12 +392,7 @@ export default function SpoolsPage() {
                                 </td>
                                 {writable && (
                                   <td className="py-1.5 text-right">
-                                    {editingRow === s.spoolId ? (
-                                      <div className="flex justify-end gap-1">
-                                        <Button variant="ghost" size="xs" onClick={() => saveEdit(s.spoolId)}>Save</Button>
-                                        <Button variant="ghost" size="xs" onClick={cancelEdit}>Cancel</Button>
-                                      </div>
-                                    ) : isDeleted ? (
+                                    {isDeleted ? (
                                       <div className="flex justify-end gap-1 items-center">
                                         <Button variant="ghost" size="xs" onClick={() => handleRestore(s.spoolId)}>Restore</Button>
                                         {confirmPermanentDeleteId === s.spoolId ? (

@@ -15,6 +15,9 @@ export type PrintJobOutcome = "production" | "prototype" | "tooling" | "failed";
  * A component produced by a print job.
  */
 export interface Component {
+  productId?: number; // references Product.productId (null for third-party one-offs)
+  version?: string;   // semver — which ProductVersion was printed
+  stlUrl: string;     // path to STL file used for this print
   part: string;       // e.g. "Insert", "Bushing", "Cap, Slipper"
   quantity: number;
 }

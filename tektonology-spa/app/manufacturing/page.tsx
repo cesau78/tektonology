@@ -34,6 +34,8 @@ export default function ManufacturingDashboard() {
 
   const navItems = [
     { href: "/manufacturing/print-jobs", label: "Print Jobs", desc: "Production log" },
+    { href: "/manufacturing/components", label: "Components", desc: "Printed parts ready for assembly" },
+    { href: "/manufacturing/inventory", label: "Inventory", desc: "Assembled product inventory" },
   ];
 
   return (

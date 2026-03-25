@@ -16,6 +16,14 @@ export function createRoutes(app, db) {
   const spools = db.collection("spools");
   const hardware = db.collection("hardware");
   const printJobs = db.collection("print_jobs");
+  const products = db.collection("products");
+  const projects = db.collection("projects");
+  const sales = db.collection("sales");
+  const printers = db.collection("printers");
+  const nozzles = db.collection("nozzles");
+  const plates = db.collection("plates");
+  const inventory = db.collection("inventory");
+  const componentStock = db.collection("component_stock");
 
   // Raw body parsing for text/csv requests
   app.use(csvBodyParser);
@@ -497,6 +505,496 @@ export function createRoutes(app, db) {
   });
 
   // =========================================================================
+  // Procurement — Printers
+  // =========================================================================
+
+  app.get("/api/procurement/printers", read, async (req, res) => {
+    const filter = req.query.includeDeleted === "true" ? {} : { deletedAt: { $exists: false } };
+    const docs = await printers.find(filter).sort({ printerId: 1 }).toArray();
+    negotiate(req, res, docs, "printers.csv");
+  });
+
+  app.get("/api/procurement/printers/:printerId", read, async (req, res) => {
+    const id = parseInt(req.params.printerId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid printer ID" });
+    const doc = await printers.findOne({ printerId: id });
+    if (!doc) return res.status(404).json({ error: "Printer not found" });
+    res.json(doc);
+  });
+
+  app.post("/api/procurement/printers", write, async (req, res) => {
+    const items = Array.isArray(req.body) ? req.body : [req.body];
+    if (items.length === 0) return res.status(400).json({ error: "No records provided" });
+    const now = new Date().toISOString();
+    for (const item of items) { item.createdAt ??= now; item.updatedAt ??= now; }
+    const result = await printers.insertMany(items);
+    res.status(201).json({ inserted: result.insertedCount });
+  });
+
+  app.put("/api/procurement/printers/:printerId", write, async (req, res) => {
+    const id = parseInt(req.params.printerId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid printer ID" });
+    const existing = await printers.findOne({ printerId: id });
+    if (!existing) return res.status(404).json({ error: "Printer not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Cannot edit deleted printer" });
+    const update = { ...req.body, updatedAt: new Date().toISOString() };
+    delete update._id;
+    await printers.updateOne({ printerId: id }, { $set: update });
+    const doc = await printers.findOne({ printerId: id });
+    res.json(doc);
+  });
+
+  app.delete("/api/procurement/printers/:printerId", write, async (req, res) => {
+    const id = parseInt(req.params.printerId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid printer ID" });
+    const existing = await printers.findOne({ printerId: id });
+    if (!existing) return res.status(404).json({ error: "Printer not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Printer already deleted" });
+    await printers.updateOne({ printerId: id }, { $set: { deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } });
+    res.json({ deleted: 1 });
+  });
+
+  app.delete("/api/procurement/printers/:printerId/permanent", write, async (req, res) => {
+    const id = parseInt(req.params.printerId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid printer ID" });
+    const existing = await printers.findOne({ printerId: id });
+    if (!existing) return res.status(404).json({ error: "Printer not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Printer must be soft-deleted first" });
+    await printers.deleteOne({ printerId: id });
+    res.json({ deleted: 1 });
+  });
+
+  app.post("/api/procurement/printers/:printerId/restore", write, async (req, res) => {
+    const id = parseInt(req.params.printerId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid printer ID" });
+    const existing = await printers.findOne({ printerId: id });
+    if (!existing) return res.status(404).json({ error: "Printer not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Printer is not deleted" });
+    await printers.updateOne({ printerId: id }, { $unset: { deletedAt: "" }, $set: { updatedAt: new Date().toISOString() } });
+    res.json({ restored: 1 });
+  });
+
+  // =========================================================================
+  // Procurement — Nozzles
+  // =========================================================================
+
+  app.get("/api/procurement/nozzles", read, async (req, res) => {
+    const filter = req.query.includeDeleted === "true" ? {} : { deletedAt: { $exists: false } };
+    const docs = await nozzles.find(filter).sort({ nozzleId: 1 }).toArray();
+    negotiate(req, res, docs, "nozzles.csv");
+  });
+
+  app.get("/api/procurement/nozzles/:nozzleId", read, async (req, res) => {
+    const id = parseInt(req.params.nozzleId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid nozzle ID" });
+    const doc = await nozzles.findOne({ nozzleId: id });
+    if (!doc) return res.status(404).json({ error: "Nozzle not found" });
+    res.json(doc);
+  });
+
+  app.post("/api/procurement/nozzles", write, async (req, res) => {
+    const items = Array.isArray(req.body) ? req.body : [req.body];
+    if (items.length === 0) return res.status(400).json({ error: "No records provided" });
+    const now = new Date().toISOString();
+    for (const item of items) { item.createdAt ??= now; item.updatedAt ??= now; }
+    const result = await nozzles.insertMany(items);
+    res.status(201).json({ inserted: result.insertedCount });
+  });
+
+  app.put("/api/procurement/nozzles/:nozzleId", write, async (req, res) => {
+    const id = parseInt(req.params.nozzleId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid nozzle ID" });
+    const existing = await nozzles.findOne({ nozzleId: id });
+    if (!existing) return res.status(404).json({ error: "Nozzle not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Cannot edit deleted nozzle" });
+    const update = { ...req.body, updatedAt: new Date().toISOString() };
+    delete update._id;
+    await nozzles.updateOne({ nozzleId: id }, { $set: update });
+    const doc = await nozzles.findOne({ nozzleId: id });
+    res.json(doc);
+  });
+
+  app.delete("/api/procurement/nozzles/:nozzleId", write, async (req, res) => {
+    const id = parseInt(req.params.nozzleId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid nozzle ID" });
+    const existing = await nozzles.findOne({ nozzleId: id });
+    if (!existing) return res.status(404).json({ error: "Nozzle not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Nozzle already deleted" });
+    await nozzles.updateOne({ nozzleId: id }, { $set: { deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } });
+    res.json({ deleted: 1 });
+  });
+
+  app.delete("/api/procurement/nozzles/:nozzleId/permanent", write, async (req, res) => {
+    const id = parseInt(req.params.nozzleId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid nozzle ID" });
+    const existing = await nozzles.findOne({ nozzleId: id });
+    if (!existing) return res.status(404).json({ error: "Nozzle not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Nozzle must be soft-deleted first" });
+    await nozzles.deleteOne({ nozzleId: id });
+    res.json({ deleted: 1 });
+  });
+
+  app.post("/api/procurement/nozzles/:nozzleId/restore", write, async (req, res) => {
+    const id = parseInt(req.params.nozzleId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid nozzle ID" });
+    const existing = await nozzles.findOne({ nozzleId: id });
+    if (!existing) return res.status(404).json({ error: "Nozzle not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Nozzle is not deleted" });
+    await nozzles.updateOne({ nozzleId: id }, { $unset: { deletedAt: "" }, $set: { updatedAt: new Date().toISOString() } });
+    res.json({ restored: 1 });
+  });
+
+  // =========================================================================
+  // Procurement — Plates
+  // =========================================================================
+
+  app.get("/api/procurement/plates", read, async (req, res) => {
+    const filter = req.query.includeDeleted === "true" ? {} : { deletedAt: { $exists: false } };
+    const docs = await plates.find(filter).sort({ plateId: 1 }).toArray();
+    negotiate(req, res, docs, "plates.csv");
+  });
+
+  app.get("/api/procurement/plates/:plateId", read, async (req, res) => {
+    const id = parseInt(req.params.plateId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid plate ID" });
+    const doc = await plates.findOne({ plateId: id });
+    if (!doc) return res.status(404).json({ error: "Plate not found" });
+    res.json(doc);
+  });
+
+  app.post("/api/procurement/plates", write, async (req, res) => {
+    const items = Array.isArray(req.body) ? req.body : [req.body];
+    if (items.length === 0) return res.status(400).json({ error: "No records provided" });
+    const now = new Date().toISOString();
+    for (const item of items) { item.createdAt ??= now; item.updatedAt ??= now; }
+    const result = await plates.insertMany(items);
+    res.status(201).json({ inserted: result.insertedCount });
+  });
+
+  app.put("/api/procurement/plates/:plateId", write, async (req, res) => {
+    const id = parseInt(req.params.plateId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid plate ID" });
+    const existing = await plates.findOne({ plateId: id });
+    if (!existing) return res.status(404).json({ error: "Plate not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Cannot edit deleted plate" });
+    const update = { ...req.body, updatedAt: new Date().toISOString() };
+    delete update._id;
+    await plates.updateOne({ plateId: id }, { $set: update });
+    const doc = await plates.findOne({ plateId: id });
+    res.json(doc);
+  });
+
+  app.delete("/api/procurement/plates/:plateId", write, async (req, res) => {
+    const id = parseInt(req.params.plateId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid plate ID" });
+    const existing = await plates.findOne({ plateId: id });
+    if (!existing) return res.status(404).json({ error: "Plate not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Plate already deleted" });
+    await plates.updateOne({ plateId: id }, { $set: { deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } });
+    res.json({ deleted: 1 });
+  });
+
+  app.delete("/api/procurement/plates/:plateId/permanent", write, async (req, res) => {
+    const id = parseInt(req.params.plateId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid plate ID" });
+    const existing = await plates.findOne({ plateId: id });
+    if (!existing) return res.status(404).json({ error: "Plate not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Plate must be soft-deleted first" });
+    await plates.deleteOne({ plateId: id });
+    res.json({ deleted: 1 });
+  });
+
+  app.post("/api/procurement/plates/:plateId/restore", write, async (req, res) => {
+    const id = parseInt(req.params.plateId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid plate ID" });
+    const existing = await plates.findOne({ plateId: id });
+    if (!existing) return res.status(404).json({ error: "Plate not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Plate is not deleted" });
+    await plates.updateOne({ plateId: id }, { $unset: { deletedAt: "" }, $set: { updatedAt: new Date().toISOString() } });
+    res.json({ restored: 1 });
+  });
+
+  // =========================================================================
+  // Products (catalog — MongoDB-backed)
+  // =========================================================================
+
+  app.get("/api/products", async (req, res) => {
+    const filter = req.query.includeDeleted === "true" ? {} : { deletedAt: { $exists: false } };
+    const docs = await products.find(filter).sort({ name: 1 }).toArray();
+    res.json(docs);
+  });
+
+  app.get("/api/products/:productId", async (req, res) => {
+    const id = parseInt(req.params.productId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid product ID" });
+    const doc = await products.findOne({ productId: id });
+    if (!doc) return res.status(404).json({ error: "Product not found" });
+    res.json(doc);
+  });
+
+  app.post("/api/products", write, async (req, res) => {
+    const items = Array.isArray(req.body) ? req.body : [req.body];
+    if (items.length === 0) return res.status(400).json({ error: "No records provided" });
+    const now = new Date().toISOString();
+    for (const item of items) { item.createdAt ??= now; item.updatedAt ??= now; }
+    const result = await products.insertMany(items);
+    res.status(201).json({ inserted: result.insertedCount });
+  });
+
+  app.put("/api/products/:productId", write, async (req, res) => {
+    const id = parseInt(req.params.productId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid product ID" });
+    const existing = await products.findOne({ productId: id });
+    if (!existing) return res.status(404).json({ error: "Product not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Cannot edit deleted product" });
+    const update = { ...req.body, updatedAt: new Date().toISOString() };
+    delete update._id;
+    await products.updateOne({ productId: id }, { $set: update });
+    const doc = await products.findOne({ productId: id });
+    res.json(doc);
+  });
+
+  app.delete("/api/products/:productId", write, async (req, res) => {
+    const id = parseInt(req.params.productId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid product ID" });
+    const existing = await products.findOne({ productId: id });
+    if (!existing) return res.status(404).json({ error: "Product not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Product already deleted" });
+    await products.updateOne({ productId: id }, { $set: { deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } });
+    res.json({ deleted: 1 });
+  });
+
+  app.delete("/api/products/:productId/permanent", write, async (req, res) => {
+    const id = parseInt(req.params.productId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid product ID" });
+    const existing = await products.findOne({ productId: id });
+    if (!existing) return res.status(404).json({ error: "Product not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Product must be soft-deleted first" });
+    await products.deleteOne({ productId: id });
+    res.json({ deleted: 1 });
+  });
+
+  app.post("/api/products/:productId/restore", write, async (req, res) => {
+    const id = parseInt(req.params.productId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid product ID" });
+    const existing = await products.findOne({ productId: id });
+    if (!existing) return res.status(404).json({ error: "Product not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Product is not deleted" });
+    await products.updateOne({ productId: id }, { $unset: { deletedAt: "" }, $set: { updatedAt: new Date().toISOString() } });
+    res.json({ restored: 1 });
+  });
+
+  // =========================================================================
+  // Projects (MongoDB-backed)
+  // =========================================================================
+
+  app.get("/api/projects", async (req, res) => {
+    const filter = req.query.includeDeleted === "true" ? {} : { deletedAt: { $exists: false } };
+    const docs = await projects.find(filter).sort({ name: 1 }).toArray();
+    res.json(docs);
+  });
+
+  app.get("/api/projects/:projectId", async (req, res) => {
+    const id = parseInt(req.params.projectId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid project ID" });
+    const doc = await projects.findOne({ projectId: id });
+    if (!doc) return res.status(404).json({ error: "Project not found" });
+    res.json(doc);
+  });
+
+  app.post("/api/projects", write, async (req, res) => {
+    const items = Array.isArray(req.body) ? req.body : [req.body];
+    if (items.length === 0) return res.status(400).json({ error: "No records provided" });
+    const now = new Date().toISOString();
+    for (const item of items) { item.createdAt ??= now; item.updatedAt ??= now; }
+    const result = await projects.insertMany(items);
+    res.status(201).json({ inserted: result.insertedCount });
+  });
+
+  app.put("/api/projects/:projectId", write, async (req, res) => {
+    const id = parseInt(req.params.projectId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid project ID" });
+    const existing = await projects.findOne({ projectId: id });
+    if (!existing) return res.status(404).json({ error: "Project not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Cannot edit deleted project" });
+    const update = { ...req.body, updatedAt: new Date().toISOString() };
+    delete update._id;
+    await projects.updateOne({ projectId: id }, { $set: update });
+    const doc = await projects.findOne({ projectId: id });
+    res.json(doc);
+  });
+
+  app.delete("/api/projects/:projectId", write, async (req, res) => {
+    const id = parseInt(req.params.projectId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid project ID" });
+    const existing = await projects.findOne({ projectId: id });
+    if (!existing) return res.status(404).json({ error: "Project not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Project already deleted" });
+    await projects.updateOne({ projectId: id }, { $set: { deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } });
+    res.json({ deleted: 1 });
+  });
+
+  app.delete("/api/projects/:projectId/permanent", write, async (req, res) => {
+    const id = parseInt(req.params.projectId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid project ID" });
+    const existing = await projects.findOne({ projectId: id });
+    if (!existing) return res.status(404).json({ error: "Project not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Project must be soft-deleted first" });
+    await projects.deleteOne({ projectId: id });
+    res.json({ deleted: 1 });
+  });
+
+  app.post("/api/projects/:projectId/restore", write, async (req, res) => {
+    const id = parseInt(req.params.projectId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid project ID" });
+    const existing = await projects.findOne({ projectId: id });
+    if (!existing) return res.status(404).json({ error: "Project not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Project is not deleted" });
+    await projects.updateOne({ projectId: id }, { $unset: { deletedAt: "" }, $set: { updatedAt: new Date().toISOString() } });
+    res.json({ restored: 1 });
+  });
+
+  // =========================================================================
+  // Sales
+  // =========================================================================
+
+  app.get("/api/sales", read, async (req, res) => {
+    const filter = req.query.includeDeleted === "true" ? {} : { deletedAt: { $exists: false } };
+    const docs = await sales.find(filter).sort({ effective: -1 }).toArray();
+    negotiate(req, res, docs, "sales.csv");
+  });
+
+  app.get("/api/sales/:saleId", read, async (req, res) => {
+    const id = parseInt(req.params.saleId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid sale ID" });
+    const doc = await sales.findOne({ saleId: id });
+    if (!doc) return res.status(404).json({ error: "Sale not found" });
+    res.json(doc);
+  });
+
+  app.post("/api/sales", write, async (req, res) => {
+    const items = Array.isArray(req.body) ? req.body : [req.body];
+    if (items.length === 0) return res.status(400).json({ error: "No records provided" });
+    const now = new Date().toISOString();
+    for (const item of items) { item.createdAt ??= now; item.updatedAt ??= now; }
+    const result = await sales.insertMany(items);
+    res.status(201).json({ inserted: result.insertedCount });
+  });
+
+  app.put("/api/sales/:saleId", write, async (req, res) => {
+    const id = parseInt(req.params.saleId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid sale ID" });
+    const existing = await sales.findOne({ saleId: id });
+    if (!existing) return res.status(404).json({ error: "Sale not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Cannot edit deleted sale" });
+    const update = { ...req.body, updatedAt: new Date().toISOString() };
+    delete update._id;
+    await sales.updateOne({ saleId: id }, { $set: update });
+    const doc = await sales.findOne({ saleId: id });
+    res.json(doc);
+  });
+
+  app.delete("/api/sales/:saleId", write, async (req, res) => {
+    const id = parseInt(req.params.saleId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid sale ID" });
+    const existing = await sales.findOne({ saleId: id });
+    if (!existing) return res.status(404).json({ error: "Sale not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Sale already deleted" });
+    await sales.updateOne({ saleId: id }, { $set: { deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } });
+    res.json({ deleted: 1 });
+  });
+
+  app.delete("/api/sales/:saleId/permanent", write, async (req, res) => {
+    const id = parseInt(req.params.saleId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid sale ID" });
+    const existing = await sales.findOne({ saleId: id });
+    if (!existing) return res.status(404).json({ error: "Sale not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Sale must be soft-deleted first" });
+    await sales.deleteOne({ saleId: id });
+    res.json({ deleted: 1 });
+  });
+
+  app.post("/api/sales/:saleId/restore", write, async (req, res) => {
+    const id = parseInt(req.params.saleId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid sale ID" });
+    const existing = await sales.findOne({ saleId: id });
+    if (!existing) return res.status(404).json({ error: "Sale not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Sale is not deleted" });
+    await sales.updateOne({ saleId: id }, { $unset: { deletedAt: "" }, $set: { updatedAt: new Date().toISOString() } });
+    res.json({ restored: 1 });
+  });
+
+  // =========================================================================
+  // Inventory
+  // =========================================================================
+
+  app.get("/api/inventory", read, async (req, res) => {
+    const filter = req.query.includeDeleted === "true" ? {} : { deletedAt: { $exists: false } };
+    const docs = await inventory.find(filter).sort({ inventoryId: 1 }).toArray();
+    negotiate(req, res, docs, "inventory.csv");
+  });
+
+  app.get("/api/inventory/:inventoryId", read, async (req, res) => {
+    const id = parseInt(req.params.inventoryId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid inventory ID" });
+    const doc = await inventory.findOne({ inventoryId: id });
+    if (!doc) return res.status(404).json({ error: "Inventory item not found" });
+    res.json(doc);
+  });
+
+  app.post("/api/inventory", write, async (req, res) => {
+    const items = Array.isArray(req.body) ? req.body : [req.body];
+    if (items.length === 0) return res.status(400).json({ error: "No records provided" });
+    const now = new Date().toISOString();
+    for (const item of items) { item.createdAt ??= now; item.updatedAt ??= now; }
+    const result = await inventory.insertMany(items);
+    res.status(201).json({ inserted: result.insertedCount });
+  });
+
+  app.put("/api/inventory/:inventoryId", write, async (req, res) => {
+    const id = parseInt(req.params.inventoryId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid inventory ID" });
+    const existing = await inventory.findOne({ inventoryId: id });
+    if (!existing) return res.status(404).json({ error: "Inventory item not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Cannot edit deleted inventory item" });
+    const update = { ...req.body, updatedAt: new Date().toISOString() };
+    delete update._id;
+    await inventory.updateOne({ inventoryId: id }, { $set: update });
+    const doc = await inventory.findOne({ inventoryId: id });
+    res.json(doc);
+  });
+
+  app.delete("/api/inventory/:inventoryId", write, async (req, res) => {
+    const id = parseInt(req.params.inventoryId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid inventory ID" });
+    const existing = await inventory.findOne({ inventoryId: id });
+    if (!existing) return res.status(404).json({ error: "Inventory item not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Inventory item already deleted" });
+    await inventory.updateOne({ inventoryId: id }, { $set: { deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } });
+    res.json({ deleted: 1 });
+  });
+
+  app.delete("/api/inventory/:inventoryId/permanent", write, async (req, res) => {
+    const id = parseInt(req.params.inventoryId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid inventory ID" });
+    const existing = await inventory.findOne({ inventoryId: id });
+    if (!existing) return res.status(404).json({ error: "Inventory item not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Inventory item must be soft-deleted first" });
+    await inventory.deleteOne({ inventoryId: id });
+    res.json({ deleted: 1 });
+  });
+
+  app.post("/api/inventory/:inventoryId/restore", write, async (req, res) => {
+    const id = parseInt(req.params.inventoryId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid inventory ID" });
+    const existing = await inventory.findOne({ inventoryId: id });
+    if (!existing) return res.status(404).json({ error: "Inventory item not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Inventory item is not deleted" });
+    await inventory.updateOne({ inventoryId: id }, { $unset: { deletedAt: "" }, $set: { updatedAt: new Date().toISOString() } });
+    res.json({ restored: 1 });
+  });
+
+  // =========================================================================
   // Dashboard (aggregation — JSON only)
   // =========================================================================
 
@@ -569,5 +1067,76 @@ export function createRoutes(app, db) {
         scrapRate: totalJobs > 0 ? ((failedJobs / totalJobs) * 100).toFixed(1) : "0",
       },
     });
+  });
+
+  // =========================================================================
+  // Manufacturing — Component Stock
+  // =========================================================================
+
+  app.get("/api/manufacturing/components", read, async (req, res) => {
+    const filter = req.query.includeDeleted === "true" ? {} : { deletedAt: { $exists: false } };
+    const docs = await componentStock.find(filter).sort({ batchId: 1 }).toArray();
+    negotiate(req, res, docs, "component-stock.csv");
+  });
+
+  app.get("/api/manufacturing/components/:batchId", read, async (req, res) => {
+    const id = parseInt(req.params.batchId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid batch ID" });
+    const doc = await componentStock.findOne({ batchId: id });
+    if (!doc) return res.status(404).json({ error: "Component batch not found" });
+    res.json(doc);
+  });
+
+  app.post("/api/manufacturing/components", write, async (req, res) => {
+    const items = Array.isArray(req.body) ? req.body : [req.body];
+    if (items.length === 0) return res.status(400).json({ error: "No records provided" });
+    const now = new Date().toISOString();
+    for (const item of items) { item.createdAt ??= now; item.updatedAt ??= now; }
+    const result = await componentStock.insertMany(items);
+    res.status(201).json({ inserted: result.insertedCount });
+  });
+
+  app.put("/api/manufacturing/components/:batchId", write, async (req, res) => {
+    const id = parseInt(req.params.batchId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid batch ID" });
+    const existing = await componentStock.findOne({ batchId: id });
+    if (!existing) return res.status(404).json({ error: "Component batch not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Cannot edit deleted batch" });
+    const update = { ...req.body, updatedAt: new Date().toISOString() };
+    delete update._id;
+    await componentStock.updateOne({ batchId: id }, { $set: update });
+    const doc = await componentStock.findOne({ batchId: id });
+    res.json(doc);
+  });
+
+  app.delete("/api/manufacturing/components/:batchId", write, async (req, res) => {
+    const id = parseInt(req.params.batchId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid batch ID" });
+    const existing = await componentStock.findOne({ batchId: id });
+    if (!existing) return res.status(404).json({ error: "Component batch not found" });
+    if (existing.deletedAt) return res.status(409).json({ error: "Batch already deleted" });
+    await componentStock.updateOne({ batchId: id }, { $set: { deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } });
+    res.json({ deleted: 1 });
+  });
+
+  app.delete("/api/manufacturing/components/:batchId/permanent", write, async (req, res) => {
+    const id = parseInt(req.params.batchId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid batch ID" });
+    const existing = await componentStock.findOne({ batchId: id });
+    if (!existing) return res.status(404).json({ error: "Component batch not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Batch must be soft-deleted first" });
+    await componentStock.deleteOne({ batchId: id });
+    res.json({ deleted: 1 });
+  });
+
+  app.post("/api/manufacturing/components/:batchId/restore", write, async (req, res) => {
+    const id = parseInt(req.params.batchId, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid batch ID" });
+    const existing = await componentStock.findOne({ batchId: id });
+    if (!existing) return res.status(404).json({ error: "Component batch not found" });
+    if (!existing.deletedAt) return res.status(409).json({ error: "Batch is not deleted" });
+    await componentStock.updateOne({ batchId: id }, { $unset: { deletedAt: "" }, $set: { updatedAt: new Date().toISOString() } });
+    const doc = await componentStock.findOne({ batchId: id });
+    res.json(doc);
   });
 }

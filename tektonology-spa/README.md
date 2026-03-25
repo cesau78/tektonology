@@ -83,8 +83,39 @@ erDiagram
     }
 
     Component {
+        number productId FK "optional for one-offs"
+        string version "which version was printed"
+        string stlUrl "STL file used"
         string part "e.g. Insert, Bushing"
         number quantity
+    }
+
+    Product {
+        number productId PK
+        string name "e.g. Kneeler Boot"
+        string category
+        string description
+        ProductOrigin origin "original|third-party"
+        string sourceUrl "third-party URL"
+        string effective "when first created"
+        Record printSettings "camelCase keys"
+        string assemblyGuide "optional steps"
+        ProductVersion versions "version history"
+    }
+
+    ProductVersion {
+        string version "semver"
+        string commit "GitHub SHA"
+        string effective "when it occurred"
+        string scadUrl "OpenSCAD source"
+        ProductStl stls "STL files"
+        string changelog
+    }
+
+    ProductStl {
+        string label
+        string url "path to STL"
+        string color "hex color"
     }
 
     Inventory {
@@ -184,6 +215,9 @@ erDiagram
     Nozzle ||--o{ PrintJob : "prints with"
     Plate ||--o{ PrintJob : "builds on"
     Spool ||--o{ PrintJob : "tracks usage"
+    Product ||--o{ Component : "designed as"
+    Product ||--|{ ProductVersion : "versioned as"
+    ProductVersion ||--|{ ProductStl : "includes files"
     PrintJob ||--|{ Component : "produces"
     PrintJob ||--o{ InventoryComponent : "supplies parts"
     Inventory ||--|{ InventoryComponent : "assembled from"

@@ -35,6 +35,9 @@ export default function ProcurementDashboard() {
   const navItems = [
     { href: "/procurement/spools", label: "Filament Spools", desc: "Inventory tracking" },
     { href: "/procurement/hardware", label: "Hardware Inventory", desc: "Bolts, nuts, wrenches" },
+    { href: "/procurement/printers", label: "Printers", desc: "3D printers and usage" },
+    { href: "/procurement/nozzles", label: "Nozzles", desc: "Nozzle inventory and hours" },
+    { href: "/procurement/plates", label: "Build Plates", desc: "Build plate tracking" },
   ];
 
   return (
