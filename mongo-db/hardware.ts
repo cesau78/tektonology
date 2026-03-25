@@ -1,21 +1,23 @@
+import type { Auditable } from "./auditable.js";
+
 /**
  * A hardware inventory item (bolts, nuts, wrenches, etc.).
  *
  * MongoDB collection: hardware
  */
-export interface Hardware {
+export interface Hardware extends Auditable {
   hardwareId: number;
   supplier: string;
   supplierId: string | null;
   item: string;
   dimensions: string;
   material: string;
-  purchased: string; // ISO date: YYYY-MM-DD
+  effective: string; // ISO date — when the purchase occurred
   baseCost: number;
   taxes: number;
   shipping: number;
   cost: number;      // fully-loaded cost (base + tax + shipping)
   quantity: number;
   remaining: number;
-  deletedAt?: string; // ISO 8601 — set on soft delete
+  journalId?: number;  // references JournalEntry.transactionId
 }

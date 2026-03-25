@@ -1,3 +1,5 @@
+import type { Auditable } from "./auditable.js";
+
 /**
  * A single debit or credit line within a journal entry.
  * Exactly one of debit/credit is non-null per line (double-entry rule).
@@ -15,10 +17,9 @@ export interface JournalLine {
  *
  * MongoDB collection: journal_entries
  */
-export interface JournalEntry {
+export interface JournalEntry extends Auditable {
   transactionId: number;
-  date: string;         // ISO date: YYYY-MM-DD
+  effective: string;    // ISO date — when the transaction occurred
   description: string;
   lines: JournalLine[];
-  deletedAt?: string; // ISO 8601 — set on soft delete
 }

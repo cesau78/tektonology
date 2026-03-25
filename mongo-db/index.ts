@@ -1,5 +1,12 @@
+export type { Auditable } from "./auditable.js";
 export type { Spool } from "./spool.js";
-export type { PrintJob } from "./print-job.js";
+export type { PrintJob, PrintJobOutcome, Component } from "./print-job.js";
 export type { Account, AccountType } from "./account.js";
 export type { JournalEntry, JournalLine } from "./journal-entry.js";
 export type { Hardware } from "./hardware.js";
+export type { Nozzle } from "./nozzle.js";
+export type { Plate } from "./plate.js";
+export type { Printer } from "./printer.js";
+export type { Inventory, InventoryComponent, InventoryHardware } from "./inventory.js";
+export type { Project, ProjectItem } from "./project.js";
+export type { Sale, SaleItem } from "./sale.js";
