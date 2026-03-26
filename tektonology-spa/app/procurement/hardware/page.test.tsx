@@ -28,6 +28,17 @@ vi.mock("@/lib/api", () => ({
   useApiFetch: () => mockApiFetch,
 }));
 
+vi.mock("@/components/journal-select", () => ({
+  JournalSelect: ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+    <select data-testid="journal-select" value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">— None —</option>
+      <option value="5">#5</option>
+      <option value="10">#10</option>
+      <option value="42">#42</option>
+    </select>
+  ),
+}));
+
 import HardwarePage from "./page";
 
 afterEach(cleanup);
@@ -240,6 +251,29 @@ describe("HardwarePage", () => {
     fireEvent.change(container.querySelector("input[placeholder='e.g. Bolt Depot']")!, { target: { value: "Grainger" } });
     fireEvent.change(container.querySelector("input[placeholder='e.g. 3x0.5x20mm']")!, { target: { value: "M6x25" } });
     fillCostQtyRemaining(container, "3.50", "50", "50");
+    mockApiFetch.mockResolvedValueOnce(undefined);
+    mockApiFetch.mockResolvedValueOnce(sampleHardware);
+    const saveBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Save")!;
+    await act(async () => { fireEvent.click(saveBtn); });
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith("/api/procurement/hardware", expect.objectContaining({ method: "POST" }));
+    });
+  });
+
+  it("adds hardware with material and journalId set (covers truthy branches)", async () => {
+    setupDefaultFetch();
+    const { container } = render(<HardwarePage />);
+    await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
+    const addBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "+ Add Hardware")!;
+    await act(async () => { fireEvent.click(addBtn); });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. M3x20 Socket Cap Bolt']")!, { target: { value: "Washer" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. Bolt Depot']")!, { target: { value: "Grainger" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. 3x0.5x20mm']")!, { target: { value: "M4" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. Stainless steel']")!, { target: { value: "Brass" } });
+    fillCostQtyRemaining(container, "2.00", "25", "25");
+    // Set journalId via JournalSelect (line 221 truthy branch)
+    const journalSelect = container.querySelector("select")!;
+    fireEvent.change(journalSelect, { target: { value: "10" } });
     mockApiFetch.mockResolvedValueOnce(undefined);
     mockApiFetch.mockResolvedValueOnce(sampleHardware);
     const saveBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Save")!;
@@ -755,6 +789,171 @@ describe("HardwarePage", () => {
     await waitFor(() => {
       expect(container.textContent).toContain("Failed to permanently delete");
     });
+  });
+
+  it("exercises supplierId, material, effective, baseCost, taxes, shipping, and journalId onChange in edit form", async () => {
+    setupDefaultFetch();
+    const { container } = render(<HardwarePage />);
+    await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
+    const editBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Edit")!;
+    await act(async () => { fireEvent.click(editBtn); });
+
+    // supplierId (line 243) — starts empty for Hex Bolt (supplierId: null)
+    const inputs = container.querySelectorAll("input");
+    const supplierIdInput = Array.from(inputs).find((i) => (i as HTMLInputElement).placeholder === "Optional")!;
+    fireEvent.change(supplierIdInput, { target: { value: "SUP-999" } });
+
+    // material (line 249)
+    const materialInput = Array.from(inputs).find((i) => (i as HTMLInputElement).value === "Steel")!;
+    fireEvent.change(materialInput, { target: { value: "Titanium" } });
+
+    // effective / Date Purchased (line 252)
+    const dateInput = container.querySelector("input[type='date']")!;
+    fireEvent.change(dateInput, { target: { value: "2026-01-01" } });
+
+    // baseCost (line 255), taxes (line 258), shipping (line 261)
+    const costInputs = container.querySelectorAll("input[type='number']");
+    // In edit form: baseCost, taxes, shipping, cost, quantity, remaining
+    const baseCostInput = costInputs[0]!;
+    const taxesInput = costInputs[1]!;
+    const shippingInput = costInputs[2]!;
+    fireEvent.change(baseCostInput, { target: { value: "15.00" } });
+    fireEvent.change(taxesInput, { target: { value: "2.50" } });
+    fireEvent.change(shippingInput, { target: { value: "3.00" } });
+
+    // journalId (line 273) — JournalSelect renders a <select>
+    const journalSelect = container.querySelector("select")!;
+    fireEvent.change(journalSelect, { target: { value: "5" } });
+
+    mockApiFetch.mockResolvedValueOnce(undefined);
+    mockApiFetch.mockResolvedValueOnce(sampleHardware);
+    const saveBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Save")!;
+    await act(async () => { fireEvent.click(saveBtn); });
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith("/api/procurement/hardware/1", expect.objectContaining({ method: "PUT" }));
+    });
+  });
+
+  it("exercises edit save with empty baseCost/taxes/shipping (|| 0 branches)", async () => {
+    setupDefaultFetch();
+    const { container } = render(<HardwarePage />);
+    await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
+    const editBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Edit")!;
+    await act(async () => { fireEvent.click(editBtn); });
+    // Clear baseCost, taxes, shipping to trigger parseFloat(...) || 0 branches
+    const numberInputs = container.querySelectorAll("input[type='number']");
+    // baseCost, taxes, shipping, cost, quantity, remaining
+    fireEvent.change(numberInputs[0]!, { target: { value: "" } });
+    fireEvent.change(numberInputs[1]!, { target: { value: "" } });
+    fireEvent.change(numberInputs[2]!, { target: { value: "" } });
+    mockApiFetch.mockResolvedValueOnce(undefined);
+    mockApiFetch.mockResolvedValueOnce(sampleHardware);
+    const saveBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Save")!;
+    await act(async () => { fireEvent.click(saveBtn); });
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith("/api/procurement/hardware/1", expect.objectContaining({ method: "PUT" }));
+    });
+  });
+
+  it("adds hardware with empty baseCost/taxes/shipping (|| 0 branches on add)", async () => {
+    setupDefaultFetch();
+    const { container } = render(<HardwarePage />);
+    await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
+    const addBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "+ Add Hardware")!;
+    await act(async () => { fireEvent.click(addBtn); });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. M3x20 Socket Cap Bolt']")!, { target: { value: "Nut" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. Bolt Depot']")!, { target: { value: "Store" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. 3x0.5x20mm']")!, { target: { value: "M3" } });
+    // Leave baseCost, taxes, shipping empty — they default to 0 via || 0
+    fillCostQtyRemaining(container, "1.00", "10", "10");
+    mockApiFetch.mockResolvedValueOnce(undefined);
+    mockApiFetch.mockResolvedValueOnce(sampleHardware);
+    const saveBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Save")!;
+    await act(async () => { fireEvent.click(saveBtn); });
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith("/api/procurement/hardware", expect.objectContaining({ method: "POST" }));
+    });
+  });
+
+  it("edits hardware item with journalId and supplierId pre-set (covers startEdit truthy branches)", async () => {
+    setupDefaultFetch();
+    const { container } = render(<HardwarePage />);
+    await waitFor(() => { expect(container.textContent).toContain("Lock Nut"); });
+    // Edit item 2 (Lock Nut) — has supplierId: "FAS-123", journalId: 42
+    const editBtns = Array.from(container.querySelectorAll("button")).filter((b) => b.textContent === "Edit");
+    await act(async () => { fireEvent.click(editBtns[1]!); });
+    expect(container.textContent).toContain("Edit Hardware #2");
+    // Verify pre-populated values
+    const inputs = container.querySelectorAll("input");
+    const supplierIdInput = Array.from(inputs).find((i) => (i as HTMLInputElement).value === "FAS-123");
+    expect(supplierIdInput).toBeTruthy();
+    // Save it — should include supplierId and journalId in body
+    mockApiFetch.mockResolvedValueOnce(undefined);
+    mockApiFetch.mockResolvedValueOnce(sampleHardware);
+    const saveBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Save")!;
+    await act(async () => { fireEvent.click(saveBtn); });
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith("/api/procurement/hardware/2", expect.objectContaining({ method: "PUT" }));
+    });
+    const putCall = mockApiFetch.mock.calls.find(
+      (c: unknown[]) => typeof c[0] === "string" && c[0] === "/api/procurement/hardware/2" && typeof c[1] === "object" && (c[1] as Record<string, unknown>).method === "PUT",
+    );
+    const body = JSON.parse((putCall![1] as Record<string, string>).body);
+    expect(body.supplierId).toBe("FAS-123");
+    expect(body.journalId).toBe(42);
+  });
+
+  it("edits hardware item with null material and supplierId (covers ?? '' fallback branches in startEdit)", async () => {
+    const hwWithNulls = [
+      { hardwareId: 5, supplier: "Acme", supplierId: null, item: "Spring", dimensions: "10mm", material: null, effective: null, baseCost: null, taxes: null, shipping: null, cost: 3.00, quantity: 50, remaining: 50 },
+    ];
+    setupDefaultFetch(hwWithNulls as unknown as typeof sampleHardware);
+    const { container } = render(<HardwarePage />);
+    await waitFor(() => { expect(container.textContent).toContain("Spring"); });
+    const editBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Edit")!;
+    await act(async () => { fireEvent.click(editBtn); });
+    expect(container.textContent).toContain("Edit Hardware #5");
+    // material, supplierId, effective should default to "" via ?? operator
+    const dateInput = container.querySelector("input[type='date']") as HTMLInputElement;
+    expect(dateInput.value).toBe("");
+    mockApiFetch.mockResolvedValueOnce(undefined);
+    mockApiFetch.mockResolvedValueOnce(hwWithNulls);
+    const saveBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Save")!;
+    await act(async () => { fireEvent.click(saveBtn); });
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith("/api/procurement/hardware/5", expect.objectContaining({ method: "PUT" }));
+    });
+    const putCall = mockApiFetch.mock.calls.find(
+      (c: unknown[]) => typeof c[0] === "string" && c[0] === "/api/procurement/hardware/5" && typeof c[1] === "object" && (c[1] as Record<string, unknown>).method === "PUT",
+    );
+    const body = JSON.parse((putCall![1] as Record<string, string>).body);
+    expect(body.supplierId).toBeNull();
+    expect(body.material).toBe("");
+  });
+
+  it("adds hardware with supplierId set (covers truthy supplierId?.trim() || null branch on add)", async () => {
+    setupDefaultFetch();
+    const { container } = render(<HardwarePage />);
+    await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
+    const addBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "+ Add Hardware")!;
+    await act(async () => { fireEvent.click(addBtn); });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. M3x20 Socket Cap Bolt']")!, { target: { value: "Pin" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. Bolt Depot']")!, { target: { value: "Store" } });
+    fireEvent.change(container.querySelector("input[placeholder='Optional']")!, { target: { value: "SUP-100" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. 3x0.5x20mm']")!, { target: { value: "2mm" } });
+    fillCostQtyRemaining(container, "1.00", "10", "10");
+    mockApiFetch.mockResolvedValueOnce(undefined);
+    mockApiFetch.mockResolvedValueOnce(sampleHardware);
+    const saveBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Save")!;
+    await act(async () => { fireEvent.click(saveBtn); });
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith("/api/procurement/hardware", expect.objectContaining({ method: "POST" }));
+    });
+    const postCall = mockApiFetch.mock.calls.find(
+      (c: unknown[]) => typeof c[0] === "string" && c[0] === "/api/procurement/hardware" && typeof c[1] === "object" && (c[1] as Record<string, unknown>).method === "POST",
+    );
+    const body = JSON.parse((postCall![1] as Record<string, string>).body);
+    expect(body.supplierId).toBe("SUP-100");
   });
 
   it("shows deleted count text", async () => {

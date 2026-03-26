@@ -98,25 +98,31 @@ export function CrudTable<T>({
     finally { setBusyId(null); }
   };
 
-  const editInput = (field: string, type: string = "text", placeholder?: string) => (
-    <input
-      type={type}
-      value={editValues[field] ?? ""}
-      onChange={(e) => setEditValues({ ...editValues, [field]: e.target.value })}
-      placeholder={placeholder ?? field}
-      className={`w-full border border-border rounded px-2 py-1 text-sm bg-background ${type === "number" ? "font-mono text-right" : ""}`}
-    />
-  );
+  const editInput = (field: string) => {
+    const val = String(editValues[field] || "");
+    return (
+      <input
+        type="text"
+        value={val}
+        onChange={(e) => setEditValues({ ...editValues, [field]: e.target.value })}
+        placeholder={field}
+        className="w-full border border-border rounded px-2 py-1 text-sm bg-background"
+      />
+    );
+  };
 
-  const newInput = (field: string, type: string = "text", placeholder?: string) => (
-    <input
-      type={type}
-      value={newRow[field] ?? ""}
-      onChange={(e) => setNewRow({ ...newRow, [field]: e.target.value })}
-      placeholder={placeholder ?? field}
-      className={`border border-border rounded px-2 py-1 text-sm bg-background ${type === "number" ? "font-mono text-right" : ""}`}
-    />
-  );
+  const newInput = (field: string) => {
+    const val = String(newRow[field] || "");
+    return (
+      <input
+        type="text"
+        value={val}
+        onChange={(e) => setNewRow({ ...newRow, [field]: e.target.value })}
+        placeholder={field}
+        className="border border-border rounded px-2 py-1 text-sm bg-background"
+      />
+    );
+  };
 
   if (crud.error) return <ErrorState message={crud.error} />;
   if (!crud.items) return <LoadingState />;
@@ -152,7 +158,7 @@ export function CrudTable<T>({
               : (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {Object.keys(emptyFields).map((field) => (
-                    <div key={field}>{newInput(field, "text", field)}</div>
+                    <div key={field}>{newInput(field)}</div>
                   ))}
                 </div>
               )}

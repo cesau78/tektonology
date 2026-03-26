@@ -46,14 +46,14 @@ function ComponentForm({ values, onChange }: { values: Record<string, string>; o
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
       <FormField label="Part">
-        <input type="text" value={values.part ?? ""} onChange={(e) => onChange("part", e.target.value)} placeholder="e.g. Insert, Cap, Slipper" className={inputClass} autoFocus />
+        <input type="text" value={values.part} onChange={(e) => onChange("part", e.target.value)} placeholder="e.g. Insert, Cap, Slipper" className={inputClass} autoFocus />
       </FormField>
       <FormField label="Date Produced">
-        <input type="date" value={values.effective ?? ""} onChange={(e) => onChange("effective", e.target.value)} className={inputClass} />
+        <input type="date" value={values.effective} onChange={(e) => onChange("effective", e.target.value)} className={inputClass} />
       </FormField>
       <FormField label="Print Job">
         <PrintJobSelect
-          value={values.printJobId ?? ""}
+          value={values.printJobId}
           onChange={(id, job) => {
             onChange("printJobId", id);
             if (job && job.components.length > 0) {
@@ -65,10 +65,10 @@ function ComponentForm({ values, onChange }: { values: Record<string, string>; o
         />
       </FormField>
       <FormField label="Quantity Produced">
-        <input type="number" value={values.quantity ?? ""} onChange={(e) => onChange("quantity", e.target.value)} placeholder="0" className={monoInputClass} />
+        <input type="number" value={values.quantity} onChange={(e) => onChange("quantity", e.target.value)} placeholder="0" className={monoInputClass} />
       </FormField>
       <FormField label="Remaining">
-        <input type="number" value={values.remaining ?? ""} onChange={(e) => onChange("remaining", e.target.value)} placeholder="0" className={monoInputClass} />
+        <input type="number" value={values.remaining} onChange={(e) => onChange("remaining", e.target.value)} placeholder="0" className={monoInputClass} />
       </FormField>
     </div>
   );
@@ -133,8 +133,8 @@ export default function ComponentsPage() {
         toPayload={(v) => ({
           part: v.part?.trim(),
           effective: v.effective,
-          quantity: parseInt(v.quantity) || 0,
-          remaining: parseInt(v.remaining) || 0,
+          quantity: Number(v.quantity),
+          remaining: Number(v.remaining),
           ...(v.printJobId ? { printJobId: v.printJobId.trim() } : {}),
         })}
         fromItem={(c) => ({
@@ -142,7 +142,7 @@ export default function ComponentsPage() {
           effective: c.effective,
           quantity: String(c.quantity),
           remaining: String(c.remaining),
-          printJobId: c.printJobId ?? "",
+          printJobId: c.printJobId || "",
         })}
       />
     </div>

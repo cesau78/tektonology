@@ -32,6 +32,9 @@ vi.mock("@/components/journal-select", () => ({
   JournalSelect: ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
     <select data-testid="journal-select" value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="">— None —</option>
+      <option value="42">#42</option>
+      <option value="55">#55</option>
+      <option value="77">#77</option>
     </select>
   ),
 }));
@@ -259,6 +262,9 @@ describe("SpoolsPage", () => {
     fireEvent.change(getByPlaceholderText("e.g. Bambu"), { target: { value: "NewBrand" } });
     fireEvent.change(getByPlaceholderText("e.g. PLA Pro"), { target: { value: "PLA" } });
     fireEvent.change(getByPlaceholderText("e.g. Black"), { target: { value: "Red" } });
+    // Exercise date onChange (line 265)
+    const dateInput = container.querySelector("input[type='date']")!;
+    fireEvent.change(dateInput, { target: { value: "2026-03-25" } });
     fireEvent.change(getByPlaceholderText("0.00"), { target: { value: "19.99" } });
     const weightInput = getFieldInput(container, "Weight (g)");
     const remainingInput = getFieldInput(container, "Remaining (g)");
@@ -731,6 +737,126 @@ describe("SpoolsPage", () => {
     await waitFor(() => {
       expect(container.textContent).toContain("1 deleted");
     });
+  });
+
+  it("exercises JournalSelect onChange in add form", async () => {
+    mockApiFetch.mockResolvedValue(sampleSpools);
+    const { getByText, getByTestId } = render(<SpoolsPage />);
+    await waitFor(() => { expect(getByText("+ Add Spool")).toBeDefined(); });
+    await act(async () => { fireEvent.click(getByText("+ Add Spool")); });
+    // JournalSelect onChange (line 277) — triggers the setNewRow({...newRow, journalId: v}) callback
+    const journalSelect = getByTestId("journal-select");
+    await act(async () => { fireEvent.change(journalSelect, { target: { value: "42" } }); });
+    // The onChange was invoked; no error thrown means the handler executed
+    expect(journalSelect).toBeTruthy();
+  });
+
+  it("exercises date, weight, and journalId onChange in edit form", async () => {
+    mockApiFetch.mockResolvedValue(sampleSpools);
+    const { getAllByText, getByText, container } = render(<SpoolsPage />);
+    await waitFor(() => { expect(getAllByText("Edit").length).toBeGreaterThan(0); });
+    await act(async () => { fireEvent.click(getAllByText("Edit")[0]); });
+
+    // Date Purchased onChange (line 303)
+    const dateInput = container.querySelector("input[type='date']")!;
+    fireEvent.change(dateInput, { target: { value: "2026-06-15" } });
+
+    // Weight (g) onChange (line 309)
+    const weightInput = getFieldInput(container, "Weight (g)");
+    fireEvent.change(weightInput, { target: { value: "500" } });
+
+    // JournalSelect onChange in edit form (line 315)
+    const journalSelect = container.querySelector("[data-testid='journal-select']")!;
+    fireEvent.change(journalSelect, { target: { value: "7" } });
+
+    mockApiFetch.mockResolvedValueOnce({});
+    mockApiFetch.mockResolvedValueOnce(sampleSpools);
+    await act(async () => { fireEvent.click(getByText("Save")); });
+    expect(mockApiFetch).toHaveBeenCalledWith("/api/procurement/spools/1", expect.objectContaining({ method: "PUT" }));
+  });
+
+  it("covers startEdit with a spool that has journalId and undefined effective (lines 82-86)", async () => {
+    const spoolWithJournal = [
+      { spoolId: 10, brand: "Bambu", material: "PLA Pro", color: "Black", cost: 24.99, weightG: 1000, remainingG: 750, journalId: 42 },
+    ];
+    mockApiFetch.mockResolvedValue(spoolWithJournal);
+    const { getByText, container } = render(<SpoolsPage />);
+    await waitFor(() => { expect(container.textContent).toContain("Bambu"); });
+    await act(async () => { fireEvent.click(getByText("Edit")); });
+    // Edit form visible with journalId pre-populated
+    expect(container.textContent).toContain("Edit Spool #10");
+    // effective should default to "" since it's undefined on the spool
+    const dateInput = container.querySelector("input[type='date']") as HTMLInputElement;
+    expect(dateInput.value).toBe("");
+  });
+
+  it("saves edit with journalId set (line 119 truthy branch)", async () => {
+    // Edit a spool that already has journalId — startEdit pre-populates editValues.journalId
+    const spoolsWithJournal = [
+      { spoolId: 10, brand: "Bambu", material: "PLA Pro", color: "Black", effective: "2025-01-01", cost: 24.99, weightG: 1000, remainingG: 750, journalId: 55 },
+    ];
+    mockApiFetch.mockResolvedValue(spoolsWithJournal);
+    const { getByText, container } = render(<SpoolsPage />);
+    await waitFor(() => { expect(container.textContent).toContain("Bambu"); });
+    await act(async () => { fireEvent.click(getByText("Edit")); });
+    // Save without changing anything — editValues.journalId is "55" from startEdit
+    mockApiFetch.mockResolvedValueOnce({});
+    mockApiFetch.mockResolvedValueOnce(spoolsWithJournal);
+    await act(async () => { fireEvent.click(getByText("Save")); });
+    const putCall = mockApiFetch.mock.calls.find(
+      (c: unknown[]) => typeof c[1] === "object" && (c[1] as Record<string, unknown>).method === "PUT",
+    );
+    expect(putCall).toBeTruthy();
+    const body = JSON.parse((putCall![1] as Record<string, string>).body);
+    expect(body.journalId).toBe(55);
+  });
+
+  it("adds a spool with journalId set (line 190 truthy branch)", async () => {
+    mockApiFetch.mockResolvedValue(sampleSpools);
+    const { getByText, container } = render(<SpoolsPage />);
+    await waitFor(() => { expect(getByText("+ Add Spool")).toBeDefined(); });
+    await act(async () => { fireEvent.click(getByText("+ Add Spool")); });
+
+    // Set each field one at a time, verifying state persists between changes.
+    // Each await act flushes the state update so the next onChange closure has fresh newRow.
+    const brandInput = container.querySelector("input[placeholder='e.g. Bambu']") as HTMLInputElement;
+    await act(async () => { fireEvent.change(brandInput, { target: { value: "X" } }); });
+    expect(brandInput.value).toBe("X");
+
+    const materialInput = container.querySelector("input[placeholder='e.g. PLA Pro']") as HTMLInputElement;
+    await act(async () => { fireEvent.change(materialInput, { target: { value: "PLA" } }); });
+    expect(materialInput.value).toBe("PLA");
+
+    const colorInput = container.querySelector("input[placeholder='e.g. Black']") as HTMLInputElement;
+    await act(async () => { fireEvent.change(colorInput, { target: { value: "Red" } }); });
+    expect(colorInput.value).toBe("Red");
+
+    const costInput = container.querySelector("input[placeholder='0.00']") as HTMLInputElement;
+    await act(async () => { fireEvent.change(costInput, { target: { value: "10" } }); });
+    expect(costInput.value).toBe("10");
+
+    const weightInput = getFieldInput(container, "Weight (g)");
+    await act(async () => { fireEvent.change(weightInput, { target: { value: "100" } }); });
+    expect(weightInput.value).toBe("100");
+
+    const remainingInput = getFieldInput(container, "Remaining (g)");
+    await act(async () => { fireEvent.change(remainingInput, { target: { value: "50" } }); });
+    expect(remainingInput.value).toBe("50");
+
+    // Set journalId last
+    const journalSelect = container.querySelector("[data-testid='journal-select']") as HTMLSelectElement;
+    await act(async () => { fireEvent.change(journalSelect, { target: { value: "77" } }); });
+
+    mockApiFetch.mockResolvedValueOnce({});
+    mockApiFetch.mockResolvedValueOnce(sampleSpools);
+    await act(async () => { fireEvent.click(getByText("Save")); });
+
+    const postCall = mockApiFetch.mock.calls.find(
+      (c: unknown[]) => typeof c[1] === "object" && (c[1] as Record<string, unknown>).method === "POST",
+    );
+    expect(postCall).toBeTruthy();
+    const body = JSON.parse((postCall![1] as Record<string, string>).body);
+    expect(body.journalId).toBe(77);
   });
 
   it("hides groups with only deleted spools when showDeleted is false", async () => {

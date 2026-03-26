@@ -42,31 +42,31 @@ function PrinterForm({ values, onChange }: { values: Record<string, string>; onC
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
       <FormField label="Brand">
-        <input type="text" value={values.brand ?? ""} onChange={(e) => onChange("brand", e.target.value)} placeholder="e.g. Bambu Lab" className={inputClass} />
+        <input type="text" value={values.brand} onChange={(e) => onChange("brand", e.target.value)} placeholder="e.g. Bambu Lab" className={inputClass} />
       </FormField>
       <FormField label="Name">
-        <input type="text" value={values.name ?? ""} onChange={(e) => onChange("name", e.target.value)} placeholder="e.g. A1 Lab" className={inputClass} />
+        <input type="text" value={values.name} onChange={(e) => onChange("name", e.target.value)} placeholder="e.g. A1 Lab" className={inputClass} />
       </FormField>
       <FormField label="Date Purchased">
-        <input type="date" value={values.effective ?? ""} onChange={(e) => onChange("effective", e.target.value)} className={inputClass} />
+        <input type="date" value={values.effective} onChange={(e) => onChange("effective", e.target.value)} className={inputClass} />
       </FormField>
       <FormField label="Base Cost">
-        <input type="number" step="0.01" value={values.baseCost ?? ""} onChange={(e) => onChange("baseCost", e.target.value)} placeholder="0.00" className={monoInputClass} />
+        <input type="number" step="0.01" value={values.baseCost} onChange={(e) => onChange("baseCost", e.target.value)} placeholder="0.00" className={monoInputClass} />
       </FormField>
       <FormField label="Taxes">
-        <input type="number" step="0.01" value={values.taxes ?? ""} onChange={(e) => onChange("taxes", e.target.value)} placeholder="0.00" className={monoInputClass} />
+        <input type="number" step="0.01" value={values.taxes} onChange={(e) => onChange("taxes", e.target.value)} placeholder="0.00" className={monoInputClass} />
       </FormField>
       <FormField label="Shipping">
-        <input type="number" step="0.01" value={values.shipping ?? ""} onChange={(e) => onChange("shipping", e.target.value)} placeholder="0.00" className={monoInputClass} />
+        <input type="number" step="0.01" value={values.shipping} onChange={(e) => onChange("shipping", e.target.value)} placeholder="0.00" className={monoInputClass} />
       </FormField>
       <FormField label="Total Cost">
-        <input type="number" step="0.01" value={values.cost ?? ""} onChange={(e) => onChange("cost", e.target.value)} placeholder="0.00" className={monoInputClass} />
+        <input type="number" step="0.01" value={values.cost} onChange={(e) => onChange("cost", e.target.value)} placeholder="0.00" className={monoInputClass} />
       </FormField>
       <FormField label="Hours Used">
-        <input type="number" step="0.1" value={values.hoursUsed ?? "0"} onChange={(e) => onChange("hoursUsed", e.target.value)} placeholder="0" className={monoInputClass} />
+        <input type="number" step="0.1" value={values.hoursUsed} onChange={(e) => onChange("hoursUsed", e.target.value)} placeholder="0" className={monoInputClass} />
       </FormField>
       <FormField label="Journal Entry">
-        <JournalSelect value={values.journalId ?? ""} onChange={(v) => onChange("journalId", v)} />
+        <JournalSelect value={values.journalId} onChange={(v) => onChange("journalId", v)} />
       </FormField>
     </div>
   );

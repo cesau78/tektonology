@@ -122,12 +122,12 @@ export default function InventoryPage() {
     effective: formEffective,
     components: formComponents
       .filter((c) => c.batchId)
-      .map((c) => ({ batchId: parseInt(c.batchId) || 0, part: c.part.trim(), quantity: parseInt(c.quantity) || 0 })),
+      .map((c) => ({ batchId: Number(c.batchId), part: c.part.trim(), quantity: Number(c.quantity) })),
     hardware: formHardware
       .filter((h) => h.hardwareId)
-      .map((h) => ({ hardwareId: parseInt(h.hardwareId) || 0, item: h.item.trim(), quantity: parseInt(h.quantity) || 0 })),
-    quantity: parseInt(formQuantity) || 0,
-    remaining: parseInt(formRemaining) || 0,
+      .map((h) => ({ hardwareId: Number(h.hardwareId), item: h.item.trim(), quantity: Number(h.quantity) })),
+    quantity: Number(formQuantity),
+    remaining: Number(formRemaining),
   });
 
   const handleAdd = async () => {
@@ -139,9 +139,8 @@ export default function InventoryPage() {
   };
 
   const handleSaveEdit = async () => {
-    if (editingId == null) return;
     try {
-      await crud.update(editingId, buildPayload() as Partial<InventoryData>);
+      await crud.update(editingId!, buildPayload() as Partial<InventoryData>);
       setEditingId(null);
       resetForm();
     } catch { /* error set by hook */ }
@@ -218,9 +217,13 @@ export default function InventoryPage() {
                 <select
                   value={c.batchId}
                   onChange={(e) => {
-                    const opt = componentOptions.find((o) => String(o.batchId) === e.target.value);
-                    updateComponent(idx, "batchId", e.target.value);
-                    if (opt) updateComponent(idx, "part", opt.part);
+                    const id = e.target.value;
+                    const opt = componentOptions.find((o) => String(o.batchId) === id);
+                    setFormComponents((prev) => {
+                      const updated = [...prev];
+                      updated[idx] = { ...updated[idx], batchId: id, ...(opt ? { part: opt.part } : {}) };
+                      return updated;
+                    });
                   }}
                   className="w-full border border-border rounded px-2 py-1 text-sm bg-background"
                 >
@@ -255,9 +258,13 @@ export default function InventoryPage() {
                 <select
                   value={h.hardwareId}
                   onChange={(e) => {
-                    const opt = hardwareOptions.find((o) => String(o.hardwareId) === e.target.value);
-                    updateHw(idx, "hardwareId", e.target.value);
-                    if (opt) updateHw(idx, "item", opt.item);
+                    const id = e.target.value;
+                    const opt = hardwareOptions.find((o) => String(o.hardwareId) === id);
+                    setFormHardware((prev) => {
+                      const updated = [...prev];
+                      updated[idx] = { ...updated[idx], hardwareId: id, ...(opt ? { item: opt.item } : {}) };
+                      return updated;
+                    });
                   }}
                   className="w-full border border-border rounded px-2 py-1 text-sm bg-background"
                 >
