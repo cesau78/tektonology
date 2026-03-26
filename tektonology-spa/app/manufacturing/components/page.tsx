@@ -6,6 +6,7 @@ import { useRole, canWrite } from "@/lib/auth";
 import { useCrud } from "@/lib/use-crud";
 import { CrudTable, type Column } from "@/components/crud-table";
 import { FormField, inputClass, monoInputClass } from "@/components/form-field";
+import { PrintJobSelect } from "@/components/print-job-select";
 
 interface ComponentStockData {
   batchId: number;
@@ -50,8 +51,18 @@ function ComponentForm({ values, onChange }: { values: Record<string, string>; o
       <FormField label="Date Produced">
         <input type="date" value={values.effective ?? ""} onChange={(e) => onChange("effective", e.target.value)} className={inputClass} />
       </FormField>
-      <FormField label="Print Job ID">
-        <input type="text" value={values.printJobId ?? ""} onChange={(e) => onChange("printJobId", e.target.value)} placeholder="Optional — links to print job" className={`${inputClass} text-xs font-mono`} />
+      <FormField label="Print Job">
+        <PrintJobSelect
+          value={values.printJobId ?? ""}
+          onChange={(id, job) => {
+            onChange("printJobId", id);
+            if (job && job.components.length > 0) {
+              onChange("part", job.components[0].part);
+              onChange("quantity", String(job.components[0].quantity));
+              onChange("remaining", String(job.components[0].quantity));
+            }
+          }}
+        />
       </FormField>
       <FormField label="Quantity Produced">
         <input type="number" value={values.quantity ?? ""} onChange={(e) => onChange("quantity", e.target.value)} placeholder="0" className={monoInputClass} />

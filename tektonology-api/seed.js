@@ -275,12 +275,11 @@ await db.collection("component_stock").insertMany(compDocs);
 console.log(`component_stock: ${compDocs.length} inserted`);
 
 // -- 9. Inventory (assembled products) --
-// Look up inserted print job _ids so we can reference them in components
-const insertedJobs = await db.collection("print_jobs").find({}, { projection: { _id: 1, components: 1, effective: 1 } }).toArray();
-function findJobIds(part) {
-  return insertedJobs
-    .filter((j) => j.components?.some((c) => c.part === part))
-    .map((j) => String(j._id));
+// Reference component_stock batches by batchId
+const insertedBatches = await db.collection("component_stock").find({}).toArray();
+function findBatchId(part) {
+  const batch = insertedBatches.find((b) => b.part === part);
+  return batch?.batchId ?? 0;
 }
 
 const invDocs = [
@@ -289,8 +288,8 @@ const invDocs = [
     product: "Compound Fastened Boot",
     effective: "2026-03-15",
     components: [
-      { printJobId: findJobIds("Cap, Slipper")[0] ?? "", part: "Cap, Slipper", quantity: 45 },
-      { printJobId: findJobIds("Insert")[0] ?? "", part: "Insert", quantity: 45 },
+      { batchId: findBatchId("Cap, Slipper"), part: "Cap, Slipper", quantity: 45 },
+      { batchId: findBatchId("Insert"), part: "Insert", quantity: 45 },
     ],
     hardware: [
       { hardwareId: 1, item: "M3x20 Socket Cap Bolt", quantity: 90 },

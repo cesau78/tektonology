@@ -34,14 +34,25 @@ afterEach(cleanup);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Default: hardware list fetch resolves with sample data; journal fetch resolves with empty array
+  mockApiFetch.mockImplementation((url: string) => {
+    if (url === "/api/finance/journal") return Promise.resolve([]);
+    return new Promise(() => {}); // hang by default so each test sets up its own
+  });
 });
 
 const sampleHardware = [
   {
     hardwareId: 1,
     supplier: "McMaster-Carr",
+    supplierId: null,
     item: "Hex Bolt",
     dimensions: "M5x20",
+    material: "Steel",
+    effective: "2025-06-01",
+    baseCost: 10.0,
+    taxes: 1.5,
+    shipping: 1.0,
     cost: 12.50,
     quantity: 100,
     remaining: 85,
@@ -49,32 +60,70 @@ const sampleHardware = [
   {
     hardwareId: 2,
     supplier: "Fastenal",
+    supplierId: "FAS-123",
     item: "Lock Nut",
     dimensions: "M5",
+    material: "Zinc",
+    effective: "2025-06-15",
+    baseCost: 6.0,
+    taxes: 1.0,
+    shipping: 1.0,
     cost: 8.00,
     quantity: 200,
     remaining: 150,
+    journalId: 42,
   },
   {
     hardwareId: 3,
     supplier: "Amazon",
+    supplierId: null,
     item: "Allen Wrench",
     dimensions: "4mm",
+    material: "Chrome Vanadium",
+    effective: "2025-07-01",
+    baseCost: 4.0,
+    taxes: 0.99,
+    shipping: 1.0,
     cost: 5.99,
     quantity: 0,
     remaining: 0,
   },
 ];
 
+/** Helper: set up mockApiFetch to return sampleHardware for the list endpoint and [] for journal */
+function setupDefaultFetch(data = sampleHardware) {
+  mockApiFetch.mockImplementation((url: string) => {
+    if (url === "/api/finance/journal") return Promise.resolve([]);
+    if (typeof url === "string" && url.startsWith("/api/procurement/hardware")) return Promise.resolve(data);
+    return Promise.resolve(data);
+  });
+}
+
+/** Helper to fill the add/edit form's "Total Cost", "Quantity", and "Remaining" fields */
+function fillCostQtyRemaining(container: HTMLElement, cost: string, qty: string, rem: string) {
+  const costInputs = container.querySelectorAll("input[placeholder='0.00']");
+  // 0=Base Cost, 1=Taxes, 2=Shipping, 3=Total Cost
+  fireEvent.change(costInputs[3]!, { target: { value: cost } });
+  const numInputs = container.querySelectorAll("input[placeholder='0']");
+  fireEvent.change(numInputs[0]!, { target: { value: qty } });
+  fireEvent.change(numInputs[1]!, { target: { value: rem } });
+}
+
 describe("HardwarePage", () => {
   it("shows loading state initially", () => {
-    mockApiFetch.mockReturnValue(new Promise(() => {}));
+    mockApiFetch.mockImplementation((url: string) => {
+      if (url === "/api/finance/journal") return Promise.resolve([]);
+      return new Promise(() => {});
+    });
     const { container } = render(<HardwarePage />);
     expect(container.textContent).toContain("Loading...");
   });
 
   it("shows error state on fetch failure", async () => {
-    mockApiFetch.mockRejectedValue(new Error("Server error"));
+    mockApiFetch.mockImplementation((url: string) => {
+      if (url === "/api/finance/journal") return Promise.resolve([]);
+      return Promise.reject(new Error("Server error"));
+    });
     const { container } = render(<HardwarePage />);
     await waitFor(() => {
       expect(container.textContent).toContain("Server error");
@@ -82,7 +131,7 @@ describe("HardwarePage", () => {
   });
 
   it("renders hardware table with data", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => {
       expect(container.textContent).toContain("Hex Bolt");
@@ -92,7 +141,7 @@ describe("HardwarePage", () => {
   });
 
   it("renders breadcrumb navigation", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => {
       expect(container.querySelector("a[href='/']")?.textContent).toBe("Home");
@@ -102,7 +151,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows summary with total pieces and cost", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => {
       expect(container.textContent).toContain("235 pieces on hand");
@@ -111,7 +160,7 @@ describe("HardwarePage", () => {
   });
 
   it("renders all table columns", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => {
       expect(container.textContent).toContain("McMaster-Carr");
@@ -123,7 +172,7 @@ describe("HardwarePage", () => {
   });
 
   it("calculates unit cost correctly", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => {
       // Unit cost for Hex Bolt: 12.50 / 100 = $0.13
@@ -134,7 +183,7 @@ describe("HardwarePage", () => {
   });
 
   it("handles zero quantity (unit cost = 0)", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => {
       // Allen Wrench: quantity 0, unitCost = 0 => "$0.00"
@@ -143,7 +192,7 @@ describe("HardwarePage", () => {
   });
 
   it("renders quantity and remaining columns", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => {
       expect(container.textContent).toContain("100");
@@ -153,37 +202,44 @@ describe("HardwarePage", () => {
     expect(container.textContent).toContain("150");
   });
 
+  it("renders journal column with IDs and dashes", async () => {
+    setupDefaultFetch();
+    const { container } = render(<HardwarePage />);
+    await waitFor(() => {
+      expect(container.textContent).toContain("#42");
+    });
+    // Items without journalId show em-dash
+    expect(container.textContent).toContain("—");
+  });
+
   // ── Add Row ──────────────────────────────────────────────────────────
 
   it("opens add form and cancels", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => {
       expect(container.textContent).toContain("Hex Bolt");
     });
     const addBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "+ Add Hardware")!;
     await act(async () => { fireEvent.click(addBtn); });
-    expect(container.querySelector("input[placeholder='Item name']")).toBeTruthy();
+    expect(container.querySelector("input[placeholder='e.g. M3x20 Socket Cap Bolt']")).toBeTruthy();
     const cancelBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Cancel")!;
     await act(async () => { fireEvent.click(cancelBtn); });
-    expect(container.querySelector("input[placeholder='Item name']")).toBeFalsy();
+    expect(container.querySelector("input[placeholder='e.g. M3x20 Socket Cap Bolt']")).toBeFalsy();
   });
 
   it("adds hardware successfully", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => {
       expect(container.textContent).toContain("Hex Bolt");
     });
     const addBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "+ Add Hardware")!;
     await act(async () => { fireEvent.click(addBtn); });
-    fireEvent.change(container.querySelector("input[placeholder='Item name']")!, { target: { value: "Cap Screw" } });
-    fireEvent.change(container.querySelector("input[placeholder='Supplier']")!, { target: { value: "Grainger" } });
-    fireEvent.change(container.querySelector("input[placeholder='Dimensions']")!, { target: { value: "M6x25" } });
-    fireEvent.change(container.querySelector("input[placeholder='0.00']")!, { target: { value: "3.50" } });
-    const numInputs = container.querySelectorAll("input[placeholder='0']");
-    fireEvent.change(numInputs[0]!, { target: { value: "50" } });
-    fireEvent.change(numInputs[1]!, { target: { value: "50" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. M3x20 Socket Cap Bolt']")!, { target: { value: "Cap Screw" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. Bolt Depot']")!, { target: { value: "Grainger" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. 3x0.5x20mm']")!, { target: { value: "M6x25" } });
+    fillCostQtyRemaining(container, "3.50", "50", "50");
     mockApiFetch.mockResolvedValueOnce(undefined);
     mockApiFetch.mockResolvedValueOnce(sampleHardware);
     const saveBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Save")!;
@@ -194,7 +250,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows validation error for empty item on add", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const addBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "+ Add Hardware")!;
@@ -205,40 +261,42 @@ describe("HardwarePage", () => {
   });
 
   it("shows validation error for empty supplier on add", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const addBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "+ Add Hardware")!;
     await act(async () => { fireEvent.click(addBtn); });
-    fireEvent.change(container.querySelector("input[placeholder='Item name']")!, { target: { value: "Bolt" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. M3x20 Socket Cap Bolt']")!, { target: { value: "Bolt" } });
     const saveBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Save")!;
     await act(async () => { fireEvent.click(saveBtn); });
     expect(container.textContent).toContain("Supplier is required");
   });
 
   it("shows validation error for NaN cost on add", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const addBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "+ Add Hardware")!;
     await act(async () => { fireEvent.click(addBtn); });
-    fireEvent.change(container.querySelector("input[placeholder='Item name']")!, { target: { value: "Bolt" } });
-    fireEvent.change(container.querySelector("input[placeholder='Supplier']")!, { target: { value: "Acme" } });
-    fireEvent.change(container.querySelector("input[placeholder='0.00']")!, { target: { value: "abc" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. M3x20 Socket Cap Bolt']")!, { target: { value: "Bolt" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. Bolt Depot']")!, { target: { value: "Acme" } });
+    const costInputs = container.querySelectorAll("input[placeholder='0.00']");
+    fireEvent.change(costInputs[3]!, { target: { value: "abc" } });
     const saveBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Save")!;
     await act(async () => { fireEvent.click(saveBtn); });
     expect(container.textContent).toContain("Cost must be a non-negative number");
   });
 
   it("shows validation error for negative cost on add", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const addBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "+ Add Hardware")!;
     await act(async () => { fireEvent.click(addBtn); });
-    fireEvent.change(container.querySelector("input[placeholder='Item name']")!, { target: { value: "Bolt" } });
-    fireEvent.change(container.querySelector("input[placeholder='Supplier']")!, { target: { value: "Acme" } });
-    fireEvent.change(container.querySelector("input[placeholder='0.00']")!, { target: { value: "-5" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. M3x20 Socket Cap Bolt']")!, { target: { value: "Bolt" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. Bolt Depot']")!, { target: { value: "Acme" } });
+    const costInputs = container.querySelectorAll("input[placeholder='0.00']");
+    fireEvent.change(costInputs[3]!, { target: { value: "-5" } });
     const numInputs = container.querySelectorAll("input[placeholder='0']");
     fireEvent.change(numInputs[0]!, { target: { value: "10" } });
     fireEvent.change(numInputs[1]!, { target: { value: "10" } });
@@ -248,14 +306,15 @@ describe("HardwarePage", () => {
   });
 
   it("shows validation error for NaN quantity on add", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const addBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "+ Add Hardware")!;
     await act(async () => { fireEvent.click(addBtn); });
-    fireEvent.change(container.querySelector("input[placeholder='Item name']")!, { target: { value: "Bolt" } });
-    fireEvent.change(container.querySelector("input[placeholder='Supplier']")!, { target: { value: "Acme" } });
-    fireEvent.change(container.querySelector("input[placeholder='0.00']")!, { target: { value: "5" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. M3x20 Socket Cap Bolt']")!, { target: { value: "Bolt" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. Bolt Depot']")!, { target: { value: "Acme" } });
+    const costInputs = container.querySelectorAll("input[placeholder='0.00']");
+    fireEvent.change(costInputs[3]!, { target: { value: "5" } });
     const numInputs = container.querySelectorAll("input[placeholder='0']");
     fireEvent.change(numInputs[0]!, { target: { value: "abc" } });
     const saveBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Save")!;
@@ -264,14 +323,15 @@ describe("HardwarePage", () => {
   });
 
   it("shows validation error for NaN remaining on add", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const addBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "+ Add Hardware")!;
     await act(async () => { fireEvent.click(addBtn); });
-    fireEvent.change(container.querySelector("input[placeholder='Item name']")!, { target: { value: "Bolt" } });
-    fireEvent.change(container.querySelector("input[placeholder='Supplier']")!, { target: { value: "Acme" } });
-    fireEvent.change(container.querySelector("input[placeholder='0.00']")!, { target: { value: "5" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. M3x20 Socket Cap Bolt']")!, { target: { value: "Bolt" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. Bolt Depot']")!, { target: { value: "Acme" } });
+    const costInputs = container.querySelectorAll("input[placeholder='0.00']");
+    fireEvent.change(costInputs[3]!, { target: { value: "5" } });
     const numInputs = container.querySelectorAll("input[placeholder='0']");
     fireEvent.change(numInputs[0]!, { target: { value: "10" } });
     fireEvent.change(numInputs[1]!, { target: { value: "abc" } });
@@ -281,17 +341,14 @@ describe("HardwarePage", () => {
   });
 
   it("shows error message on add API error (Error)", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const addBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "+ Add Hardware")!;
     await act(async () => { fireEvent.click(addBtn); });
-    fireEvent.change(container.querySelector("input[placeholder='Item name']")!, { target: { value: "Bolt" } });
-    fireEvent.change(container.querySelector("input[placeholder='Supplier']")!, { target: { value: "Acme" } });
-    fireEvent.change(container.querySelector("input[placeholder='0.00']")!, { target: { value: "5" } });
-    const numInputs = container.querySelectorAll("input[placeholder='0']");
-    fireEvent.change(numInputs[0]!, { target: { value: "10" } });
-    fireEvent.change(numInputs[1]!, { target: { value: "10" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. M3x20 Socket Cap Bolt']")!, { target: { value: "Bolt" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. Bolt Depot']")!, { target: { value: "Acme" } });
+    fillCostQtyRemaining(container, "5", "10", "10");
     mockApiFetch.mockRejectedValueOnce(new Error("Add failed badly"));
     const saveBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Save")!;
     await act(async () => { fireEvent.click(saveBtn); });
@@ -301,17 +358,14 @@ describe("HardwarePage", () => {
   });
 
   it("shows fallback message on add API error (non-Error)", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const addBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "+ Add Hardware")!;
     await act(async () => { fireEvent.click(addBtn); });
-    fireEvent.change(container.querySelector("input[placeholder='Item name']")!, { target: { value: "Bolt" } });
-    fireEvent.change(container.querySelector("input[placeholder='Supplier']")!, { target: { value: "Acme" } });
-    fireEvent.change(container.querySelector("input[placeholder='0.00']")!, { target: { value: "5" } });
-    const numInputs = container.querySelectorAll("input[placeholder='0']");
-    fireEvent.change(numInputs[0]!, { target: { value: "10" } });
-    fireEvent.change(numInputs[1]!, { target: { value: "10" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. M3x20 Socket Cap Bolt']")!, { target: { value: "Bolt" } });
+    fireEvent.change(container.querySelector("input[placeholder='e.g. Bolt Depot']")!, { target: { value: "Acme" } });
+    fillCostQtyRemaining(container, "5", "10", "10");
     mockApiFetch.mockRejectedValueOnce("string error");
     const saveBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Save")!;
     await act(async () => { fireEvent.click(saveBtn); });
@@ -321,7 +375,7 @@ describe("HardwarePage", () => {
   });
 
   it("hides add button while adding", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const addBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "+ Add Hardware")!;
@@ -333,7 +387,7 @@ describe("HardwarePage", () => {
   // ── Edit Row ─────────────────────────────────────────────────────────
 
   it("enters edit mode, shows Save/Cancel, Cancel exits", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const editBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Edit")!;
@@ -346,7 +400,7 @@ describe("HardwarePage", () => {
   });
 
   it("saves edit via PUT", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const editBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Edit")!;
@@ -364,7 +418,7 @@ describe("HardwarePage", () => {
   });
 
   it("exercises dimensions onChange in edit mode", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const editBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Edit")!;
@@ -382,7 +436,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows edit validation error for empty item", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const editBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Edit")!;
@@ -396,7 +450,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows edit validation error for empty supplier", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const editBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Edit")!;
@@ -410,7 +464,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows edit validation error for NaN cost", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const editBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Edit")!;
@@ -424,7 +478,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows edit validation error for NaN quantity", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const editBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Edit")!;
@@ -438,7 +492,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows edit validation error for NaN remaining", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const editBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Edit")!;
@@ -452,7 +506,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows error message on edit save error (Error)", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const editBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Edit")!;
@@ -466,7 +520,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows fallback message on edit save error (non-Error)", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const editBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Edit")!;
@@ -482,7 +536,7 @@ describe("HardwarePage", () => {
   // ── Inline Delete ────────────────────────────────────────────────────
 
   it("shows Delete? Yes/No confirmation", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const deleteBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Delete")!;
@@ -493,7 +547,7 @@ describe("HardwarePage", () => {
   });
 
   it("confirms delete via DELETE request", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const deleteBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Delete")!;
@@ -508,7 +562,7 @@ describe("HardwarePage", () => {
   });
 
   it("cancels delete on No", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const deleteBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Delete")!;
@@ -519,7 +573,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows error message on delete error (Error)", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const deleteBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Delete")!;
@@ -533,7 +587,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows fallback message on delete error (non-Error)", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     const deleteBtn = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Delete")!;
@@ -549,12 +603,12 @@ describe("HardwarePage", () => {
   // ── Soft Delete Lifecycle ────────────────────────────────────────────
 
   const sampleHardwareWithDeleted = [
-    { hardwareId: 1, supplier: "McMaster-Carr", item: "Hex Bolt", dimensions: "M5x20", cost: 12.50, quantity: 100, remaining: 85 },
-    { hardwareId: 99, supplier: "OldCo", item: "Old Part", dimensions: "N/A", cost: 5.00, quantity: 10, remaining: 0, deletedAt: "2025-01-01T00:00:00.000Z" },
+    { hardwareId: 1, supplier: "McMaster-Carr", supplierId: null, item: "Hex Bolt", dimensions: "M5x20", material: "Steel", effective: "2025-06-01", baseCost: 10.0, taxes: 1.5, shipping: 1.0, cost: 12.50, quantity: 100, remaining: 85 },
+    { hardwareId: 99, supplier: "OldCo", supplierId: null, item: "Old Part", dimensions: "N/A", material: "", effective: "", baseCost: 5.0, taxes: 0, shipping: 0, cost: 5.00, quantity: 10, remaining: 0, deletedAt: "2025-01-01T00:00:00.000Z" },
   ];
 
   it("toggles show deleted and fetches with includeDeleted", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     mockApiFetch.mockResolvedValueOnce(sampleHardwareWithDeleted);
@@ -566,7 +620,7 @@ describe("HardwarePage", () => {
   });
 
   it("renders deleted rows with opacity-50 and shows Restore/Purge", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     mockApiFetch.mockResolvedValueOnce(sampleHardwareWithDeleted);
@@ -584,7 +638,7 @@ describe("HardwarePage", () => {
   });
 
   it("restores a deleted row via POST restore", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     mockApiFetch.mockResolvedValueOnce(sampleHardwareWithDeleted);
@@ -601,7 +655,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows error on restore failure", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     mockApiFetch.mockResolvedValueOnce(sampleHardwareWithDeleted);
@@ -617,7 +671,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows fallback 'Failed to restore' when non-Error is thrown", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     mockApiFetch.mockResolvedValueOnce(sampleHardwareWithDeleted);
@@ -633,7 +687,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows purge confirmation and purges via DELETE permanent", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     mockApiFetch.mockResolvedValueOnce(sampleHardwareWithDeleted);
@@ -653,7 +707,7 @@ describe("HardwarePage", () => {
   });
 
   it("cancels purge on No", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     mockApiFetch.mockResolvedValueOnce(sampleHardwareWithDeleted);
@@ -668,7 +722,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows error message on purge error (Error)", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     mockApiFetch.mockResolvedValueOnce(sampleHardwareWithDeleted);
@@ -686,7 +740,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows fallback message on purge error (non-Error)", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     mockApiFetch.mockResolvedValueOnce(sampleHardwareWithDeleted);
@@ -704,7 +758,7 @@ describe("HardwarePage", () => {
   });
 
   it("shows deleted count text", async () => {
-    mockApiFetch.mockResolvedValue(sampleHardware);
+    setupDefaultFetch();
     const { container } = render(<HardwarePage />);
     await waitFor(() => { expect(container.textContent).toContain("Hex Bolt"); });
     mockApiFetch.mockResolvedValueOnce(sampleHardwareWithDeleted);

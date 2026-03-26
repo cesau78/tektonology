@@ -28,6 +28,14 @@ vi.mock("@/lib/api", () => ({
   useApiFetch: () => mockApiFetch,
 }));
 
+vi.mock("@/components/journal-select", () => ({
+  JournalSelect: ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+    <select data-testid="journal-select" value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">— None —</option>
+    </select>
+  ),
+}));
+
 import SpoolsPage from "./page";
 
 afterEach(cleanup);
@@ -42,6 +50,7 @@ const sampleSpools = [
     brand: "Bambu",
     material: "PLA Pro",
     color: "Black",
+    effective: "2025-01-01",
     cost: 24.99,
     weightG: 1000,
     remainingG: 750,
@@ -51,6 +60,7 @@ const sampleSpools = [
     brand: "Bambu",
     material: "PLA Pro",
     color: "White",
+    effective: "2025-01-02",
     cost: 24.99,
     weightG: 1000,
     remainingG: 100,
@@ -60,6 +70,7 @@ const sampleSpools = [
     brand: "Overture",
     material: "TPU 90A",
     color: "Black",
+    effective: "2025-01-03",
     cost: 29.99,
     weightG: 1000,
     remainingG: 600,
@@ -69,6 +80,7 @@ const sampleSpools = [
     brand: "Bambu",
     material: "PETG",
     color: "Clear",
+    effective: "2025-01-04",
     cost: 22.99,
     weightG: 1000,
     remainingG: 300,
@@ -78,6 +90,7 @@ const sampleSpools = [
     brand: "Generic",
     material: "ABS",
     color: "Red",
+    effective: "2025-01-05",
     cost: 18.99,
     weightG: 1000,
     remainingG: 50,
@@ -87,11 +100,25 @@ const sampleSpools = [
     brand: "Test",
     material: "ABS",
     color: "Blue",
+    effective: "2025-01-06",
     cost: 10.00,
     weightG: 0,
     remainingG: 0,
   },
 ];
+
+/** Helper: find an input inside a FormField by its label text */
+function getFieldInput(container: HTMLElement, labelText: string): HTMLInputElement {
+  const labels = container.querySelectorAll("label");
+  for (const label of labels) {
+    if (label.textContent?.trim().toLowerCase() === labelText.toLowerCase()) {
+      const parent = label.parentElement!;
+      const input = parent.querySelector("input");
+      if (input) return input;
+    }
+  }
+  throw new Error(`No input found for label "${labelText}"`);
+}
 
 describe("SpoolsPage", () => {
   it("shows loading state initially", () => {
@@ -219,22 +246,24 @@ describe("SpoolsPage", () => {
     const { getByText, queryByPlaceholderText } = render(<SpoolsPage />);
     await waitFor(() => { expect(getByText("+ Add Spool")).toBeDefined(); });
     await act(async () => { fireEvent.click(getByText("+ Add Spool")); });
-    expect(queryByPlaceholderText("Brand")).toBeDefined();
+    expect(queryByPlaceholderText("e.g. Bambu")).toBeDefined();
     await act(async () => { fireEvent.click(getByText("Cancel")); });
-    expect(queryByPlaceholderText("Brand")).toBeNull();
+    expect(queryByPlaceholderText("e.g. Bambu")).toBeNull();
   });
 
   it("adds a spool successfully via POST", async () => {
     mockApiFetch.mockResolvedValue(sampleSpools);
-    const { getByText, getByPlaceholderText } = render(<SpoolsPage />);
+    const { getByText, getByPlaceholderText, container } = render(<SpoolsPage />);
     await waitFor(() => { expect(getByText("+ Add Spool")).toBeDefined(); });
     await act(async () => { fireEvent.click(getByText("+ Add Spool")); });
-    fireEvent.change(getByPlaceholderText("Brand"), { target: { value: "NewBrand" } });
-    fireEvent.change(getByPlaceholderText("Material"), { target: { value: "PLA" } });
-    fireEvent.change(getByPlaceholderText("Color"), { target: { value: "Red" } });
-    fireEvent.change(getByPlaceholderText("Cost"), { target: { value: "19.99" } });
-    fireEvent.change(getByPlaceholderText("Weight (g)"), { target: { value: "1000" } });
-    fireEvent.change(getByPlaceholderText("Remaining (g)"), { target: { value: "1000" } });
+    fireEvent.change(getByPlaceholderText("e.g. Bambu"), { target: { value: "NewBrand" } });
+    fireEvent.change(getByPlaceholderText("e.g. PLA Pro"), { target: { value: "PLA" } });
+    fireEvent.change(getByPlaceholderText("e.g. Black"), { target: { value: "Red" } });
+    fireEvent.change(getByPlaceholderText("0.00"), { target: { value: "19.99" } });
+    const weightInput = getFieldInput(container, "Weight (g)");
+    const remainingInput = getFieldInput(container, "Remaining (g)");
+    fireEvent.change(weightInput, { target: { value: "1000" } });
+    fireEvent.change(remainingInput, { target: { value: "1000" } });
     mockApiFetch.mockResolvedValueOnce({});
     mockApiFetch.mockResolvedValueOnce(sampleSpools);
     await act(async () => { fireEvent.click(getByText("Save")); });
@@ -246,11 +275,13 @@ describe("SpoolsPage", () => {
     const { getByText, getByPlaceholderText, container } = render(<SpoolsPage />);
     await waitFor(() => { expect(getByText("+ Add Spool")).toBeDefined(); });
     await act(async () => { fireEvent.click(getByText("+ Add Spool")); });
-    fireEvent.change(getByPlaceholderText("Material"), { target: { value: "PLA" } });
-    fireEvent.change(getByPlaceholderText("Color"), { target: { value: "Red" } });
-    fireEvent.change(getByPlaceholderText("Cost"), { target: { value: "10" } });
-    fireEvent.change(getByPlaceholderText("Weight (g)"), { target: { value: "100" } });
-    fireEvent.change(getByPlaceholderText("Remaining (g)"), { target: { value: "50" } });
+    fireEvent.change(getByPlaceholderText("e.g. PLA Pro"), { target: { value: "PLA" } });
+    fireEvent.change(getByPlaceholderText("e.g. Black"), { target: { value: "Red" } });
+    fireEvent.change(getByPlaceholderText("0.00"), { target: { value: "10" } });
+    const weightInput = getFieldInput(container, "Weight (g)");
+    const remainingInput = getFieldInput(container, "Remaining (g)");
+    fireEvent.change(weightInput, { target: { value: "100" } });
+    fireEvent.change(remainingInput, { target: { value: "50" } });
     await act(async () => { fireEvent.click(getByText("Save")); });
     expect(container.textContent).toContain("Brand is required");
   });
@@ -260,11 +291,13 @@ describe("SpoolsPage", () => {
     const { getByText, getByPlaceholderText, container } = render(<SpoolsPage />);
     await waitFor(() => { expect(getByText("+ Add Spool")).toBeDefined(); });
     await act(async () => { fireEvent.click(getByText("+ Add Spool")); });
-    fireEvent.change(getByPlaceholderText("Brand"), { target: { value: "X" } });
-    fireEvent.change(getByPlaceholderText("Color"), { target: { value: "Red" } });
-    fireEvent.change(getByPlaceholderText("Cost"), { target: { value: "10" } });
-    fireEvent.change(getByPlaceholderText("Weight (g)"), { target: { value: "100" } });
-    fireEvent.change(getByPlaceholderText("Remaining (g)"), { target: { value: "50" } });
+    fireEvent.change(getByPlaceholderText("e.g. Bambu"), { target: { value: "X" } });
+    fireEvent.change(getByPlaceholderText("e.g. Black"), { target: { value: "Red" } });
+    fireEvent.change(getByPlaceholderText("0.00"), { target: { value: "10" } });
+    const weightInput = getFieldInput(container, "Weight (g)");
+    const remainingInput = getFieldInput(container, "Remaining (g)");
+    fireEvent.change(weightInput, { target: { value: "100" } });
+    fireEvent.change(remainingInput, { target: { value: "50" } });
     await act(async () => { fireEvent.click(getByText("Save")); });
     expect(container.textContent).toContain("Material is required");
   });
@@ -274,11 +307,13 @@ describe("SpoolsPage", () => {
     const { getByText, getByPlaceholderText, container } = render(<SpoolsPage />);
     await waitFor(() => { expect(getByText("+ Add Spool")).toBeDefined(); });
     await act(async () => { fireEvent.click(getByText("+ Add Spool")); });
-    fireEvent.change(getByPlaceholderText("Brand"), { target: { value: "X" } });
-    fireEvent.change(getByPlaceholderText("Material"), { target: { value: "PLA" } });
-    fireEvent.change(getByPlaceholderText("Cost"), { target: { value: "10" } });
-    fireEvent.change(getByPlaceholderText("Weight (g)"), { target: { value: "100" } });
-    fireEvent.change(getByPlaceholderText("Remaining (g)"), { target: { value: "50" } });
+    fireEvent.change(getByPlaceholderText("e.g. Bambu"), { target: { value: "X" } });
+    fireEvent.change(getByPlaceholderText("e.g. PLA Pro"), { target: { value: "PLA" } });
+    fireEvent.change(getByPlaceholderText("0.00"), { target: { value: "10" } });
+    const weightInput = getFieldInput(container, "Weight (g)");
+    const remainingInput = getFieldInput(container, "Remaining (g)");
+    fireEvent.change(weightInput, { target: { value: "100" } });
+    fireEvent.change(remainingInput, { target: { value: "50" } });
     await act(async () => { fireEvent.click(getByText("Save")); });
     expect(container.textContent).toContain("Color is required");
   });
@@ -288,12 +323,14 @@ describe("SpoolsPage", () => {
     const { getByText, getByPlaceholderText, container } = render(<SpoolsPage />);
     await waitFor(() => { expect(getByText("+ Add Spool")).toBeDefined(); });
     await act(async () => { fireEvent.click(getByText("+ Add Spool")); });
-    fireEvent.change(getByPlaceholderText("Brand"), { target: { value: "X" } });
-    fireEvent.change(getByPlaceholderText("Material"), { target: { value: "PLA" } });
-    fireEvent.change(getByPlaceholderText("Color"), { target: { value: "Red" } });
-    fireEvent.change(getByPlaceholderText("Cost"), { target: { value: "abc" } });
-    fireEvent.change(getByPlaceholderText("Weight (g)"), { target: { value: "100" } });
-    fireEvent.change(getByPlaceholderText("Remaining (g)"), { target: { value: "50" } });
+    fireEvent.change(getByPlaceholderText("e.g. Bambu"), { target: { value: "X" } });
+    fireEvent.change(getByPlaceholderText("e.g. PLA Pro"), { target: { value: "PLA" } });
+    fireEvent.change(getByPlaceholderText("e.g. Black"), { target: { value: "Red" } });
+    fireEvent.change(getByPlaceholderText("0.00"), { target: { value: "abc" } });
+    const weightInput = getFieldInput(container, "Weight (g)");
+    const remainingInput = getFieldInput(container, "Remaining (g)");
+    fireEvent.change(weightInput, { target: { value: "100" } });
+    fireEvent.change(remainingInput, { target: { value: "50" } });
     await act(async () => { fireEvent.click(getByText("Save")); });
     expect(container.textContent).toContain("Cost must be a non-negative number");
   });
@@ -303,12 +340,14 @@ describe("SpoolsPage", () => {
     const { getByText, getByPlaceholderText, container } = render(<SpoolsPage />);
     await waitFor(() => { expect(getByText("+ Add Spool")).toBeDefined(); });
     await act(async () => { fireEvent.click(getByText("+ Add Spool")); });
-    fireEvent.change(getByPlaceholderText("Brand"), { target: { value: "X" } });
-    fireEvent.change(getByPlaceholderText("Material"), { target: { value: "PLA" } });
-    fireEvent.change(getByPlaceholderText("Color"), { target: { value: "Red" } });
-    fireEvent.change(getByPlaceholderText("Cost"), { target: { value: "10" } });
-    fireEvent.change(getByPlaceholderText("Weight (g)"), { target: { value: "0" } });
-    fireEvent.change(getByPlaceholderText("Remaining (g)"), { target: { value: "0" } });
+    fireEvent.change(getByPlaceholderText("e.g. Bambu"), { target: { value: "X" } });
+    fireEvent.change(getByPlaceholderText("e.g. PLA Pro"), { target: { value: "PLA" } });
+    fireEvent.change(getByPlaceholderText("e.g. Black"), { target: { value: "Red" } });
+    fireEvent.change(getByPlaceholderText("0.00"), { target: { value: "10" } });
+    const weightInput = getFieldInput(container, "Weight (g)");
+    const remainingInput = getFieldInput(container, "Remaining (g)");
+    fireEvent.change(weightInput, { target: { value: "0" } });
+    fireEvent.change(remainingInput, { target: { value: "0" } });
     await act(async () => { fireEvent.click(getByText("Save")); });
     expect(container.textContent).toContain("Weight must be a positive number");
   });
@@ -318,12 +357,14 @@ describe("SpoolsPage", () => {
     const { getByText, getByPlaceholderText, container } = render(<SpoolsPage />);
     await waitFor(() => { expect(getByText("+ Add Spool")).toBeDefined(); });
     await act(async () => { fireEvent.click(getByText("+ Add Spool")); });
-    fireEvent.change(getByPlaceholderText("Brand"), { target: { value: "X" } });
-    fireEvent.change(getByPlaceholderText("Material"), { target: { value: "PLA" } });
-    fireEvent.change(getByPlaceholderText("Color"), { target: { value: "Red" } });
-    fireEvent.change(getByPlaceholderText("Cost"), { target: { value: "10" } });
-    fireEvent.change(getByPlaceholderText("Weight (g)"), { target: { value: "100" } });
-    fireEvent.change(getByPlaceholderText("Remaining (g)"), { target: { value: "abc" } });
+    fireEvent.change(getByPlaceholderText("e.g. Bambu"), { target: { value: "X" } });
+    fireEvent.change(getByPlaceholderText("e.g. PLA Pro"), { target: { value: "PLA" } });
+    fireEvent.change(getByPlaceholderText("e.g. Black"), { target: { value: "Red" } });
+    fireEvent.change(getByPlaceholderText("0.00"), { target: { value: "10" } });
+    const weightInput = getFieldInput(container, "Weight (g)");
+    const remainingInput = getFieldInput(container, "Remaining (g)");
+    fireEvent.change(weightInput, { target: { value: "100" } });
+    fireEvent.change(remainingInput, { target: { value: "abc" } });
     await act(async () => { fireEvent.click(getByText("Save")); });
     expect(container.textContent).toContain("Remaining must be a non-negative number");
   });
@@ -333,12 +374,14 @@ describe("SpoolsPage", () => {
     const { getByText, getByPlaceholderText, container } = render(<SpoolsPage />);
     await waitFor(() => { expect(getByText("+ Add Spool")).toBeDefined(); });
     await act(async () => { fireEvent.click(getByText("+ Add Spool")); });
-    fireEvent.change(getByPlaceholderText("Brand"), { target: { value: "X" } });
-    fireEvent.change(getByPlaceholderText("Material"), { target: { value: "PLA" } });
-    fireEvent.change(getByPlaceholderText("Color"), { target: { value: "Red" } });
-    fireEvent.change(getByPlaceholderText("Cost"), { target: { value: "10" } });
-    fireEvent.change(getByPlaceholderText("Weight (g)"), { target: { value: "100" } });
-    fireEvent.change(getByPlaceholderText("Remaining (g)"), { target: { value: "50" } });
+    fireEvent.change(getByPlaceholderText("e.g. Bambu"), { target: { value: "X" } });
+    fireEvent.change(getByPlaceholderText("e.g. PLA Pro"), { target: { value: "PLA" } });
+    fireEvent.change(getByPlaceholderText("e.g. Black"), { target: { value: "Red" } });
+    fireEvent.change(getByPlaceholderText("0.00"), { target: { value: "10" } });
+    const weightInput = getFieldInput(container, "Weight (g)");
+    const remainingInput = getFieldInput(container, "Remaining (g)");
+    fireEvent.change(weightInput, { target: { value: "100" } });
+    fireEvent.change(remainingInput, { target: { value: "50" } });
     mockApiFetch.mockRejectedValueOnce(new Error("Server error"));
     await act(async () => { fireEvent.click(getByText("Save")); });
     expect(container.textContent).toContain("Server error");
@@ -349,12 +392,14 @@ describe("SpoolsPage", () => {
     const { getByText, getByPlaceholderText, container } = render(<SpoolsPage />);
     await waitFor(() => { expect(getByText("+ Add Spool")).toBeDefined(); });
     await act(async () => { fireEvent.click(getByText("+ Add Spool")); });
-    fireEvent.change(getByPlaceholderText("Brand"), { target: { value: "X" } });
-    fireEvent.change(getByPlaceholderText("Material"), { target: { value: "PLA" } });
-    fireEvent.change(getByPlaceholderText("Color"), { target: { value: "Red" } });
-    fireEvent.change(getByPlaceholderText("Cost"), { target: { value: "10" } });
-    fireEvent.change(getByPlaceholderText("Weight (g)"), { target: { value: "100" } });
-    fireEvent.change(getByPlaceholderText("Remaining (g)"), { target: { value: "50" } });
+    fireEvent.change(getByPlaceholderText("e.g. Bambu"), { target: { value: "X" } });
+    fireEvent.change(getByPlaceholderText("e.g. PLA Pro"), { target: { value: "PLA" } });
+    fireEvent.change(getByPlaceholderText("e.g. Black"), { target: { value: "Red" } });
+    fireEvent.change(getByPlaceholderText("0.00"), { target: { value: "10" } });
+    const weightInput = getFieldInput(container, "Weight (g)");
+    const remainingInput = getFieldInput(container, "Remaining (g)");
+    fireEvent.change(weightInput, { target: { value: "100" } });
+    fireEvent.change(remainingInput, { target: { value: "50" } });
     mockApiFetch.mockRejectedValueOnce("not an error");
     await act(async () => { fireEvent.click(getByText("Save")); });
     expect(container.textContent).toContain("Failed to add");
@@ -378,8 +423,10 @@ describe("SpoolsPage", () => {
     await act(async () => { fireEvent.click(editButtons[0]); });
     expect(getByText("Save")).toBeDefined();
     expect(getByText("Cancel")).toBeDefined();
+    // Edit card should have text inputs
+    expect(container.querySelectorAll("input[type='text']").length).toBeGreaterThan(0);
     await act(async () => { fireEvent.click(getByText("Cancel")); });
-    // After cancel, no Save button in actions
+    // After cancel, edit card is gone — no text inputs from the edit form
     expect(container.querySelectorAll("input[type='text']").length).toBe(0);
   });
 
@@ -407,22 +454,13 @@ describe("SpoolsPage", () => {
 
   it("validates empty material on edit", async () => {
     mockApiFetch.mockResolvedValue(sampleSpools);
-    const { getAllByText, getByText, container } = render(<SpoolsPage />);
+    const { getAllByText, getByText, getByDisplayValue, container } = render(<SpoolsPage />);
     await waitFor(() => { expect(getAllByText("Edit").length).toBeGreaterThan(0); });
     await act(async () => { fireEvent.click(getAllByText("Edit")[0]); });
-    // Material is in editValues but not as an input in the row - it's not editable inline
-    // Looking at page.tsx: only brand, color, cost, remainingG have inline inputs; material does NOT have an inline input in edit mode
-    // Actually re-reading the code: editValues has material but there's no input for it in the edit row
-    // Wait - let me check again... The edit mode only shows inputs for brand, color, cost, remainingG
-    // But saveEdit validates material. We need to set editValues.material to empty.
-    // The startEdit pre-fills from spool data, so material would be "PLA Pro". We can't clear it via UI since there's no input.
-    // This validation path might be unreachable in practice, but we need to test the code path.
-    // Actually looking more carefully at the JSX, the edit mode doesn't render a material input or weightG input.
-    // The validation still runs though. Let me just verify the save with existing values passes.
-    // Since we can't clear material via UI, this validation is not reachable. Skip this test.
-    // But the user asked for it... Let me look at the code more carefully.
-    // Actually wait - I need to re-read the page source to see if material/weightG have edit inputs.
-    expect(container.textContent).toBeDefined(); // placeholder
+    // Edit card has a material input; clear it
+    fireEvent.change(getByDisplayValue("PLA Pro"), { target: { value: "" } });
+    await act(async () => { fireEvent.click(getByText("Save")); });
+    expect(container.textContent).toContain("Material is required");
   });
 
   it("validates empty color on edit", async () => {
@@ -430,7 +468,6 @@ describe("SpoolsPage", () => {
     const { getAllByText, getByText, getByDisplayValue, container } = render(<SpoolsPage />);
     await waitFor(() => { expect(getAllByText("Edit").length).toBeGreaterThan(0); });
     await act(async () => { fireEvent.click(getAllByText("Edit")[0]); });
-    // Color input displays "Black" (sampleSpools[0].color)
     fireEvent.change(getByDisplayValue("Black"), { target: { value: "" } });
     await act(async () => { fireEvent.click(getByText("Save")); });
     expect(container.textContent).toContain("Color is required");
@@ -557,8 +594,8 @@ describe("SpoolsPage", () => {
   // ── Soft Delete Lifecycle tests ──
 
   const sampleSpoolsWithDeleted = [
-    { spoolId: 1, brand: "Bambu", material: "PLA Pro", color: "Black", cost: 24.99, weightG: 1000, remainingG: 750 },
-    { spoolId: 99, brand: "Old", material: "PLA Pro", color: "Gray", cost: 10.00, weightG: 500, remainingG: 0, deletedAt: "2025-01-01T00:00:00.000Z" },
+    { spoolId: 1, brand: "Bambu", material: "PLA Pro", color: "Black", effective: "2025-01-01", cost: 24.99, weightG: 1000, remainingG: 750 },
+    { spoolId: 99, brand: "Old", material: "PLA Pro", color: "Gray", effective: "2024-06-01", cost: 10.00, weightG: 500, remainingG: 0, deletedAt: "2025-01-01T00:00:00.000Z" },
   ];
 
   it("Show Deleted toggle fetches with ?includeDeleted=true", async () => {
@@ -698,8 +735,8 @@ describe("SpoolsPage", () => {
 
   it("hides groups with only deleted spools when showDeleted is false", async () => {
     const spoolsAllDeletedGroup = [
-      { spoolId: 1, brand: "Bambu", material: "PLA Pro", color: "Black", cost: 24.99, weightG: 1000, remainingG: 750 },
-      { spoolId: 99, brand: "Old", material: "ABS", color: "Gray", cost: 10.00, weightG: 500, remainingG: 0, deletedAt: "2025-01-01T00:00:00.000Z" },
+      { spoolId: 1, brand: "Bambu", material: "PLA Pro", color: "Black", effective: "2025-01-01", cost: 24.99, weightG: 1000, remainingG: 750 },
+      { spoolId: 99, brand: "Old", material: "ABS", color: "Gray", effective: "2024-06-01", cost: 10.00, weightG: 500, remainingG: 0, deletedAt: "2025-01-01T00:00:00.000Z" },
     ];
     mockApiFetch.mockResolvedValue(spoolsAllDeletedGroup);
     const { container } = render(<SpoolsPage />);

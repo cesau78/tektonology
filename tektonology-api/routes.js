@@ -946,7 +946,28 @@ export function createRoutes(app, db) {
     const items = Array.isArray(req.body) ? req.body : [req.body];
     if (items.length === 0) return res.status(400).json({ error: "No records provided" });
     const now = new Date().toISOString();
-    for (const item of items) { item.createdAt ??= now; item.updatedAt ??= now; }
+    for (const item of items) {
+      item.createdAt ??= now;
+      item.updatedAt ??= now;
+      // Decrement component_stock remaining for each referenced batch
+      for (const comp of item.components ?? []) {
+        if (comp.batchId && comp.quantity > 0) {
+          await componentStock.updateOne(
+            { batchId: comp.batchId },
+            { $inc: { remaining: -comp.quantity }, $set: { updatedAt: now } },
+          );
+        }
+      }
+      // Decrement hardware remaining for each referenced item
+      for (const hw of item.hardware ?? []) {
+        if (hw.hardwareId && hw.quantity > 0) {
+          await hardware.updateOne(
+            { hardwareId: hw.hardwareId },
+            { $inc: { remaining: -hw.quantity }, $set: { updatedAt: now } },
+          );
+        }
+      }
+    }
     const result = await inventory.insertMany(items);
     res.status(201).json({ inserted: result.insertedCount });
   });

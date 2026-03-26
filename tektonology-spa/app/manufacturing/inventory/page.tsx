@@ -1,17 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LoadingState, ErrorState } from "@/components/api-error";
 import { RequireRole } from "@/components/auth-guard";
 import { useRole, canWrite } from "@/lib/auth";
+import { useApiFetch } from "@/lib/api";
 import { useCrud } from "@/lib/use-crud";
 import { FormField, inputClass, monoInputClass } from "@/components/form-field";
 
 interface InventoryComponent {
-  printJobId: string;
+  batchId: number;
   part: string;
   quantity: number;
 }
@@ -33,13 +34,26 @@ interface InventoryData {
   deletedAt?: string;
 }
 
-const emptyComponent = { printJobId: "", part: "", quantity: "" };
+interface ComponentStockOption {
+  batchId: number;
+  part: string;
+  remaining: number;
+}
+
+interface HardwareOption {
+  hardwareId: number;
+  item: string;
+  remaining: number;
+}
+
+const emptyComponent = { batchId: "", part: "", quantity: "" };
 const emptyHardware = { hardwareId: "", item: "", quantity: "" };
 
 export default function InventoryPage() {
   const crud = useCrud<InventoryData>("/api/inventory");
   const { role } = useRole();
   const writable = canWrite(role);
+  const apiFetch = useApiFetch();
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [addingRow, setAddingRow] = useState(false);
@@ -48,12 +62,25 @@ export default function InventoryPage() {
   const [confirmPermanentId, setConfirmPermanentId] = useState<number | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
 
+  // Dropdown options
+  const [componentOptions, setComponentOptions] = useState<ComponentStockOption[]>([]);
+  const [hardwareOptions, setHardwareOptions] = useState<HardwareOption[]>([]);
+
+  useEffect(() => {
+    apiFetch<ComponentStockOption[]>("/api/manufacturing/components")
+      .then(setComponentOptions)
+      .catch(() => setComponentOptions([]));
+    apiFetch<HardwareOption[]>("/api/procurement/hardware")
+      .then(setHardwareOptions)
+      .catch(() => setHardwareOptions([]));
+  }, [apiFetch]);
+
   // Form state
   const [formProduct, setFormProduct] = useState("");
   const [formEffective, setFormEffective] = useState("");
   const [formQuantity, setFormQuantity] = useState("");
   const [formRemaining, setFormRemaining] = useState("");
-  const [formComponents, setFormComponents] = useState<{ printJobId: string; part: string; quantity: string }[]>([{ ...emptyComponent }]);
+  const [formComponents, setFormComponents] = useState<{ batchId: string; part: string; quantity: string }[]>([{ ...emptyComponent }]);
   const [formHardware, setFormHardware] = useState<{ hardwareId: string; item: string; quantity: string }[]>([]);
 
   const resetForm = () => {
@@ -79,7 +106,7 @@ export default function InventoryPage() {
     setFormRemaining(String(item.remaining));
     setFormComponents(
       item.components.length > 0
-        ? item.components.map((c) => ({ printJobId: c.printJobId, part: c.part, quantity: String(c.quantity) }))
+        ? item.components.map((c) => ({ batchId: String(c.batchId), part: c.part, quantity: String(c.quantity) }))
         : [{ ...emptyComponent }],
     );
     setFormHardware(
@@ -94,10 +121,10 @@ export default function InventoryPage() {
     product: formProduct.trim(),
     effective: formEffective,
     components: formComponents
-      .filter((c) => c.part.trim())
-      .map((c) => ({ printJobId: c.printJobId, part: c.part.trim(), quantity: parseInt(c.quantity) || 0 })),
+      .filter((c) => c.batchId)
+      .map((c) => ({ batchId: parseInt(c.batchId) || 0, part: c.part.trim(), quantity: parseInt(c.quantity) || 0 })),
     hardware: formHardware
-      .filter((h) => h.item.trim())
+      .filter((h) => h.hardwareId)
       .map((h) => ({ hardwareId: parseInt(h.hardwareId) || 0, item: h.item.trim(), quantity: parseInt(h.quantity) || 0 })),
     quantity: parseInt(formQuantity) || 0,
     remaining: parseInt(formRemaining) || 0,
@@ -187,9 +214,23 @@ export default function InventoryPage() {
           </div>
           <div className="space-y-2">
             {formComponents.map((c, idx) => (
-              <div key={idx} className="grid grid-cols-[1fr_1fr_80px_auto] gap-2 items-end">
-                <input type="text" value={c.part} onChange={(e) => updateComponent(idx, "part", e.target.value)} placeholder="Part name (e.g. Insert)" className={inputClass} />
-                <input type="text" value={c.printJobId} onChange={(e) => updateComponent(idx, "printJobId", e.target.value)} placeholder="Print Job ID (optional)" className={`${inputClass} text-xs font-mono`} />
+              <div key={idx} className="grid grid-cols-[1fr_80px_auto] gap-2 items-end">
+                <select
+                  value={c.batchId}
+                  onChange={(e) => {
+                    const opt = componentOptions.find((o) => String(o.batchId) === e.target.value);
+                    updateComponent(idx, "batchId", e.target.value);
+                    if (opt) updateComponent(idx, "part", opt.part);
+                  }}
+                  className="w-full border border-border rounded px-2 py-1 text-sm bg-background"
+                >
+                  <option value="">— Select batch —</option>
+                  {componentOptions.filter((o) => o.remaining > 0).map((o) => (
+                    <option key={o.batchId} value={String(o.batchId)}>
+                      Batch #{o.batchId} — {o.part} ({o.remaining} on hand)
+                    </option>
+                  ))}
+                </select>
                 <input type="number" value={c.quantity} onChange={(e) => updateComponent(idx, "quantity", e.target.value)} placeholder="Qty" className={monoInputClass} />
                 <Button variant="ghost" size="xs" className="text-red-600" onClick={() => setFormComponents(formComponents.filter((_, i) => i !== idx))}>
                   &times;
@@ -210,9 +251,23 @@ export default function InventoryPage() {
           )}
           <div className="space-y-2">
             {formHardware.map((h, idx) => (
-              <div key={idx} className="grid grid-cols-[80px_1fr_80px_auto] gap-2 items-end">
-                <input type="number" value={h.hardwareId} onChange={(e) => updateHw(idx, "hardwareId", e.target.value)} placeholder="HW #" className={monoInputClass} />
-                <input type="text" value={h.item} onChange={(e) => updateHw(idx, "item", e.target.value)} placeholder="Item (e.g. M3x20 Socket Cap Bolt)" className={inputClass} />
+              <div key={idx} className="grid grid-cols-[1fr_80px_auto] gap-2 items-end">
+                <select
+                  value={h.hardwareId}
+                  onChange={(e) => {
+                    const opt = hardwareOptions.find((o) => String(o.hardwareId) === e.target.value);
+                    updateHw(idx, "hardwareId", e.target.value);
+                    if (opt) updateHw(idx, "item", opt.item);
+                  }}
+                  className="w-full border border-border rounded px-2 py-1 text-sm bg-background"
+                >
+                  <option value="">— Select hardware —</option>
+                  {hardwareOptions.filter((o) => o.remaining > 0).map((o) => (
+                    <option key={o.hardwareId} value={String(o.hardwareId)}>
+                      #{o.hardwareId} — {o.item} ({o.remaining} on hand)
+                    </option>
+                  ))}
+                </select>
                 <input type="number" value={h.quantity} onChange={(e) => updateHw(idx, "quantity", e.target.value)} placeholder="Qty" className={monoInputClass} />
                 <Button variant="ghost" size="xs" className="text-red-600" onClick={() => setFormHardware(formHardware.filter((_, i) => i !== idx))}>
                   &times;
@@ -360,6 +415,7 @@ export default function InventoryPage() {
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="text-xs text-muted-foreground">
+                                <th className="text-left font-medium pb-1">Batch</th>
                                 <th className="text-left font-medium pb-1">Part</th>
                                 <th className="text-right font-medium pb-1">Qty</th>
                                 <th className="text-right font-medium pb-1">Per Unit</th>
@@ -368,6 +424,7 @@ export default function InventoryPage() {
                             <tbody>
                               {item.components.map((c, idx) => (
                                 <tr key={idx} className="border-t border-border/30">
+                                  <td className="py-1 font-mono text-xs text-muted-foreground">#{c.batchId}</td>
                                   <td className="py-1">{c.part}</td>
                                   <td className="py-1 text-right font-mono">{c.quantity}</td>
                                   <td className="py-1 text-right font-mono text-xs text-muted-foreground">
