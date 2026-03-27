@@ -2080,3 +2080,295 @@ describe("Journal entry null coalescing edge cases", () => {
     assert.equal(res.body.balanceSheet.byType.cogs[0].balance, 50);
   });
 });
+
+// ===========================================================================
+// Generic CRUD resource tests
+// ===========================================================================
+
+/**
+ * Generate a full CRUD test suite for a resource.
+ * @param {string} label       — human name (e.g. "Printers")
+ * @param {string} basePath    — API base (e.g. "/api/procurement/printers")
+ * @param {string} collection  — Mongo collection name
+ * @param {string} idField     — document ID field (e.g. "printerId")
+ * @param {object} sampleDoc   — a valid document for insert
+ */
+function crudTests(label, basePath, collection, idField, sampleDoc) {
+  describe(`${label} CRUD — ${basePath}`, () => {
+    it("GET list returns empty array", async () => {
+      const res = await GET(basePath);
+      assert.equal(res.status, 200);
+      assert.deepEqual(res.body, []);
+    });
+
+    it("GET list excludes soft-deleted by default", async () => {
+      await db.collection(collection).insertMany([
+        { ...sampleDoc, [idField]: 1 },
+        { ...sampleDoc, [idField]: 2, deletedAt: "2025-01-01T00:00:00Z" },
+      ]);
+      const res = await GET(basePath);
+      assert.equal(res.body.length, 1);
+      assert.equal(res.body[0][idField], 1);
+    });
+
+    it("GET list includes soft-deleted with includeDeleted=true", async () => {
+      await db.collection(collection).insertMany([
+        { ...sampleDoc, [idField]: 1 },
+        { ...sampleDoc, [idField]: 2, deletedAt: "2025-01-01T00:00:00Z" },
+      ]);
+      const res = await GET(`${basePath}?includeDeleted=true`);
+      assert.equal(res.body.length, 2);
+    });
+
+    it("GET by ID returns the document", async () => {
+      await db.collection(collection).insertOne({ ...sampleDoc, [idField]: 1 });
+      const res = await GET(`${basePath}/1`);
+      assert.equal(res.status, 200);
+      assert.equal(res.body[idField], 1);
+    });
+
+    it("GET by ID returns 400 for invalid ID", async () => {
+      const res = await GET(`${basePath}/abc`);
+      assert.equal(res.status, 400);
+    });
+
+    it("GET by ID returns 404 for missing", async () => {
+      const res = await GET(`${basePath}/999`);
+      assert.equal(res.status, 404);
+    });
+
+    it("POST creates a single record", async () => {
+      const res = await POST(basePath, { ...sampleDoc, [idField]: 1 });
+      assert.equal(res.status, 201);
+      assert.equal(res.body.inserted, 1);
+      const doc = await db.collection(collection).findOne({ [idField]: 1 });
+      assert.ok(doc);
+      assert.ok(doc.createdAt);
+    });
+
+    it("POST creates an array of records", async () => {
+      const res = await POST(basePath, [
+        { ...sampleDoc, [idField]: 1 },
+        { ...sampleDoc, [idField]: 2 },
+      ]);
+      assert.equal(res.status, 201);
+      assert.equal(res.body.inserted, 2);
+    });
+
+    it("POST preserves pre-set createdAt and updatedAt", async () => {
+      const ts = "2020-01-01T00:00:00.000Z";
+      const res = await POST(basePath, { ...sampleDoc, [idField]: 99, createdAt: ts, updatedAt: ts });
+      assert.equal(res.status, 201);
+      const doc = await db.collection(collection).findOne({ [idField]: 99 });
+      assert.equal(doc.createdAt, ts);
+      assert.equal(doc.updatedAt, ts);
+    });
+
+    it("POST returns 400 for empty array", async () => {
+      const res = await POST(basePath, []);
+      assert.equal(res.status, 400);
+    });
+
+    it("PUT updates a record", async () => {
+      await db.collection(collection).insertOne({ ...sampleDoc, [idField]: 1 });
+      const res = await PUT(`${basePath}/1`, { name: "Updated" });
+      assert.equal(res.status, 200);
+      assert.equal(res.body.name, "Updated");
+    });
+
+    it("PUT returns 400 for invalid ID", async () => {
+      const res = await PUT(`${basePath}/abc`, {});
+      assert.equal(res.status, 400);
+    });
+
+    it("PUT returns 404 for missing", async () => {
+      const res = await PUT(`${basePath}/999`, {});
+      assert.equal(res.status, 404);
+    });
+
+    it("PUT returns 409 for soft-deleted", async () => {
+      await db.collection(collection).insertOne({ ...sampleDoc, [idField]: 1, deletedAt: "2025-01-01T00:00:00Z" });
+      const res = await PUT(`${basePath}/1`, {});
+      assert.equal(res.status, 409);
+    });
+
+    it("DELETE soft-deletes a record", async () => {
+      await db.collection(collection).insertOne({ ...sampleDoc, [idField]: 1 });
+      const res = await DELETE(`${basePath}/1`);
+      assert.equal(res.status, 200);
+      assert.equal(res.body.deleted, 1);
+      const doc = await db.collection(collection).findOne({ [idField]: 1 });
+      assert.ok(doc.deletedAt);
+    });
+
+    it("DELETE returns 400 for invalid ID", async () => {
+      const res = await DELETE(`${basePath}/abc`);
+      assert.equal(res.status, 400);
+    });
+
+    it("DELETE returns 404 for missing", async () => {
+      const res = await DELETE(`${basePath}/999`);
+      assert.equal(res.status, 404);
+    });
+
+    it("DELETE returns 409 for already-deleted", async () => {
+      await db.collection(collection).insertOne({ ...sampleDoc, [idField]: 1, deletedAt: "2025-01-01T00:00:00Z" });
+      const res = await DELETE(`${basePath}/1`);
+      assert.equal(res.status, 409);
+    });
+
+    it("DELETE permanent removes a soft-deleted record", async () => {
+      await db.collection(collection).insertOne({ ...sampleDoc, [idField]: 1, deletedAt: "2025-01-01T00:00:00Z" });
+      const res = await DELETE(`${basePath}/1/permanent`);
+      assert.equal(res.status, 200);
+      assert.equal(res.body.deleted, 1);
+      const doc = await db.collection(collection).findOne({ [idField]: 1 });
+      assert.equal(doc, null);
+    });
+
+    it("DELETE permanent returns 400 for invalid ID", async () => {
+      const res = await DELETE(`${basePath}/abc/permanent`);
+      assert.equal(res.status, 400);
+    });
+
+    it("DELETE permanent returns 404 for missing", async () => {
+      const res = await DELETE(`${basePath}/999/permanent`);
+      assert.equal(res.status, 404);
+    });
+
+    it("DELETE permanent returns 409 for non-deleted", async () => {
+      await db.collection(collection).insertOne({ ...sampleDoc, [idField]: 1 });
+      const res = await DELETE(`${basePath}/1/permanent`);
+      assert.equal(res.status, 409);
+    });
+
+    it("POST restore restores a soft-deleted record", async () => {
+      await db.collection(collection).insertOne({ ...sampleDoc, [idField]: 1, deletedAt: "2025-01-01T00:00:00Z" });
+      const res = await POST(`${basePath}/1/restore`);
+      assert.equal(res.status, 200);
+      const doc = await db.collection(collection).findOne({ [idField]: 1 });
+      assert.equal(doc.deletedAt, undefined);
+    });
+
+    it("POST restore returns 400 for invalid ID", async () => {
+      const res = await POST(`${basePath}/abc/restore`);
+      assert.equal(res.status, 400);
+    });
+
+    it("POST restore returns 404 for missing", async () => {
+      const res = await POST(`${basePath}/999/restore`);
+      assert.equal(res.status, 404);
+    });
+
+    it("POST restore returns 409 for non-deleted", async () => {
+      await db.collection(collection).insertOne({ ...sampleDoc, [idField]: 1 });
+      const res = await POST(`${basePath}/1/restore`);
+      assert.equal(res.status, 409);
+    });
+  });
+}
+
+// Run CRUD tests for each resource
+crudTests("Printers", "/api/procurement/printers", "printers", "printerId", { name: "A1 Lab", brand: "Bambu" });
+crudTests("Nozzles", "/api/procurement/nozzles", "nozzles", "nozzleId", { brand: "Bambu", nozzle: "0.4mm Stainless" });
+crudTests("Plates", "/api/procurement/plates", "plates", "plateId", { brand: "Bambu", plate: "Textured PEI" });
+crudTests("Products", "/api/products", "products", "productId", { name: "Boot", price: 10 });
+crudTests("Projects", "/api/projects", "projects", "projectId", { name: "Kneeler" });
+crudTests("Sales", "/api/sales", "sales", "saleId", { product: "Boot", quantity: 1, effective: "2025-06-01" });
+crudTests("Inventory", "/api/inventory", "inventory", "inventoryId", { product: "Boot", quantity: 10, remaining: 10, components: [], hardware: [] });
+crudTests("Component Stock", "/api/manufacturing/components", "component_stock", "batchId", { part: "Insert", quantity: 20, remaining: 15 });
+
+// ===========================================================================
+// Inventory POST — component/hardware decrement
+// ===========================================================================
+
+describe("POST /api/inventory — stock decrement", () => {
+  it("decrements component_stock remaining when creating inventory", async () => {
+    await db.collection("component_stock").insertOne({ batchId: 10, part: "Upper Boot", quantity: 20, remaining: 15 });
+    await db.collection("hardware").insertOne({ hardwareId: 20, item: "M5 Bolt", quantity: 100, remaining: 50 });
+
+    const res = await POST("/api/inventory", {
+      inventoryId: 1,
+      product: "Boot Assembly",
+      quantity: 5,
+      remaining: 5,
+      components: [{ batchId: 10, part: "Upper Boot", quantity: 5 }],
+      hardware: [{ hardwareId: 20, item: "M5 Bolt", quantity: 10 }],
+    });
+    assert.equal(res.status, 201);
+
+    const comp = await db.collection("component_stock").findOne({ batchId: 10 });
+    assert.equal(comp.remaining, 10); // 15 - 5
+
+    const hw = await db.collection("hardware").findOne({ hardwareId: 20 });
+    assert.equal(hw.remaining, 40); // 50 - 10
+  });
+
+  it("skips decrement for zero-quantity components and hardware", async () => {
+    await db.collection("component_stock").insertOne({ batchId: 10, part: "Boot", quantity: 20, remaining: 15 });
+    await db.collection("hardware").insertOne({ hardwareId: 20, item: "Bolt", quantity: 100, remaining: 50 });
+
+    await POST("/api/inventory", {
+      inventoryId: 2,
+      product: "Empty",
+      quantity: 0,
+      remaining: 0,
+      components: [{ batchId: 10, part: "Boot", quantity: 0 }],
+      hardware: [{ hardwareId: 20, item: "Bolt", quantity: 0 }],
+    });
+
+    const comp = await db.collection("component_stock").findOne({ batchId: 10 });
+    assert.equal(comp.remaining, 15); // unchanged
+
+    const hw = await db.collection("hardware").findOne({ hardwareId: 20 });
+    assert.equal(hw.remaining, 50); // unchanged
+  });
+
+  it("handles inventory with no components or hardware arrays", async () => {
+    const res = await POST("/api/inventory", {
+      inventoryId: 3,
+      product: "Simple",
+      quantity: 1,
+      remaining: 1,
+    });
+    assert.equal(res.status, 201);
+  });
+
+  it("skips decrement when batchId or hardwareId is falsy", async () => {
+    await db.collection("component_stock").insertOne({ batchId: 10, part: "Boot", quantity: 20, remaining: 15 });
+    await db.collection("hardware").insertOne({ hardwareId: 20, item: "Bolt", quantity: 100, remaining: 50 });
+
+    await POST("/api/inventory", {
+      inventoryId: 5,
+      product: "Falsy IDs",
+      quantity: 1,
+      remaining: 1,
+      components: [{ batchId: 0, part: "None", quantity: 5 }],
+      hardware: [{ hardwareId: 0, item: "None", quantity: 5 }],
+    });
+
+    const comp = await db.collection("component_stock").findOne({ batchId: 10 });
+    assert.equal(comp.remaining, 15); // unchanged — batchId 0 is falsy
+
+    const hw = await db.collection("hardware").findOne({ hardwareId: 20 });
+    assert.equal(hw.remaining, 50); // unchanged — hardwareId 0 is falsy
+  });
+
+  it("preserves pre-set timestamps on inventory items", async () => {
+    const ts = "2020-01-01T00:00:00.000Z";
+    const res = await POST("/api/inventory", {
+      inventoryId: 4,
+      product: "Timestamped",
+      quantity: 1,
+      remaining: 1,
+      components: [],
+      hardware: [],
+      createdAt: ts,
+      updatedAt: ts,
+    });
+    assert.equal(res.status, 201);
+    const doc = await db.collection("inventory").findOne({ inventoryId: 4 });
+    assert.equal(doc.createdAt, ts);
+    assert.equal(doc.updatedAt, ts);
+  });
+});
