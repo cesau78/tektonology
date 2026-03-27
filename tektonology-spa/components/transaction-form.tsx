@@ -75,7 +75,7 @@ export function TransactionForm({ accounts }: { accounts: AccountInfo[] }) {
     setSaveError(null);
 
     const entry = {
-      date,
+      effective: date,
       description: description.trim(),
       lines: lines.map((l) => {
         const acct = accounts.find((a) => a.number === l.accountNumber);

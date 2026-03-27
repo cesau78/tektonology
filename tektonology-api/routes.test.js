@@ -73,7 +73,7 @@ async function seedAccounts() {
 /** Build a balanced journal entry payload. */
 function balancedEntry(overrides = {}) {
   return {
-    date: "2025-06-01",
+    effective: "2025-06-01",
     description: "Test entry",
     lines: [
       { accountNumber: 1000, debit: 100, credit: 0 },
@@ -131,8 +131,8 @@ describe("GET /api/finance/journal", () => {
   it("returns entries excluding soft-deleted by default", async () => {
     const entries = db.collection("journal_entries");
     await entries.insertMany([
-      { transactionId: 1, date: "2025-01-01", lines: [], description: "Active" },
-      { transactionId: 2, date: "2025-01-02", lines: [], description: "Deleted", deletedAt: "2025-06-01T00:00:00.000Z" },
+      { transactionId: 1, effective: "2025-01-01", lines: [], description: "Active" },
+      { transactionId: 2, effective: "2025-01-02", lines: [], description: "Deleted", deletedAt: "2025-06-01T00:00:00.000Z" },
     ]);
     const res = await GET("/api/finance/journal");
     assert.equal(res.status, 200);
@@ -143,8 +143,8 @@ describe("GET /api/finance/journal", () => {
   it("returns all entries (including soft-deleted) when ?includeDeleted=true", async () => {
     const entries = db.collection("journal_entries");
     await entries.insertMany([
-      { transactionId: 1, date: "2025-01-01", lines: [], description: "Active" },
-      { transactionId: 2, date: "2025-01-02", lines: [], description: "Deleted", deletedAt: "2025-06-01T00:00:00.000Z" },
+      { transactionId: 1, effective: "2025-01-01", lines: [], description: "Active" },
+      { transactionId: 2, effective: "2025-01-02", lines: [], description: "Deleted", deletedAt: "2025-06-01T00:00:00.000Z" },
     ]);
     const res = await GET("/api/finance/journal?includeDeleted=true");
     assert.equal(res.status, 200);
@@ -162,7 +162,7 @@ describe("POST /api/finance/journal", () => {
     const res = await POST("/api/finance/journal", balancedEntry());
     assert.equal(res.status, 201);
     assert.equal(res.body.transactionId, 1);
-    assert.equal(res.body.date, "2025-06-01");
+    assert.equal(res.body.effective, "2025-06-01");
     assert.equal(res.body.lines.length, 2);
   });
 
@@ -181,7 +181,7 @@ describe("POST /api/finance/journal", () => {
 
   it("rejects entry with fewer than 2 lines", async () => {
     const entry = {
-      date: "2025-06-01",
+      effective: "2025-06-01",
       lines: [{ accountNumber: 1000, debit: 100, credit: 0 }],
     };
     const res = await POST("/api/finance/journal", entry);
@@ -189,7 +189,7 @@ describe("POST /api/finance/journal", () => {
     assert.match(res.body.error, /at least 2 lines/);
   });
 
-  it("rejects entry without a date", async () => {
+  it("rejects entry without an effective date", async () => {
     const entry = {
       lines: [
         { accountNumber: 1000, debit: 100, credit: 0 },
@@ -201,7 +201,7 @@ describe("POST /api/finance/journal", () => {
   });
 
   it("rejects entry without lines", async () => {
-    const entry = { date: "2025-06-01" };
+    const entry = { effective: "2025-06-01" };
     const res = await POST("/api/finance/journal", entry);
     assert.equal(res.status, 400);
   });
@@ -211,10 +211,10 @@ describe("POST /api/finance/journal", () => {
     const r1 = await POST("/api/finance/journal", balancedEntry());
     assert.equal(r1.body.transactionId, 1);
 
-    const r2 = await POST("/api/finance/journal", balancedEntry({ date: "2025-06-02" }));
+    const r2 = await POST("/api/finance/journal", balancedEntry({ effective: "2025-06-02" }));
     assert.equal(r2.body.transactionId, 2);
 
-    const r3 = await POST("/api/finance/journal", balancedEntry({ date: "2025-06-03" }));
+    const r3 = await POST("/api/finance/journal", balancedEntry({ effective: "2025-06-03" }));
     assert.equal(r3.body.transactionId, 3);
   });
 
@@ -266,7 +266,7 @@ describe("PUT /api/finance/journal/:transactionId", () => {
     await POST("/api/finance/journal", balancedEntry());
 
     const updated = balancedEntry({
-      date: "2025-07-01",
+      effective: "2025-07-01",
       description: "Updated entry",
       lines: [
         { accountNumber: 1000, debit: 200, credit: 0 },
@@ -275,7 +275,7 @@ describe("PUT /api/finance/journal/:transactionId", () => {
     });
     const res = await PUT("/api/finance/journal/1", updated);
     assert.equal(res.status, 200);
-    assert.equal(res.body.date, "2025-07-01");
+    assert.equal(res.body.effective, "2025-07-01");
     assert.equal(res.body.description, "Updated entry");
   });
 
@@ -289,7 +289,7 @@ describe("PUT /api/finance/journal/:transactionId", () => {
     await POST("/api/finance/journal", balancedEntry());
 
     const unbalanced = {
-      date: "2025-07-01",
+      effective: "2025-07-01",
       lines: [
         { accountNumber: 1000, debit: 200, credit: 0 },
         { accountNumber: 4000, debit: 0, credit: 100 },
@@ -305,7 +305,7 @@ describe("PUT /api/finance/journal/:transactionId", () => {
     await POST("/api/finance/journal", balancedEntry());
 
     const res = await PUT("/api/finance/journal/1", {
-      date: "2025-07-01",
+      effective: "2025-07-01",
       lines: [{ accountNumber: 1000, debit: 100, credit: 0 }],
     });
     assert.equal(res.status, 400);
@@ -532,7 +532,7 @@ describe("Full journal entry lifecycle", () => {
 
     // 4. Edit
     const editRes = await PUT("/api/finance/journal/1", balancedEntry({
-      date: "2025-08-01",
+      effective: "2025-08-01",
       description: "Edited",
       lines: [
         { accountNumber: 1000, debit: 500, credit: 0 },
@@ -858,14 +858,14 @@ describe("POST /api/finance/accounts/:number/restore", () => {
 
 describe("POST /api/finance/journal (CSV)", () => {
   it("inserts journal rows from CSV", async () => {
-    const csv = "transactionId,date,description\n1,2025-01-01,Test row\n";
+    const csv = "transactionId,effective,description\n1,2025-01-01,Test row\n";
     const res = await POST("/api/finance/journal", csv, { "content-type": "text/csv" });
     assert.equal(res.status, 201);
     assert.equal(res.body.inserted, 1);
   });
 
   it("rejects empty CSV", async () => {
-    const csv = "transactionId,date,description\n";
+    const csv = "transactionId,effective,description\n";
     const res = await POST("/api/finance/journal", csv, { "content-type": "text/csv" });
     assert.equal(res.status, 400);
     assert.match(res.body.error, /[Nn]o records/);
@@ -880,7 +880,7 @@ describe("GET /api/finance/journal (CSV)", () => {
   it("returns CSV when Accept: text/csv", async () => {
     await db.collection("journal_entries").insertOne({
       transactionId: 1,
-      date: "2025-01-01",
+      effective: "2025-01-01",
       description: "Test",
       lines: [],
     });
@@ -1591,7 +1591,7 @@ describe("GET /api/dashboard", () => {
     await POST("/api/finance/journal", balancedEntry());
     // Expense entry: expense debit 50, payable credit 50
     await POST("/api/finance/journal", balancedEntry({
-      date: "2025-06-02",
+      effective: "2025-06-02",
       lines: [
         { accountNumber: 5000, debit: 50, credit: 0 },
         { accountNumber: 2000, debit: 0, credit: 50 },
@@ -1722,7 +1722,7 @@ describe("Journal entries with missing accounts", () => {
     await db.collection("accounts").insertOne({ number: 1000, name: "Cash", type: "asset", balance: 0 });
 
     const entry = {
-      date: "2025-06-01",
+      effective: "2025-06-01",
       lines: [
         { accountNumber: 1000, debit: 100, credit: 0 },
         { accountNumber: 9999, debit: 0, credit: 100 },
@@ -1740,7 +1740,7 @@ describe("Journal entries with missing accounts", () => {
 
     // Create entry referencing non-existent account
     const entry = {
-      date: "2025-06-01",
+      effective: "2025-06-01",
       lines: [
         { accountNumber: 1000, debit: 100, credit: 0 },
         { accountNumber: 9999, debit: 0, credit: 100 },
@@ -1750,7 +1750,7 @@ describe("Journal entries with missing accounts", () => {
 
     // Update to use only existing account
     const updated = {
-      date: "2025-06-02",
+      effective: "2025-06-02",
       lines: [
         { accountNumber: 1000, debit: 50, credit: 0 },
         { accountNumber: 9999, debit: 0, credit: 50 },
@@ -1764,7 +1764,7 @@ describe("Journal entries with missing accounts", () => {
     await db.collection("accounts").insertOne({ number: 1000, name: "Cash", type: "asset", balance: 0 });
 
     const entry = {
-      date: "2025-06-01",
+      effective: "2025-06-01",
       lines: [
         { accountNumber: 1000, debit: 100, credit: 0 },
         { accountNumber: 9999, debit: 0, credit: 100 },
@@ -1780,7 +1780,7 @@ describe("Journal entries with missing accounts", () => {
     await db.collection("accounts").insertOne({ number: 1000, name: "Cash", type: "asset", balance: 0 });
 
     const entry = {
-      date: "2025-06-01",
+      effective: "2025-06-01",
       lines: [
         { accountNumber: 1000, debit: 100, credit: 0 },
         { accountNumber: 9999, debit: 0, credit: 100 },
@@ -1797,7 +1797,7 @@ describe("Journal entries with missing accounts", () => {
     await db.collection("accounts").insertOne({ number: 1000, name: "Cash", type: "asset", balance: 100 });
     await db.collection("journal_entries").insertOne({
       transactionId: 1,
-      date: "2025-01-01",
+      effective: "2025-01-01",
       lines: [
         { accountNumber: 1000, debit: 100 },
         { accountNumber: 9999, credit: 100 },
@@ -1819,7 +1819,7 @@ describe("Journal entry null coalescing edge cases", () => {
   it("handles lines with only debit (no credit field)", async () => {
     await seedAccounts();
     const entry = {
-      date: "2025-06-01",
+      effective: "2025-06-01",
       lines: [
         { accountNumber: 1000, debit: 100 },
         { accountNumber: 4000, credit: 100 },
@@ -1866,7 +1866,7 @@ describe("Journal entry null coalescing edge cases", () => {
   it("POST handles lines with undefined debit and credit", async () => {
     await seedAccounts();
     const entry = {
-      date: "2025-06-01",
+      effective: "2025-06-01",
       lines: [
         { accountNumber: 1000 },
         { accountNumber: 4000 },
@@ -1884,7 +1884,7 @@ describe("Journal entry null coalescing edge cases", () => {
     // Manually insert entry with lines missing debit/credit (existing accounts)
     await db.collection("journal_entries").insertOne({
       transactionId: 1,
-      date: "2025-06-01",
+      effective: "2025-06-01",
       lines: [
         { accountNumber: 1000 },
         { accountNumber: 4000 },
@@ -1894,7 +1894,7 @@ describe("Journal entry null coalescing edge cases", () => {
     // Update with lines that have only debit or only credit (no zero counterpart)
     // This exercises ?? 0 in both reduce (line 150-151) and apply-new loop (line 177-178)
     const updated = {
-      date: "2025-07-01",
+      effective: "2025-07-01",
       lines: [
         { accountNumber: 1000, debit: 50 },
         { accountNumber: 4000, credit: 50 },
@@ -1911,7 +1911,7 @@ describe("Journal entry null coalescing edge cases", () => {
     // Update with lines where both debit and credit are undefined
     // Both credit-normal (4000) and debit-normal (1000) exercise ?? 0 in apply-new loop
     const updated = {
-      date: "2025-07-01",
+      effective: "2025-07-01",
       lines: [
         { accountNumber: 1000 },
         { accountNumber: 4000 },
@@ -1926,7 +1926,7 @@ describe("Journal entry null coalescing edge cases", () => {
     // Manually insert entry with lines missing debit/credit
     await db.collection("journal_entries").insertOne({
       transactionId: 1,
-      date: "2025-06-01",
+      effective: "2025-06-01",
       lines: [
         { accountNumber: 1000 },
         { accountNumber: 4000 },
@@ -1942,7 +1942,7 @@ describe("Journal entry null coalescing edge cases", () => {
     // Manually insert soft-deleted entry with lines missing debit/credit
     await db.collection("journal_entries").insertOne({
       transactionId: 1,
-      date: "2025-06-01",
+      effective: "2025-06-01",
       deletedAt: "2025-06-02T00:00:00Z",
       lines: [
         { accountNumber: 1000 },
@@ -1959,7 +1959,7 @@ describe("Journal entry null coalescing edge cases", () => {
     await POST("/api/finance/journal", balancedEntry());
 
     const updated = {
-      date: "2025-07-01",
+      effective: "2025-07-01",
       lines: [
         { accountNumber: 1000, debit: 50, credit: 0 },
         { accountNumber: 4000, debit: 0, credit: 50 },
@@ -1974,7 +1974,7 @@ describe("Journal entry null coalescing edge cases", () => {
     // Revenue account with a debit line (reversal scenario)
     await db.collection("journal_entries").insertOne({
       transactionId: 1,
-      date: "2025-01-01",
+      effective: "2025-01-01",
       lines: [
         { accountNumber: 4000, debit: 50 },
         { accountNumber: 1000, credit: 50 },
@@ -1992,7 +1992,7 @@ describe("Journal entry null coalescing edge cases", () => {
     // Expense account with a credit line (reversal scenario)
     await db.collection("journal_entries").insertOne({
       transactionId: 1,
-      date: "2025-01-01",
+      effective: "2025-01-01",
       lines: [
         { accountNumber: 5000, credit: 50 },
         { accountNumber: 1000, debit: 50 },
@@ -2008,7 +2008,7 @@ describe("Journal entry null coalescing edge cases", () => {
     await seedAccounts();
     // Entry: debit cash, credit equity
     const entry = {
-      date: "2025-06-01",
+      effective: "2025-06-01",
       lines: [
         { accountNumber: 1000, debit: 100, credit: 0 },
         { accountNumber: 3000, debit: 0, credit: 100 },
@@ -2021,7 +2021,7 @@ describe("Journal entry null coalescing edge cases", () => {
 
     // Update: change amount
     const updated = {
-      date: "2025-06-01",
+      effective: "2025-06-01",
       lines: [
         { accountNumber: 1000, debit: 200, credit: 0 },
         { accountNumber: 3000, debit: 0, credit: 200 },
@@ -2036,7 +2036,7 @@ describe("Journal entry null coalescing edge cases", () => {
   it("DELETE and restore with liability account", async () => {
     await seedAccounts();
     const entry = {
-      date: "2025-06-01",
+      effective: "2025-06-01",
       lines: [
         { accountNumber: 5000, debit: 75, credit: 0 },
         { accountNumber: 2000, debit: 0, credit: 75 },
@@ -2057,7 +2057,7 @@ describe("Journal entry null coalescing edge cases", () => {
     await seedAccounts();
     // Entry with both revenue credit AND expense debit
     const entry = {
-      date: "2025-06-01",
+      effective: "2025-06-01",
       lines: [
         { accountNumber: 5000, debit: 100, credit: 0 },
         { accountNumber: 4000, debit: 0, credit: 100 },

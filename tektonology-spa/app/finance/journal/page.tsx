@@ -19,7 +19,7 @@ interface JournalLine {
 
 interface JournalEntry {
   transactionId: number;
-  date: string;
+  effective: string;
   description: string;
   lines: JournalLine[];
   deletedAt?: string;
@@ -96,7 +96,7 @@ export default function JournalPage() {
 
   const startEdit = (entry: JournalEntry) => {
     setEditingId(entry.transactionId);
-    setEditDate(entry.date);
+    setEditDate(entry.effective);
     setEditDescription(entry.description);
     setEditLines(toEditLines(entry.lines));
   };
@@ -134,7 +134,7 @@ export default function JournalPage() {
     setSaving(true);
     try {
       const body = {
-        date: editDate,
+        effective: editDate,
         description: editDescription.trim(),
         lines: editLines.map((l) => {
           const acct = accounts.find((a) => a.number === l.accountNumber);
@@ -387,7 +387,7 @@ export default function JournalPage() {
                         )}
                       </CardTitle>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">{entry.date}</span>
+                        <span className="text-xs text-muted-foreground">{entry.effective}</span>
                         {isDeleted && (
                           <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-300">
                             Deleted
@@ -481,9 +481,9 @@ export default function JournalPage() {
                       <thead>
                         <tr className="text-xs text-muted-foreground uppercase tracking-wide">
                           <th className="text-left font-medium pb-1">Account</th>
-                          <th className="text-left font-medium pb-1">Memo</th>
-                          <th className="text-right font-medium pb-1 w-24">Debit</th>
-                          <th className="text-right font-medium pb-1 w-24">Credit</th>
+                          <th className="text-right font-medium pb-1 w-28 px-3">Debit</th>
+                          <th className="text-right font-medium pb-1 w-28 px-3">Credit</th>
+                          <th className="text-left font-medium pb-1 pl-4">Memo</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -493,14 +493,14 @@ export default function JournalPage() {
                               <span className={`font-mono text-xs ${codeColor(line.accountNumber)}`}>{line.accountNumber}</span>
                               <span className="ml-2 text-foreground">{line.accountName}</span>
                             </td>
-                            <td className="py-1.5 text-xs text-muted-foreground">
-                              {line.description ?? ""}
-                            </td>
-                            <td className="text-right font-mono py-1.5">
+                            <td className="text-right font-mono py-1.5 px-3">
                               {line.debit != null ? fmt(line.debit) : ""}
                             </td>
-                            <td className="text-right font-mono py-1.5">
+                            <td className="text-right font-mono py-1.5 px-3">
                               {line.credit != null ? fmt(line.credit) : ""}
+                            </td>
+                            <td className="py-1.5 text-xs text-muted-foreground pl-4">
+                              {line.description ?? ""}
                             </td>
                           </tr>
                         ))}

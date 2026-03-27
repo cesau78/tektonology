@@ -126,7 +126,7 @@ export function createRoutes(app, db) {
   // -- Journal Entries --
   app.get("/api/finance/journal", read, async (req, res) => {
     const filter = req.query.includeDeleted === "true" ? {} : { deletedAt: { $exists: false } };
-    const docs = await journalEntries.find(filter).sort({ date: 1, transactionId: 1 }).toArray();
+    const docs = await journalEntries.find(filter).sort({ effective: 1, transactionId: 1 }).toArray();
     negotiate(req, res, docs, "journal.csv");
   });
 
@@ -140,8 +140,8 @@ export function createRoutes(app, db) {
 
     // JSON: single journal entry with balanced lines
     const entry = req.body;
-    if (!entry.date || !entry.lines || !Array.isArray(entry.lines) || entry.lines.length < 2) {
-      return res.status(400).json({ error: "Entry must have date and at least 2 lines" });
+    if (!entry.effective || !entry.lines || !Array.isArray(entry.lines) || entry.lines.length < 2) {
+      return res.status(400).json({ error: "Entry must have effective date and at least 2 lines" });
     }
 
     const totalDebit = entry.lines.reduce((s, l) => s + (l.debit ?? 0), 0);
@@ -178,8 +178,8 @@ export function createRoutes(app, db) {
     if (!existing) return res.status(404).json({ error: "Transaction not found" });
 
     const update = req.body;
-    if (!update.date || !update.lines || !Array.isArray(update.lines) || update.lines.length < 2) {
-      return res.status(400).json({ error: "Entry must have date and at least 2 lines" });
+    if (!update.effective || !update.lines || !Array.isArray(update.lines) || update.lines.length < 2) {
+      return res.status(400).json({ error: "Entry must have effective date and at least 2 lines" });
     }
 
     const totalDebit = update.lines.reduce((s, l) => s + (l.debit ?? 0), 0);
@@ -220,7 +220,7 @@ export function createRoutes(app, db) {
 
     await journalEntries.updateOne(
       { transactionId: txId },
-      { $set: { date: update.date, description: update.description, lines: update.lines } }
+      { $set: { effective: update.effective, description: update.description, lines: update.lines } }
     );
 
     const doc = await journalEntries.findOne({ transactionId: txId });

@@ -47,7 +47,7 @@ const sampleAccounts = [
 const sampleEntries = [
   {
     transactionId: 1,
-    date: "2025-01-15",
+    effective: "2025-01-15",
     description: "Initial deposit",
     lines: [
       { accountNumber: 1000, accountName: "Cash", debit: 100, credit: null, description: "cash in" },
@@ -56,7 +56,7 @@ const sampleEntries = [
   },
   {
     transactionId: 2,
-    date: "2025-01-16",
+    effective: "2025-01-16",
     description: "Unbalanced entry",
     lines: [
       { accountNumber: 1000, accountName: "Cash", debit: 50, credit: null },
@@ -67,7 +67,7 @@ const sampleEntries = [
 
 const deletedEntry = {
   transactionId: 3,
-  date: "2025-01-17",
+  effective: "2025-01-17",
   description: "Deleted txn",
   deletedAt: "2025-02-01T00:00:00Z",
   lines: [
@@ -761,7 +761,7 @@ describe("JournalPage", () => {
     const entries = [
       {
         transactionId: 10,
-        date: "2025-01-01",
+        effective: "2025-01-01",
         description: "Color test",
         lines: [
           { accountNumber: 1000, accountName: "Asset", debit: 10, credit: null },       // < 2000 emerald
@@ -796,7 +796,7 @@ describe("JournalPage", () => {
     const entries = [
       {
         transactionId: 20,
-        date: "2025-01-01",
+        effective: "2025-01-01",
         description: "",
         lines: [
           { accountNumber: 1000, accountName: "Cash", debit: 10, credit: null },
@@ -841,7 +841,7 @@ describe("JournalPage", () => {
     const entriesWithUnknownAccount = [
       {
         transactionId: 30,
-        date: "2025-01-01",
+        effective: "2025-01-01",
         description: "Unknown account",
         lines: [
           { accountNumber: 9999, accountName: "Unknown", debit: 10, credit: null },
@@ -968,7 +968,7 @@ describe("JournalPage", () => {
     const entriesWithNulls = [
       {
         transactionId: 50,
-        date: "2025-01-01",
+        effective: "2025-01-01",
         description: "Null amounts",
         lines: [
           { accountNumber: 1000, accountName: "Cash", debit: null, credit: null },
@@ -1005,7 +1005,7 @@ describe("JournalPage", () => {
     const entriesNoDesc = [
       {
         transactionId: 51,
-        date: "2025-01-01",
+        effective: "2025-01-01",
         description: "Missing line desc",
         lines: [
           { accountNumber: 1000, accountName: "Cash", debit: 10, credit: null },
@@ -1037,7 +1037,7 @@ describe("JournalPage", () => {
     const entries = [
       {
         transactionId: 60,
-        date: "2025-01-01",
+        effective: "2025-01-01",
         description: "All color ranges",
         lines: [
           { accountNumber: 1000, accountName: "Asset < 2000", debit: 5, credit: null },
@@ -1093,7 +1093,7 @@ describe("JournalPage", () => {
     const entriesNullAmounts = [
       {
         transactionId: 70,
-        date: "2025-01-01",
+        effective: "2025-01-01",
         description: "Null reduce test",
         lines: [
           { accountNumber: 1000, accountName: "Cash", debit: null, credit: null },
@@ -1162,7 +1162,7 @@ describe("JournalPage", () => {
     const entries = [
       {
         transactionId: 40,
-        date: "2025-01-01",
+        effective: "2025-01-01",
         description: "No line desc",
         lines: [
           { accountNumber: 1000, accountName: "Cash", debit: 10, credit: null },
