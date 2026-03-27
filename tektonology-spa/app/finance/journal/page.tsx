@@ -481,6 +481,7 @@ export default function JournalPage() {
                       <thead>
                         <tr className="text-xs text-muted-foreground uppercase tracking-wide">
                           <th className="text-left font-medium pb-1">Account</th>
+                          <th className="text-left font-medium pb-1">Memo</th>
                           <th className="text-right font-medium pb-1 w-24">Debit</th>
                           <th className="text-right font-medium pb-1 w-24">Credit</th>
                         </tr>
@@ -491,9 +492,9 @@ export default function JournalPage() {
                             <td className="py-1.5">
                               <span className={`font-mono text-xs ${codeColor(line.accountNumber)}`}>{line.accountNumber}</span>
                               <span className="ml-2 text-foreground">{line.accountName}</span>
-                              {line.description && (
-                                <span className="ml-2 text-xs text-muted-foreground">— {line.description}</span>
-                              )}
+                            </td>
+                            <td className="py-1.5 text-xs text-muted-foreground">
+                              {line.description ?? ""}
                             </td>
                             <td className="text-right font-mono py-1.5">
                               {line.debit != null ? fmt(line.debit) : ""}
