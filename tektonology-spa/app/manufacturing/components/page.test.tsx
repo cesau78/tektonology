@@ -314,14 +314,15 @@ describe("ComponentsPage", () => {
       expect(container.textContent).toContain("Components");
     });
 
-    // Toggle show deleted
-    const toggleBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent === "Show Deleted",
-    );
-    // The deleted row should only appear after re-fetch with showDeleted
-    // But the CrudTable filters client-side when showDeleted changes
-    // The useCrud re-fetches with ?includeDeleted=true
-    await act(async () => { fireEvent.click(toggleBtn!); });
+    // Toggle show deleted — query inside waitFor to avoid race under coverage
+    let toggleBtn: HTMLElement;
+    await waitFor(() => {
+      toggleBtn = Array.from(container.querySelectorAll("button")).find(
+        (b) => b.textContent === "Show Deleted",
+      )!;
+      expect(toggleBtn).toBeTruthy();
+    });
+    fireEvent.click(toggleBtn!);
 
     await waitFor(() => {
       expect(container.textContent).toContain("Deleted Part");
