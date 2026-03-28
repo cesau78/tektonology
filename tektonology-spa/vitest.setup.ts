@@ -2,6 +2,13 @@ import "@testing-library/jest-dom/vitest";
 import { vi } from "vitest";
 import React from "react";
 
+//silence React's "incorrect casing" warning since it doesn't apply to our mocked components
+const originalError = console.error;
+console.error = (...args) => {
+  if (typeof args[0] === "string" && args[0].includes("incorrect casing")) return;
+  originalError(...args);
+};
+
 // Mock next/font/google
 vi.mock("next/font/google", () => ({
   Geist: () => ({ variable: "mock-geist-sans" }),
