@@ -451,13 +451,13 @@ describe("ComponentsPage", () => {
   it("includes printJobId in payload when set", async () => {
     setupDefaultFetch();
     const { container } = render(<ComponentsPage />);
+    let addBtn: HTMLButtonElement | undefined;
     await waitFor(() => {
-      expect(container.textContent).toContain("Components");
+      addBtn = Array.from(container.querySelectorAll("button")).find(
+        (b) => b.textContent?.includes("Add Component Batch"),
+      );
+      expect(addBtn).toBeTruthy();
     });
-
-    const addBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("Add Component Batch"),
-    );
     await act(async () => { fireEvent.click(addBtn!); });
 
     // Fill part
