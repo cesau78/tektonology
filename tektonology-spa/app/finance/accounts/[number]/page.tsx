@@ -120,7 +120,6 @@ export default function AccountDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {!entries && <LoadingState />}
               {entries && entries.length === 0 && (
                 <p className="text-sm text-muted-foreground">No transactions for this account.</p>
               )}
