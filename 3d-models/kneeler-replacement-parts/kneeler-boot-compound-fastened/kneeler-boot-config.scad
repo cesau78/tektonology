@@ -17,9 +17,9 @@ groove_overhang = 2;      // groove extends this far beyond socket per side
 
 // --- Performance Settings ---
 preview = false; //set preview=true for faster rendering with lower detail, or false for full detail.
-crosssection_view = true; // Set to true to cut the model along a plane and show only one side
-crosssection_axis = "x"; // axis: 'x', 'y', or 'z'
-crosssection_pos = 15; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
+crosssection_view = false; // Set to true to cut the model along a plane and show only one side
+crosssection_axis = "y"; // axis: 'x', 'y', or 'z'
+crosssection_pos = 12; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
 
 // --- Shell Geometry ---
 wall = 9.0; // thicker walls to house M3 hardware in the side walls
@@ -49,12 +49,12 @@ lip_inner_y = leg_w + tolerance; // add some clearance around the leg for easy f
 
 // --- M3x30 Socket Head Cap Screw Hardware ---
 bolt_dia        = 3.0;
-bolt_clearance  = 0.3; // clearance for bolt holes (0 for snug fit, increase if needed for print tolerance)
-bolt_length     = 20;    // M3x20 — shaft length under head (very common size)
-nut_af          = 5.5;   // hex nut across-flats
-nut_clearance   = 0.4; // clearance for nut pockets
-nut_thickness   = 2.4 + 0.4;
-head_dia        = 6.0;   // M3 socket head cap screw head diameter
+bolt_clearance  = 0.3;  // clearance for bolt holes (0 for snug fit, increase if needed for print tolerance)
+bolt_length     = 20;   // M3x20 — shaft length under head (very common size)
+nut_af          = 5.5;  // hex nut across-flats
+nut_clearance   = 0.2;  // clearance for nut pockets
+nut_thickness   = 2.4;  // typical M3 nut thickness, adjust if using thinner/heavier nuts
+head_dia        = 6.0;  // M3 socket head cap screw head diameter
 head_clearance  = tolerance;
 head_height     = 3.5;   // M3 socket head height
 
