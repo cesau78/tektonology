@@ -783,7 +783,7 @@ describe("JournalPage", () => {
       expect(screen.getByText("Transaction #10")).toBeInTheDocument();
     });
 
-    const codeSpans = container.querySelectorAll("span.font-mono.text-xs");
+    const codeSpans = container.querySelectorAll("a.font-mono.text-xs");
     const classes = Array.from(codeSpans).map((el) => el.className);
     expect(classes.some((c) => c.includes("text-emerald-700"))).toBe(true);
     expect(classes.some((c) => c.includes("text-red-700"))).toBe(true);
@@ -1064,7 +1064,7 @@ describe("JournalPage", () => {
       expect(screen.getByText("Transaction #60")).toBeInTheDocument();
     });
 
-    const codeSpans = container.querySelectorAll("span.font-mono.text-xs");
+    const codeSpans = container.querySelectorAll("a.font-mono.text-xs");
     const classMap: Record<string, string[]> = {};
     codeSpans.forEach((el) => {
       const code = el.textContent ?? "";

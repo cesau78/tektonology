@@ -150,6 +150,82 @@ describe("GET /api/finance/journal", () => {
     assert.equal(res.status, 200);
     assert.equal(res.body.length, 2);
   });
+
+  it("filters entries by accountNumber query param", async () => {
+    await seedAccounts();
+    const entries = db.collection("journal_entries");
+    await entries.insertMany([
+      {
+        transactionId: 1,
+        effective: "2025-01-01",
+        description: "Has 1000",
+        lines: [
+          { accountNumber: 1000, debit: 50, credit: 0 },
+          { accountNumber: 4000, debit: 0, credit: 50 },
+        ],
+      },
+      {
+        transactionId: 2,
+        effective: "2025-01-02",
+        description: "Only 2000",
+        lines: [
+          { accountNumber: 2000, debit: 30, credit: 0 },
+          { accountNumber: 4000, debit: 0, credit: 30 },
+        ],
+      },
+    ]);
+    const res = await GET("/api/finance/journal?accountNumber=1000");
+    assert.equal(res.status, 200);
+    assert.equal(res.body.length, 1);
+    assert.equal(res.body[0].transactionId, 1);
+  });
+
+  it("ignores invalid accountNumber param", async () => {
+    const entries = db.collection("journal_entries");
+    await entries.insertMany([
+      { transactionId: 1, effective: "2025-01-01", lines: [], description: "A" },
+      { transactionId: 2, effective: "2025-01-02", lines: [], description: "B" },
+    ]);
+    const res = await GET("/api/finance/journal?accountNumber=abc");
+    assert.equal(res.status, 200);
+    assert.equal(res.body.length, 2);
+  });
+
+  it("combines accountNumber with includeDeleted", async () => {
+    await seedAccounts();
+    const entries = db.collection("journal_entries");
+    await entries.insertMany([
+      {
+        transactionId: 1,
+        effective: "2025-01-01",
+        description: "Active with 1000",
+        lines: [
+          { accountNumber: 1000, debit: 100, credit: 0 },
+          { accountNumber: 4000, debit: 0, credit: 100 },
+        ],
+      },
+      {
+        transactionId: 2,
+        effective: "2025-01-02",
+        description: "Deleted with 1000",
+        deletedAt: "2025-06-01T00:00:00.000Z",
+        lines: [
+          { accountNumber: 1000, debit: 200, credit: 0 },
+          { accountNumber: 4000, debit: 0, credit: 200 },
+        ],
+      },
+    ]);
+    // Without includeDeleted — should exclude the deleted entry
+    const res1 = await GET("/api/finance/journal?accountNumber=1000");
+    assert.equal(res1.status, 200);
+    assert.equal(res1.body.length, 1);
+    assert.equal(res1.body[0].transactionId, 1);
+
+    // With includeDeleted — should return both
+    const res2 = await GET("/api/finance/journal?accountNumber=1000&includeDeleted=true");
+    assert.equal(res2.status, 200);
+    assert.equal(res2.body.length, 2);
+  });
 });
 
 // ===========================================================================

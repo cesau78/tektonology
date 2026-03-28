@@ -126,6 +126,10 @@ export function createRoutes(app, db) {
   // -- Journal Entries --
   app.get("/api/finance/journal", read, async (req, res) => {
     const filter = req.query.includeDeleted === "true" ? {} : { deletedAt: { $exists: false } };
+    if (req.query.accountNumber) {
+      const num = parseInt(req.query.accountNumber, 10);
+      if (!Number.isNaN(num)) filter["lines.accountNumber"] = num;
+    }
     const docs = await journalEntries.find(filter).sort({ effective: 1, transactionId: 1 }).toArray();
     negotiate(req, res, docs, "journal.csv");
   });

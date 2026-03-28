@@ -336,7 +336,7 @@ export default function ChartOfAccountsPage() {
                           className="w-full border border-border rounded px-2 py-1 text-sm bg-background font-mono"
                         />
                       ) : (
-                        a.number
+                        <Link href={`/finance/accounts/${a.number}`} className="hover:text-blue-600 hover:underline">{a.number}</Link>
                       )}
                     </td>
                     <td className="py-2">
@@ -349,7 +349,7 @@ export default function ChartOfAccountsPage() {
                           autoFocus
                         />
                       ) : (
-                        <span className="text-foreground">{a.name}</span>
+                        <Link href={`/finance/accounts/${a.number}`} className="text-foreground hover:text-blue-600 hover:underline">{a.name}</Link>
                       )}
                     </td>
                     <td className="py-2">

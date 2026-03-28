@@ -100,7 +100,7 @@ export default function FinanceDashboard() {
                       <div className="space-y-1 pl-4">
                         {(data.balanceSheet.byType[type] ?? []).map((a) => (
                           <div key={a.number} className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">{a.number}: {a.name}</span>
+                            <Link href={`/finance/accounts/${a.number}`} className="text-muted-foreground hover:text-blue-600 hover:underline">{a.number}: {a.name}</Link>
                             <span className="font-mono text-foreground">{fmt(a.balance)}</span>
                           </div>
                         ))}

@@ -376,7 +376,7 @@ export default function JournalPage() {
                   <CardHeader className="pb-0">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-sm">
-                        Transaction #{entry.transactionId}
+                        <Link href={`/finance/journal/${entry.transactionId}`} className="hover:text-blue-600 hover:underline">Transaction #{entry.transactionId}</Link>
                         {entry.description && (
                           <span className="ml-2 font-normal text-muted-foreground">— {entry.description}</span>
                         )}
@@ -490,8 +490,8 @@ export default function JournalPage() {
                         {entry.lines.map((line, i) => (
                           <tr key={i} className="border-t border-border/50">
                             <td className="py-1.5">
-                              <span className={`font-mono text-xs ${codeColor(line.accountNumber)}`}>{line.accountNumber}</span>
-                              <span className="ml-2 text-foreground">{line.accountName}</span>
+                              <Link href={`/finance/accounts/${line.accountNumber}`} className={`font-mono text-xs hover:underline ${codeColor(line.accountNumber)}`}>{line.accountNumber}</Link>
+                              <Link href={`/finance/accounts/${line.accountNumber}`} className="ml-2 text-foreground hover:text-blue-600 hover:underline">{line.accountName}</Link>
                             </td>
                             <td className="text-right font-mono py-1.5 px-3">
                               {line.debit != null ? fmt(line.debit) : ""}
