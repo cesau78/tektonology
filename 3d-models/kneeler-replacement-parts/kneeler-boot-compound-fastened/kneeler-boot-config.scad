@@ -17,9 +17,9 @@ groove_overhang = 2;      // groove extends this far beyond socket per side
 
 // --- Performance Settings ---
 preview = false; //set preview=true for faster rendering with lower detail, or false for full detail.
-crosssection_view = false; // Set to true to cut the model along a plane and show only one side
-crosssection_axis = "y"; // axis: 'x', 'y', or 'z'
-crosssection_pos = 0.5; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
+crosssection_view = true; // Set to true to cut the model along a plane and show only one side
+crosssection_axis = "x"; // axis: 'x', 'y', or 'z'
+crosssection_pos = 15; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
 
 // --- Shell Geometry ---
 wall = 9.0; // thicker walls to house M3 hardware in the side walls
@@ -253,9 +253,30 @@ module crosssection(half_space) {
 // =====================================================================
 module debug_nuts() {
     nut_r = nut_af / 2 / cos(30);
-    color("red", 0.7)
-        for (pos = bolt_positions)
+    color("green", 0.7)
+        for (pos = bolt_positions) {
+            rot = (pos[1] > 0) ? 15 : -15; // mirror matches slipper's mirror([0,m,0])
             translate([nut_x, pos[1], pos[0]])
                 rotate([0, 90, 0])
-                    cylinder(h=nut_thickness, r=nut_r, $fn=6, center=true);
+                    rotate([0, 0, rot])
+                        cylinder(h=nut_thickness, r=nut_r, $fn=6, center=true);
+        }
+}
+
+// =====================================================================
+// DEBUG: visualize bolts in their holes
+// =====================================================================
+module debug_bolts() {
+    head_start_x = outer_extent - head_height;
+    color("yellow", 0.7)
+        for (pos = bolt_positions) {
+            // Shaft
+            translate([head_start_x - bolt_length, pos[1], pos[0]])
+                rotate([0, 90, 0])
+                    cylinder(h=bolt_length, d=bolt_dia, center=false);
+            // Socket head
+            translate([head_start_x, pos[1], pos[0]])
+                rotate([0, 90, 0])
+                    cylinder(h=head_height, d=head_dia, center=false);
+        }
 }

@@ -16,7 +16,8 @@ module hex_nut_pocket(z_pos, y_pos) {
 
     translate([nut_x - pocket_depth / 2, y_pos, z_pos])
         rotate([0, 90, 0])
-            cylinder(h=pocket_depth, r=nut_r, $fn=6);
+            rotate([0, 0, 15]) // align hex flat with 45° slot entry
+                cylinder(h=pocket_depth, r=nut_r, $fn=6);
 }
 
 // Hex nut slide-in slot — 45° toward center from nut pocket through shell.
