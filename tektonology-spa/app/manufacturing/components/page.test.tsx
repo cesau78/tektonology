@@ -42,6 +42,11 @@ vi.mock("@/components/print-job-select", () => ({
   },
 }));
 
+vi.mock("@/components/auth-guard", () => ({
+  RequireRole: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+import React from "react";
 import ComponentsPage from "./page";
 
 afterEach(cleanup);
