@@ -1,0 +1,22 @@
+{
+  "id": "rubber-bumper",
+  "name": "Kneeler Rubber Bumper",
+  "category": "Kneeler Replacement Parts",
+  "description": "A hollow cylindrical bumper that sits on top of the kneeler leg plate to absorb impact when the kneeler is raised. The bumper cushions the contact between the leg plate and the underside of the pew seat, reducing noise and preventing wear. Outer diameter 17.5mm, inner bore 9.7mm, 23.8mm tall.",
+  "printSettings": {
+    "bumper": "TPU 95A (Black) | 4 Wall Loops | 100% Infill"
+  },
+  "assemblyGuide": [
+    "Slide the bumper over the post on top of the kneeler leg plate.",
+    "Press down until the bumper seats flush against the leg plate surface.",
+    "Verify the bumper clears the underside of the pew seat when the kneeler is raised."
+  ],
+  "stlDownloadUrls": [
+    {
+      "label": "Rubber Bumper",
+      "url": "/stl/rubber-bumper.stl",
+      "color": "#333333"
+    }
+  ],
+  "purchaseLinks": []
+}
