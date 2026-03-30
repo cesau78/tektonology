@@ -289,7 +289,7 @@ describe("generateStaticParams", () => {
 
   it("returns params for each batch json file", async () => {
     const batch1 = makeBatch({ id: "batch-001", productId: "kneeler-boot" });
-    const batch2 = makeBatch({ id: "batch-002", productId: "bait-station" });
+    const batch2 = makeBatch({ id: "batch-002", productId: "kneeler-bushing" });
 
     mockReaddirSync.mockReturnValue(["batch-001.json", "batch-002.json"]);
     mockReadFileSync
@@ -301,7 +301,7 @@ describe("generateStaticParams", () => {
 
     expect(params).toEqual([
       { product: "kneeler-boot", batch: "batch-001" },
-      { product: "bait-station", batch: "batch-002" },
+      { product: "kneeler-bushing", batch: "batch-002" },
     ]);
   });
 

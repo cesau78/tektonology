@@ -71,8 +71,8 @@ const sampleJobs = [
   {
     batchId: 3,
     date: "2025-01-17",
-    project: "Bait Station",
-    product: "Station",
+    project: "Kneeler Bushing",
+    product: "Bushing",
     spool: "Spool-1",
     usageG: 200,
     totalHours: 8.0,

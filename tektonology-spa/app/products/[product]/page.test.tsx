@@ -329,14 +329,14 @@ describe("generateStaticParams", () => {
   });
 
   it("returns params for each product json file", async () => {
-    mockReaddirSync.mockReturnValue(["kneeler-boot.json", "bait-station.json"]);
+    mockReaddirSync.mockReturnValue(["kneeler-boot.json", "kneeler-bushing.json"]);
 
     const { generateStaticParams } = await import("./page");
     const params = await generateStaticParams();
 
     expect(params).toEqual([
       { product: "kneeler-boot" },
-      { product: "bait-station" },
+      { product: "kneeler-bushing" },
     ]);
   });
 

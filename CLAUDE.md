@@ -24,7 +24,6 @@ When making decisions — about design, naming, architecture, or implementation 
 ```
 3d-models/                     # OpenSCAD source and generated STL files
   kneeler-replacement-parts/   # Pew kneeler boots and bushings
-  liquid-bait-station/         # Pest control
 mongo-db/                      # MongoDB — models and local data
   data/                        # Local MongoDB bind mount (gitignored)
   *.ts                         # Shared document interfaces (TypeScript)

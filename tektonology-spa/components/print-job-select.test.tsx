@@ -20,7 +20,7 @@ const jobs = [
   },
   {
     _id: "job2",
-    project: "Bait Station",
+    project: "Kneeler Bushing",
     effective: "2026-03-10",
     outcome: "partial",
     components: [],
@@ -83,7 +83,7 @@ describe("PrintJobSelect", () => {
     );
     // Job with no components — no parts suffix
     expect(options[2].textContent).toBe(
-      "2026-03-10 — Bait Station — partial",
+      "2026-03-10 — Kneeler Bushing — partial",
     );
   });
 
