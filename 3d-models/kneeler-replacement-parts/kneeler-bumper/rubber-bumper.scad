@@ -3,7 +3,9 @@ $fn = 64;
 
 // inputs
 od = 17.5; // Outer diameter of the bumper
-id = 9.7;  // Inner diameter (hollow core)
+peg_od = 9.7;  // the peg that the bumper fits onto.
+tightness = 0.3; // Increase this value for a tighter fit, decrease for a looser fit (mm)
+id = peg_od - tightness; // Inner diameter of the bumper, calculated for a snug fit
 height = 23.8; // Total height of the bumper
 
 // Main module to create the rubber bumper
