@@ -576,6 +576,82 @@ describe("ProjectDetailPage", () => {
     expect(container).toHaveTextContent("2026-03-15");
   });
 
+  it("shows message when kneeler has no hardware rows", async () => {
+    const project = makeProject({
+      layout: {
+        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
+        aisles: [],
+        sections: [
+          makeSection({
+            id: "s1",
+            rows: [
+              {
+                id: "r1",
+                label: "Row 1",
+                frontType: "pew",
+                kneelers: [makeKneeler({ hardware: [] })],
+              },
+            ],
+          }),
+        ],
+      },
+    });
+    mockReadFileSync.mockReturnValue(JSON.stringify(project));
+    mockReaddirSync.mockReturnValue(["test-project.json"]);
+
+    const { default: Page } = await import("./page");
+    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
+
+    expect(container).toHaveTextContent("No hardware tracked for this segment.");
+  });
+
+  it("renders pillar bench strip, spanning label on continuation row, and pillar gap in kneeler map", async () => {
+    const project = makeProject({
+      layout: {
+        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
+        aisles: [],
+        sections: [
+          makeSection({
+            id: "s1",
+            label: "West",
+            rows: [
+              {
+                id: "row-9",
+                label: "Row 9",
+                frontType: "pew",
+                kneelers: [
+                  makeKneeler({ id: "k1", capacity: 3 }),
+                  {
+                    id: "pillar",
+                    capacity: 2,
+                    label: "Pillar",
+                    hardware: [],
+                  },
+                  makeKneeler({ id: "k2", capacity: 3 }),
+                ],
+              },
+              {
+                id: "row-10",
+                label: "Row 10",
+                frontType: "pew",
+                kneelers: [],
+                pillarBenchContinuation: { fromRowId: "row-9", alignKneelerId: "pillar" },
+              },
+            ],
+          }),
+        ],
+      },
+    });
+    mockReadFileSync.mockReturnValue(JSON.stringify(project));
+    mockReaddirSync.mockReturnValue(["test-project.json"]);
+
+    const { default: Page } = await import("./page");
+    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
+
+    expect(container.querySelectorAll("[title='Pillar']").length).toBeGreaterThan(0);
+    expect(container.querySelector('[title="Pillar (gap)"]')).toBeTruthy();
+  });
+
   it("renders inventory row without badges when count is zero", async () => {
     const project = makeProject({
       layout: {

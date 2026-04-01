@@ -259,8 +259,6 @@ export default async function ProjectDetailPage({
                 .reduce((s, h) => s + h.quantity, 0);
               const benchStrip = pewBenchStripForRow(section, row);
 
-              const showSpanningPillarOnBench = !!row.pillarBenchContinuation;
-
               return (
                 <details
                   key={row.id}
@@ -291,11 +289,9 @@ export default async function ProjectDetailPage({
                                 className="relative flex min-h-[8px] min-w-0 items-center justify-center overflow-visible"
                                 style={{ flex: seg.capacity }}
                               >
-                                {showSpanningPillarOnBench ? (
-                                  <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
-                                    <PillarGapLabel spanning />
-                                  </div>
-                                ) : null}
+                                <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
+                                  <PillarGapLabel spanning />
+                                </div>
                               </div>
                             ) : (
                               <div

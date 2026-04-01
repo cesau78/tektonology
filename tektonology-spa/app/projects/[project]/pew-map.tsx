@@ -96,12 +96,9 @@ function KneelerSegments({ kneelers, partFilter }: { kneelers: Kneeler[]; partFi
 function PewRailStrip({
   row,
   section,
-  showSpanningPillarOnBench,
 }: {
   row: PewRow;
   section: PewSection;
-  /** Single pillar marker: centered on this row’s bench gap (row 10), not row 9 kneeler */
-  showSpanningPillarOnBench?: boolean;
 }) {
   const fromContinuation = row.pillarBenchContinuation
     ? pewBenchSegmentsFromContinuation(section, row)
@@ -128,11 +125,9 @@ function PewRailStrip({
             className="relative flex min-w-0 min-h-[5px] items-center justify-center overflow-visible"
             style={{ flex: s.capacity }}
           >
-            {showSpanningPillarOnBench ? (
-              <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
-                <PillarGapLabel compact spanning />
-              </div>
-            ) : null}
+            <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
+              <PillarGapLabel compact spanning />
+            </div>
           </div>
         ) : (
           <div key={s.id} className="flex min-w-0 items-center" style={{ flex: s.capacity }}>
@@ -148,16 +143,14 @@ function RowStrip({
   row,
   partFilter,
   section,
-  showSpanningPillarOnBench,
 }: {
   row: PewRow;
   partFilter: string;
   section: PewSection;
-  showSpanningPillarOnBench?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-0 overflow-visible">
-      <PewRailStrip row={row} section={section} showSpanningPillarOnBench={showSpanningPillarOnBench} />
+      <PewRailStrip row={row} section={section} />
       {row.kneelers.length > 0 && <KneelerSegments kneelers={row.kneelers} partFilter={partFilter} />}
     </div>
   );
@@ -182,18 +175,9 @@ function SectionMapBlock({
           </span>
         </div>
         <div className="flex flex-col gap-1">
-          {section.rows.map((row) => {
-            const showSpanningPillarOnBench = !!row.pillarBenchContinuation;
-            return (
-              <RowStrip
-                key={row.id}
-                row={row}
-                partFilter={partFilter}
-                section={section}
-                showSpanningPillarOnBench={showSpanningPillarOnBench}
-              />
-            );
-          })}
+          {section.rows.map((row) => (
+            <RowStrip key={row.id} row={row} partFilter={partFilter} section={section} />
+          ))}
         </div>
       </div>
     </a>

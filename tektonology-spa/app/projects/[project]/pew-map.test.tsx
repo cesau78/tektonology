@@ -400,6 +400,104 @@ describe("PewMap", () => {
     expect(container).toHaveTextContent("0k");
   });
 
+  it("skips kneeler segment styling for pillar column", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            kneelers: [
+              makeKneeler({ id: "k1" }),
+              { id: "pillar", capacity: 2, label: "Pillar", hardware: [] },
+              makeKneeler({ id: "k2" }),
+            ],
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+    );
+    expect(container.querySelectorAll(".flex.gap-px > div.rounded-sm.h-2").length).toBe(2);
+  });
+
+  it("renders bench gap with compact spanning pillar label on continuation row", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "row-9",
+            label: "Row 9",
+            frontType: "pew",
+            kneelers: [
+              makeKneeler({ id: "k1" }),
+              { id: "pillar", capacity: 2, label: "Pillar", hardware: [] },
+              makeKneeler({ id: "k2" }),
+            ],
+          },
+          {
+            id: "row-10",
+            label: "Row 10",
+            frontType: "pew",
+            kneelers: [],
+            pillarBenchContinuation: { fromRowId: "row-9", alignKneelerId: "pillar" },
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+    );
+    expect(container.querySelector(".w-\\[26px\\].h-\\[26px\\]")).toBeTruthy();
+    expect(container).toHaveTextContent("Pillar");
+  });
+
+  it("uses rounded-sm bench wrap when continuation row has no kneelers and previous row has no kneelers", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          { id: "row-9", label: "Row 9", frontType: "pew", kneelers: [] },
+          {
+            id: "row-10",
+            label: "Row 10",
+            frontType: "pew",
+            kneelers: [],
+            pillarBenchContinuation: { fromRowId: "row-9", alignKneelerId: "x" },
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+    );
+    expect(container.querySelector(".rounded-sm.overflow-hidden")).toBeTruthy();
+  });
+
+  it("uses simple pew rail bar when row has kneelers but no pillar segments", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            kneelers: [makeKneeler()],
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+    );
+    expect(container.querySelectorAll(".rounded-t-sm").length).toBeGreaterThan(0);
+  });
+
   it("renders section stats (rows, kneelers, pct)", () => {
     const { container } = render(
       <PewMap
