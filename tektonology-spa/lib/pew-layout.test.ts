@@ -4,8 +4,13 @@ import {
   isPillarKneeler,
   pewBenchSegmentsFromKneelers,
   pewBenchSegmentsFromContinuation,
+  pewRailSegmentsForRow,
   pewRailBarClass,
   pewRailColorClass,
+  rowCapacitySum,
+  effectiveRowCapacityForMap,
+  maxRowCapacityInSection,
+  alignRowStripWidthPercent,
 } from "./pew-layout";
 
 function k(id: string, capacity: number, label?: string): Kneeler {
@@ -82,6 +87,208 @@ describe("pew-layout", () => {
       pillarBenchContinuation: { fromRowId: "missing", alignKneelerId: "x" },
     };
     expect(pewBenchSegmentsFromContinuation(section, row)).toBeNull();
+  });
+
+  it("alignRowStripWidthPercent uses max row sum as ref when mapRowAlignRefCapacity omitted", () => {
+    const section = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+      mapRowAlign: "start" as const,
+      rows: [
+        { id: "a", label: "A", frontType: "pew" as const, kneelers: [k("x", 3), k("y", 3), k("z", 3)] },
+        { id: "b", label: "B", frontType: "pew" as const, kneelers: [k("a", 3), k("b", 3), k("c", 3), k("d", 3)] },
+      ],
+    } satisfies PewSection;
+    expect(alignRowStripWidthPercent(section, 9)).toBe(75);
+  });
+
+  it("alignRowStripWidthPercent returns 100 for fill alignment", () => {
+    const section = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+      mapRowAlign: "fill" as const,
+      rows: [{ id: "a", label: "A", frontType: "pew" as const, kneelers: [k("x", 3)] }],
+    } satisfies PewSection;
+    expect(alignRowStripWidthPercent(section, 5)).toBe(100);
+  });
+
+  it("alignRowStripWidthPercent treats missing mapRowAlign as fill", () => {
+    const section = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+      rows: [{ id: "a", label: "A", frontType: "pew" as const, kneelers: [k("x", 3)] }],
+    } satisfies PewSection;
+    expect(alignRowStripWidthPercent(section, 3)).toBe(100);
+  });
+
+  it("alignRowStripWidthPercent returns 100 when ref capacity is zero", () => {
+    const section = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+      mapRowAlign: "start" as const,
+      mapRowAlignRefCapacity: 0,
+      rows: [],
+    } satisfies PewSection;
+    expect(alignRowStripWidthPercent(section, 3)).toBe(100);
+  });
+
+  it("alignRowStripWidthPercent caps row 3 at 100% when ref is 9", () => {
+    const section = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+      mapRowAlign: "start" as const,
+      mapRowAlignRefCapacity: 9,
+      rows: [
+        { id: "a", label: "A", frontType: "pew" as const, kneelers: [k("x", 3), k("y", 3), k("z", 3)] },
+        { id: "b", label: "B", frontType: "pew" as const, kneelers: [k("a", 3), k("b", 3), k("c", 3), k("d", 3)] },
+      ],
+    } satisfies PewSection;
+    expect(alignRowStripWidthPercent(section, 9)).toBe(100);
+    expect(alignRowStripWidthPercent(section, 12)).toBe(100);
+  });
+
+  it("rowCapacitySum and maxRowCapacityInSection", () => {
+    const rowA = { id: "a", label: "A", frontType: "pew" as const, kneelers: [k("x", 3), k("y", 2)] };
+    const rowB = { id: "b", label: "B", frontType: "pew" as const, kneelers: [k("z", 4)] };
+    const sectionBase = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+    } as const;
+    expect(rowCapacitySum(rowA)).toBe(5);
+    expect(
+      maxRowCapacityInSection({
+        ...sectionBase,
+        rows: [rowA, rowB],
+      }),
+    ).toBe(5);
+    expect(maxRowCapacityInSection({ ...sectionBase, rows: [] })).toBe(0);
+  });
+
+  it("effectiveRowCapacityForMap uses continuation or pew rail widths when kneelers empty", () => {
+    const sectionBase = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+    } as const;
+    const prev: PewRow = {
+      id: "row-9",
+      label: "Row 9",
+      frontType: "pew",
+      kneelers: [k("a", 3), k("b", 3), k("c", 3), k("d", 3)],
+    };
+    const section = { ...sectionBase, rows: [prev] };
+    const rowCont: PewRow = {
+      id: "row-10",
+      label: "Row 10",
+      frontType: "pew",
+      kneelers: [],
+      pillarBenchContinuation: { fromRowId: "row-9", alignKneelerId: "a" },
+    };
+    expect(effectiveRowCapacityForMap(rowCont, section)).toBe(12);
+    const prevSmall: PewRow = {
+      id: "row-9",
+      label: "Row 9",
+      frontType: "pew",
+      kneelers: [k("a", 3), k("b", 3)],
+    };
+    const rowContRailWider: PewRow = {
+      id: "row-10",
+      label: "Row 10",
+      frontType: "pew",
+      kneelers: [],
+      pewRailSegmentWidths: [3, 3, 3, 3],
+      pillarBenchContinuation: { fromRowId: "row-9", alignKneelerId: "a" },
+    };
+    expect(effectiveRowCapacityForMap(rowContRailWider, { ...sectionBase, rows: [prevSmall] })).toBe(12);
+    const rowRail: PewRow = {
+      id: "x",
+      label: "X",
+      frontType: "pew",
+      kneelers: [],
+      pewRailSegmentWidths: [3, 2, 1],
+    };
+    expect(effectiveRowCapacityForMap(rowRail, { ...sectionBase, rows: [rowRail] })).toBe(6);
+    const rowMissingPrev: PewRow = {
+      id: "row-10",
+      label: "Row 10",
+      frontType: "pew",
+      kneelers: [],
+      pillarBenchContinuation: { fromRowId: "missing", alignKneelerId: "x" },
+      pewRailSegmentWidths: [3, 3],
+    };
+    expect(effectiveRowCapacityForMap(rowMissingPrev, { ...sectionBase, rows: [] })).toBe(6);
+  });
+
+  it("effectiveRowCapacityForMap uses max of kneeler and pew rail sums when both set", () => {
+    const sectionBase = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+    } as const;
+    const row: PewRow = {
+      id: "row-1",
+      label: "Row 1",
+      frontType: "pew",
+      pewRailSegmentWidths: [3, 3, 3],
+      kneelers: [k("a", 2.33), k("b", 2.33), k("c", 1), k("d", 2.33)],
+    };
+    expect(effectiveRowCapacityForMap(row, { ...sectionBase, rows: [row] })).toBe(9);
+  });
+
+  it("pewRailSegmentsForRow uses explicit widths and gap kinds", () => {
+    const section: PewSection = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+      rows: [],
+    };
+    const row: PewRow = {
+      id: "row-10",
+      label: "Row 10",
+      frontType: "pew",
+      kneelers: [],
+      pewRailSegmentWidths: [3, 2, 1],
+      pewRailSegmentKinds: ["pew", "gap", "pew"],
+    };
+    const segs = pewRailSegmentsForRow(section, row);
+    expect(segs).toEqual([
+      { id: "row-10-pew-rail-0", capacity: 3, variant: "pew" },
+      { id: "row-10-pew-rail-1", capacity: 2, variant: "gap" },
+      { id: "row-10-pew-rail-2", capacity: 1, variant: "pew" },
+    ]);
   });
 
   it("pewBenchSegmentsFromContinuation maps previous row kneelers with gap at align id", () => {

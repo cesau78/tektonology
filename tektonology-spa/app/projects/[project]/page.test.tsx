@@ -576,6 +576,74 @@ describe("ProjectDetailPage", () => {
     expect(container).toHaveTextContent("2026-03-15");
   });
 
+  it("applies mapRowAlign start width scaling to section detail rows", async () => {
+    const project = makeProject({
+      layout: {
+        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
+        aisles: [],
+        sections: [
+          makeSection({
+            id: "s1",
+            label: "West Front",
+            side: "west",
+            alignment: "outer",
+            mapRowAlign: "start",
+            rows: [
+              { id: "r0", label: "Row 0", frontType: "communionRail", kneelers: [makeKneeler({ id: "k0", capacity: 3 })] },
+              {
+                id: "r1",
+                label: "Row 1",
+                frontType: "pew",
+                kneelers: [makeKneeler({ id: "k1", capacity: 3 }), makeKneeler({ id: "k2", capacity: 3 })],
+              },
+            ],
+          }),
+        ],
+      },
+    });
+    mockReadFileSync.mockReturnValue(JSON.stringify(project));
+    mockReaddirSync.mockReturnValue(["test-project.json"]);
+
+    const { default: Page } = await import("./page");
+    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
+
+    expect(container.querySelectorAll(".items-start .min-w-0[style]").length).toBeGreaterThan(0);
+  });
+
+  it("applies mapRowAlign end to section detail rows", async () => {
+    const project = makeProject({
+      layout: {
+        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
+        aisles: [],
+        sections: [
+          makeSection({
+            id: "s1",
+            label: "East Front",
+            side: "east",
+            alignment: "outer",
+            mapRowAlign: "end",
+            rows: [
+              { id: "r0", label: "Row 0", frontType: "communionRail", kneelers: [makeKneeler({ id: "k0", capacity: 3 })] },
+              {
+                id: "r1",
+                label: "Row 1",
+                frontType: "pew",
+                kneelers: [makeKneeler({ id: "k1", capacity: 3 }), makeKneeler({ id: "k2", capacity: 3 })],
+              },
+            ],
+          }),
+        ],
+      },
+    });
+    mockReadFileSync.mockReturnValue(JSON.stringify(project));
+    mockReaddirSync.mockReturnValue(["test-project.json"]);
+
+    const { default: Page } = await import("./page");
+    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
+
+    expect(container.querySelector(".items-end")).toBeTruthy();
+  });
+
   it("shows message when kneeler has no hardware rows", async () => {
     const project = makeProject({
       layout: {

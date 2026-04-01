@@ -13,8 +13,11 @@ import type {
 import {
   pewRailColorClass,
   isPillarKneeler,
-  pewBenchSegmentsFromKneelers,
-  pewBenchSegmentsFromContinuation,
+  pewRailSegmentsForRow,
+  rowCapacitySum,
+  effectiveRowCapacityForMap,
+  maxRowCapacityInSection,
+  alignRowStripWidthPercent,
 } from "@/lib/pew-layout";
 import { PillarGapLabel } from "@/components/pillar-gap-label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -72,13 +75,7 @@ const frontTypeLabels: Record<string, string> = {
 };
 
 function pewBenchStripForRow(section: PewSection, row: PewRow) {
-  if (row.pillarBenchContinuation) {
-    return pewBenchSegmentsFromContinuation(section, row);
-  }
-  if (row.kneelers.some(isPillarKneeler)) {
-    return pewBenchSegmentsFromKneelers(row.kneelers, row.id);
-  }
-  return null;
+  return pewRailSegmentsForRow(section, row);
 }
 
 function getInventorySummary(project: Project) {
@@ -253,16 +250,36 @@ export default async function ProjectDetailPage({
             </div>
           </CardHeader>
           <CardContent>
+            <div
+              className={`flex flex-col gap-2 ${
+                section.mapRowAlign === "start"
+                  ? "items-start"
+                  : section.mapRowAlign === "end"
+                    ? "items-end"
+                    : ""
+              }`}
+            >
             {section.rows.map((row) => {
               const totalParts = row.kneelers
                 .flatMap((k) => k.hardware)
                 .reduce((s, h) => s + h.quantity, 0);
               const benchStrip = pewBenchStripForRow(section, row);
+              const mapAlign = section.mapRowAlign ?? "fill";
+              const maxCap = maxRowCapacityInSection(section);
+              const scaleRows = mapAlign !== "fill" && maxCap > 0;
+              const widthPct = scaleRows
+                ? alignRowStripWidthPercent(section, effectiveRowCapacityForMap(row, section))
+                : 100;
 
               return (
-                <details
+                <div
                   key={row.id}
-                  className="border rounded-lg mb-2 last:mb-0"
+                  className={scaleRows ? "min-w-0" : "w-full"}
+                  style={scaleRows ? { width: `${widthPct}%` } : undefined}
+                >
+                <div className="w-full min-w-0">
+                <details
+                  className="border rounded-lg w-full"
                 >
                   <summary className="px-3 py-2 text-sm cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -281,7 +298,7 @@ export default async function ProjectDetailPage({
                         <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                           Pew / Rail
                         </div>
-                        <div className="relative flex items-center gap-px overflow-visible border rounded p-2">
+                        <div className="relative flex w-full min-w-0 items-center gap-px overflow-visible border rounded p-2">
                           {benchStrip.map((seg) =>
                             seg.variant === "gap" ? (
                               <div
@@ -308,7 +325,7 @@ export default async function ProjectDetailPage({
 
                     {/* Proportional kneeler map */}
                     {row.kneelers.length > 0 ? (
-                    <div className="flex items-center gap-px border rounded p-2">
+                    <div className="flex w-full min-w-0 items-center gap-px border rounded p-2">
                       {row.kneelers.map((kneeler) => {
                         const mapLabel = kneeler.label
                           ? `${kneeler.label} (${kneeler.capacity}p)`
@@ -378,8 +395,11 @@ export default async function ProjectDetailPage({
                     </div>
                   </div>
                 </details>
+                </div>
+                </div>
               );
             })}
+            </div>
           </CardContent>
         </Card>
       ))}

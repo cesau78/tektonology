@@ -47,6 +47,53 @@ const orientation: ChurchOrientation = {
 };
 
 describe("PewMap", () => {
+  it("scales row widths in map when mapRowAlign is start or end", () => {
+    const rowsNarrowWide = [
+      {
+        id: "r0",
+        label: "R0",
+        frontType: "communionRail" as const,
+        kneelers: [makeKneeler({ id: "a", capacity: 3 })],
+      },
+      {
+        id: "r1",
+        label: "R1",
+        frontType: "pew" as const,
+        kneelers: [
+          makeKneeler({ id: "b", capacity: 3 }),
+          makeKneeler({ id: "c", capacity: 3 }),
+          makeKneeler({ id: "d", capacity: 3 }),
+          makeKneeler({ id: "e", capacity: 3 }),
+        ],
+      },
+    ];
+    const sections = [
+      makeSection({
+        id: "west-front",
+        label: "West Front",
+        side: "west",
+        alignment: "outer",
+        group: 0,
+        mapRowAlign: "start",
+        rows: rowsNarrowWide,
+      }),
+      makeSection({
+        id: "east-front",
+        label: "East Front",
+        side: "east",
+        alignment: "outer",
+        group: 0,
+        mapRowAlign: "end",
+        rows: rowsNarrowWide,
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+    );
+    expect(container.querySelectorAll(".items-start .min-w-0[style]").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".items-end .min-w-0[style]").length).toBeGreaterThan(0);
+  });
+
   it("renders church name as title", () => {
     const { container } = render(
       <PewMap

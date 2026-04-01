@@ -13,6 +13,53 @@ export function isPillarKneeler(k: Kneeler): boolean {
   return k.label === "Pillar";
 }
 
+/** Sum of kneeler capacities in a row (used to scale row width in the pew map). */
+export function rowCapacitySum(row: PewRow): number {
+  return row.kneelers.reduce((s, k) => s + k.capacity, 0);
+}
+
+/**
+ * Capacity used for map row-width scaling. When both kneelers and pew rail widths exist,
+ * uses the larger sum so the strip matches the physical front (e.g. 3+3+3 rail vs 9 kneeler units).
+ */
+export function effectiveRowCapacityForMap(row: PewRow, section: PewSection): number {
+  const kneelerSum = rowCapacitySum(row);
+  const railSum = row.pewRailSegmentWidths?.reduce((s, w) => s + w, 0) ?? 0;
+
+  if (kneelerSum > 0 && railSum > 0) {
+    return Math.max(kneelerSum, railSum);
+  }
+  if (kneelerSum > 0) return kneelerSum;
+
+  const c = row.pillarBenchContinuation;
+  if (c) {
+    const prev = section.rows.find((r) => r.id === c.fromRowId);
+    if (prev) {
+      const prevSum = rowCapacitySum(prev);
+      if (railSum > 0) return Math.max(prevSum, railSum);
+      return prevSum;
+    }
+  }
+  if (railSum > 0) return railSum;
+  return 0;
+}
+
+/** Widest row in the section (effective capacity for map scaling). */
+export function maxRowCapacityInSection(section: PewSection): number {
+  if (section.rows.length === 0) return 0;
+  return Math.max(...section.rows.map((r) => effectiveRowCapacityForMap(r, section)));
+}
+
+/** Row strip width % when mapRowAlign is set (capped at 100%). */
+export function alignRowStripWidthPercent(section: PewSection, rowSum: number): number {
+  const mapAlign = section.mapRowAlign ?? "fill";
+  if (mapAlign === "fill") return 100;
+  const maxCap = maxRowCapacityInSection(section);
+  const refCap = section.mapRowAlignRefCapacity ?? maxCap;
+  if (refCap <= 0) return 100;
+  return Math.min(100, (rowSum / refCap) * 100);
+}
+
 export type PewBenchSegment = { id: string; capacity: number; variant: "pew" | "gap" };
 
 /**
@@ -52,4 +99,24 @@ export function pewBenchSegmentsFromContinuation(
     capacity: k.capacity,
     variant: k.id === c.alignKneelerId ? "gap" : "pew",
   }));
+}
+
+/** Pew/rail strip segments: explicit widths first, else continuation, else pillar kneeler runs. */
+export function pewRailSegmentsForRow(section: PewSection, row: PewRow): PewBenchSegment[] | null {
+  if (row.pewRailSegmentWidths?.length) {
+    const widths = row.pewRailSegmentWidths;
+    const kinds = row.pewRailSegmentKinds;
+    return widths.map((capacity, i) => ({
+      id: `${row.id}-pew-rail-${i}`,
+      capacity,
+      variant: kinds?.[i] === "gap" ? "gap" : "pew",
+    }));
+  }
+  if (row.pillarBenchContinuation) {
+    return pewBenchSegmentsFromContinuation(section, row);
+  }
+  if (row.kneelers.length > 0 && row.kneelers.some(isPillarKneeler)) {
+    return pewBenchSegmentsFromKneelers(row.kneelers, row.id);
+  }
+  return null;
 }

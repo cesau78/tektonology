@@ -13,8 +13,10 @@ import {
   pewRailBarClass,
   pewRailColorClass,
   isPillarKneeler,
-  pewBenchSegmentsFromKneelers,
-  pewBenchSegmentsFromContinuation,
+  pewRailSegmentsForRow,
+  effectiveRowCapacityForMap,
+  maxRowCapacityInSection,
+  alignRowStripWidthPercent,
 } from "@/lib/pew-layout";
 import { PillarGapLabel } from "@/components/pillar-gap-label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -69,7 +71,7 @@ function groupSections(sections: PewSection[]) {
 
 function KneelerSegments({ kneelers, partFilter }: { kneelers: Kneeler[]; partFilter: string }) {
   return (
-    <div className="flex gap-px">
+    <div className="flex w-full min-w-0 gap-px">
       {kneelers.map((k) => {
         if (isPillarKneeler(k)) {
           return (
@@ -100,22 +102,19 @@ function PewRailStrip({
   row: PewRow;
   section: PewSection;
 }) {
-  const fromContinuation = row.pillarBenchContinuation
-    ? pewBenchSegmentsFromContinuation(section, row)
-    : null;
-  const fromKneelers =
-    row.kneelers.length > 0 && row.kneelers.some(isPillarKneeler)
-      ? pewBenchSegmentsFromKneelers(row.kneelers, row.id)
-      : null;
-  const segments = fromContinuation ?? fromKneelers;
+  const segments = pewRailSegmentsForRow(section, row);
   if (!segments) {
-    return <div className={`${pewRailBarClass} ${row.kneelers.length > 0 ? "rounded-t-sm" : "rounded-sm"}`} />;
+    return (
+      <div
+        className={`w-full ${pewRailBarClass} ${row.kneelers.length > 0 ? "rounded-t-sm" : "rounded-sm"}`}
+      />
+    );
   }
   const hasGap = segments.some((s) => s.variant === "gap");
   const benchWrapClass =
     hasGap
-      ? "flex gap-px min-h-[5px] items-stretch overflow-visible rounded-sm relative z-10"
-      : `flex gap-px ${row.kneelers.length > 0 ? "rounded-t-sm overflow-hidden" : "rounded-sm overflow-hidden"}`;
+      ? "flex w-full min-w-0 gap-px min-h-[5px] items-stretch overflow-visible rounded-sm relative z-10"
+      : `flex w-full min-w-0 gap-px ${row.kneelers.length > 0 ? "rounded-t-sm overflow-hidden" : "rounded-sm overflow-hidden"}`;
   return (
     <div className={benchWrapClass}>
       {segments.map((s) =>
@@ -149,7 +148,7 @@ function RowStrip({
   section: PewSection;
 }) {
   return (
-    <div className="flex flex-col gap-0 overflow-visible">
+    <div className="flex w-full min-w-0 flex-col gap-0 overflow-visible">
       <PewRailStrip row={row} section={section} />
       {row.kneelers.length > 0 && <KneelerSegments kneelers={row.kneelers} partFilter={partFilter} />}
     </div>
@@ -164,6 +163,12 @@ function SectionMapBlock({
   partFilter: string;
 }) {
   const stats = sectionStats(section, partFilter);
+  const mapAlign = section.mapRowAlign ?? "fill";
+  const maxCap = maxRowCapacityInSection(section);
+  const scaleRows = mapAlign !== "fill" && maxCap > 0;
+  const colAlign =
+    mapAlign === "start" ? "items-start" : mapAlign === "end" ? "items-end" : "";
+
   return (
     <a href={`#${section.id}`} className="block group flex-1 min-w-0">
       <div className="border rounded-lg p-1.5 group-hover:border-amber-300 transition-colors h-full">
@@ -174,10 +179,22 @@ function SectionMapBlock({
             {stats.pct}%
           </span>
         </div>
-        <div className="flex flex-col gap-1">
-          {section.rows.map((row) => (
-            <RowStrip key={row.id} row={row} partFilter={partFilter} section={section} />
-          ))}
+        <div className={`flex flex-col gap-1 ${colAlign}`}>
+          {section.rows.map((row) => {
+            const sum = effectiveRowCapacityForMap(row, section);
+            const widthPct = scaleRows ? alignRowStripWidthPercent(section, sum) : 100;
+            return (
+              <div
+                key={row.id}
+                className={scaleRows ? "min-w-0" : "w-full"}
+                style={scaleRows ? { width: `${widthPct}%` } : undefined}
+              >
+                <div className="w-full min-w-0">
+                  <RowStrip row={row} partFilter={partFilter} section={section} />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </a>

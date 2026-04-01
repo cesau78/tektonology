@@ -83,6 +83,10 @@ export interface PewRow {
   frontType: RowFrontType;
   kneelers: Kneeler[];
   pillarBenchContinuation?: PillarBenchContinuation;
+  /** Flex widths for pew/rail strip when it differs from kneeler-derived layout. */
+  pewRailSegmentWidths?: number[];
+  /** Same length as pewRailSegmentWidths; "gap" for structural pillar (no rail). */
+  pewRailSegmentKinds?: ("pew" | "gap")[];
 }
 
 export interface ChurchOrientation {
@@ -104,6 +108,17 @@ export interface PewSection {
   alignment: SectionAlignment;
   group: number;
   rows: PewRow[];
+  /**
+   * Pew map only: scale each row to the widest row in the section and align strips
+   * to the outer edge (west → start, east → end). Default fills the block width.
+   */
+  mapRowAlign?: "start" | "end" | "fill";
+  /**
+   * When set with mapRowAlign: row strip width = min(100%, (rowSum / ref) × 100%).
+   * Use when row 0 is sum 9 but a later row sums higher (e.g. 4×3=12) so all rows
+   * share the same outer width as the ref (9) row.
+   */
+  mapRowAlignRefCapacity?: number;
 }
 
 export interface ChurchLayout {
