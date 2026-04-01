@@ -9,6 +9,14 @@ import type {
   HardwareStatus,
   ChurchOrientation,
 } from "@/data/types";
+import {
+  pewRailBarClass,
+  pewRailColorClass,
+  isPillarKneeler,
+  pewBenchSegmentsFromKneelers,
+  pewBenchSegmentsFromContinuation,
+} from "@/lib/pew-layout";
+import { PillarGapLabel } from "@/components/pillar-gap-label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 const kneelerColors: Record<HardwareStatus | "none", string> = {
@@ -24,6 +32,7 @@ const kneelerColors: Record<HardwareStatus | "none", string> = {
 };
 
 function kneelerStatus(kneeler: Kneeler, partFilter: string): HardwareStatus | "none" {
+  if (kneeler.hardware.length === 0) return "none";
   const items = kneeler.hardware.filter((h) => h.name === partFilter);
   if (items.length === 0) return "none";
   const statuses = items.map((h) => h.status);
@@ -62,6 +71,15 @@ function KneelerSegments({ kneelers, partFilter }: { kneelers: Kneeler[]; partFi
   return (
     <div className="flex gap-px">
       {kneelers.map((k) => {
+        if (isPillarKneeler(k)) {
+          return (
+            <div
+              key={k.id}
+              className="flex items-center justify-center min-w-0"
+              style={{ flex: k.capacity }}
+            />
+          );
+        }
         const status = kneelerStatus(k, partFilter);
         return (
           <div
@@ -75,10 +93,71 @@ function KneelerSegments({ kneelers, partFilter }: { kneelers: Kneeler[]; partFi
   );
 }
 
-function RowStrip({ row, partFilter }: { row: PewRow; partFilter: string }) {
+function PewRailStrip({
+  row,
+  section,
+  showSpanningPillarOnBench,
+}: {
+  row: PewRow;
+  section: PewSection;
+  /** Single pillar marker: centered on this row’s bench gap (row 10), not row 9 kneeler */
+  showSpanningPillarOnBench?: boolean;
+}) {
+  const fromContinuation = row.pillarBenchContinuation
+    ? pewBenchSegmentsFromContinuation(section, row)
+    : null;
+  const fromKneelers =
+    row.kneelers.length > 0 && row.kneelers.some(isPillarKneeler)
+      ? pewBenchSegmentsFromKneelers(row.kneelers, row.id)
+      : null;
+  const segments = fromContinuation ?? fromKneelers;
+  if (!segments) {
+    return <div className={`${pewRailBarClass} ${row.kneelers.length > 0 ? "rounded-t-sm" : "rounded-sm"}`} />;
+  }
+  const hasGap = segments.some((s) => s.variant === "gap");
+  const benchWrapClass =
+    hasGap
+      ? "flex gap-px min-h-[5px] items-stretch overflow-visible rounded-sm relative z-10"
+      : `flex gap-px ${row.kneelers.length > 0 ? "rounded-t-sm overflow-hidden" : "rounded-sm overflow-hidden"}`;
   return (
-    <div className="flex flex-col gap-0">
-      <div className={`bg-neutral-600 dark:bg-neutral-400 h-[5px] ${row.kneelers.length > 0 ? "rounded-t-sm" : "rounded-sm"}`} />
+    <div className={benchWrapClass}>
+      {segments.map((s) =>
+        s.variant === "gap" ? (
+          <div
+            key={s.id}
+            className="relative flex min-w-0 min-h-[5px] items-center justify-center overflow-visible"
+            style={{ flex: s.capacity }}
+          >
+            {showSpanningPillarOnBench ? (
+              <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
+                <PillarGapLabel compact spanning />
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div key={s.id} className="flex min-w-0 items-center" style={{ flex: s.capacity }}>
+            <div className={`${pewRailBarClass} w-full`} />
+          </div>
+        ),
+      )}
+    </div>
+  );
+}
+
+function RowStrip({
+  row,
+  partFilter,
+  section,
+  showSpanningPillarOnBench,
+}: {
+  row: PewRow;
+  partFilter: string;
+  section: PewSection;
+  showSpanningPillarOnBench?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-0 overflow-visible">
+      <PewRailStrip row={row} section={section} showSpanningPillarOnBench={showSpanningPillarOnBench} />
       {row.kneelers.length > 0 && <KneelerSegments kneelers={row.kneelers} partFilter={partFilter} />}
     </div>
   );
@@ -102,10 +181,19 @@ function SectionMapBlock({
             {stats.pct}%
           </span>
         </div>
-        <div className="flex flex-col gap-0.5">
-          {section.rows.map((row) => (
-            <RowStrip key={row.id} row={row} partFilter={partFilter} />
-          ))}
+        <div className="flex flex-col gap-1">
+          {section.rows.map((row) => {
+            const showSpanningPillarOnBench = !!row.pillarBenchContinuation;
+            return (
+              <RowStrip
+                key={row.id}
+                row={row}
+                partFilter={partFilter}
+                section={section}
+                showSpanningPillarOnBench={showSpanningPillarOnBench}
+              />
+            );
+          })}
         </div>
       </div>
     </a>
@@ -202,6 +290,38 @@ export function PewMap({
               className="h-full rounded-full bg-green-500 transition-all"
               style={{ width: `${pct}%` }}
             />
+          </div>
+        </div>
+        <div className="mb-4 flex flex-col gap-3 text-xs text-muted-foreground">
+          <div>
+            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5">
+              Pew / Rail
+            </div>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-1.5">
+                <div className={`w-8 h-3 rounded-sm ${pewRailColorClass}`} />
+                <span>Pew / Rail</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5">
+              Kneeler Parts
+            </div>
+            <div className="flex flex-wrap gap-4">
+              {(["needed", "upcoming", "installed"] as const).map((status) => (
+                <div key={status} className="flex items-center gap-1.5">
+                  <div className={`w-6 h-2 rounded-sm border ${kneelerColors[status]}`} />
+                  <span>
+                    {status === "needed"
+                      ? "Parts Needed"
+                      : status === "upcoming"
+                        ? "Upcoming"
+                        : "Installed"}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
         <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4" />

@@ -7,7 +7,16 @@ import type {
   Project,
   Kneeler,
   HardwareStatus,
+  PewSection,
+  PewRow,
 } from "@/data/types";
+import {
+  pewRailColorClass,
+  isPillarKneeler,
+  pewBenchSegmentsFromKneelers,
+  pewBenchSegmentsFromContinuation,
+} from "@/lib/pew-layout";
+import { PillarGapLabel } from "@/components/pillar-gap-label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PewMap } from "./pew-map";
@@ -31,6 +40,7 @@ export function generateStaticParams() {
 // --- helpers ---
 
 function kneelerStatus(kneeler: Kneeler): HardwareStatus {
+  if (kneeler.hardware.length === 0) return "unknown";
   const statuses = kneeler.hardware.map((h) => h.status);
   if (statuses.every((s) => s === "installed")) return "installed";
   if (statuses.some((s) => s === "installed" || s === "upcoming")) return "upcoming";
@@ -61,6 +71,16 @@ const frontTypeLabels: Record<string, string> = {
   pew: "Pew",
 };
 
+function pewBenchStripForRow(section: PewSection, row: PewRow) {
+  if (row.pillarBenchContinuation) {
+    return pewBenchSegmentsFromContinuation(section, row);
+  }
+  if (row.kneelers.some(isPillarKneeler)) {
+    return pewBenchSegmentsFromKneelers(row.kneelers, row.id);
+  }
+  return null;
+}
+
 function getInventorySummary(project: Project) {
   const allHardware = project.layout.sections
     .flatMap((s) => s.rows)
@@ -89,6 +109,11 @@ function getInventorySummary(project: Project) {
 // --- components ---
 
 function KneelerHardwareTable({ kneeler }: { kneeler: Kneeler }) {
+  if (kneeler.hardware.length === 0) {
+    return (
+      <p className="px-2 pb-2 text-xs text-muted-foreground">No hardware tracked for this segment.</p>
+    );
+  }
   return (
     <div className="px-2 pb-2">
       <table className="w-full text-xs">
@@ -172,24 +197,36 @@ export default async function ProjectDetailPage({
       </div>
 
       {/* Legend */}
-      <div className="flex gap-4 mb-4 flex-wrap">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <div className="w-8 h-3 rounded-sm bg-neutral-600 dark:bg-neutral-400" />
-          Pew / Rail
-        </div>
-        {(["unknown", "needed", "upcoming", "installed"] as HardwareStatus[]).map(
-          (status) => (
-            <div
-              key={status}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground"
-            >
-              <div
-                className={`w-6 h-2 rounded-sm border ${kneelerColors[status]}`}
-              />
-              {statusLabels[status]}
+      <div className="flex flex-col gap-4 mb-4">
+        <div>
+          <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5">
+            Pew / Rail
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <div className={`w-8 h-3 rounded-sm ${pewRailColorClass}`} />
+              Pew / Rail
             </div>
-          ),
-        )}
+          </div>
+        </div>
+        <div>
+          <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5">
+            Kneeler Parts
+          </div>
+          <div className="flex flex-wrap gap-4">
+            {(["needed", "upcoming", "installed"] as const).map((status) => (
+              <div
+                key={status}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground"
+              >
+                <div
+                  className={`w-6 h-2 rounded-sm border ${kneelerColors[status]}`}
+                />
+                {statusLabels[status]}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Pew Map */}
@@ -220,6 +257,9 @@ export default async function ProjectDetailPage({
               const totalParts = row.kneelers
                 .flatMap((k) => k.hardware)
                 .reduce((s, h) => s + h.quantity, 0);
+              const benchStrip = pewBenchStripForRow(section, row);
+
+              const showSpanningPillarOnBench = !!row.pillarBenchContinuation;
 
               return (
                 <details
@@ -238,9 +278,55 @@ export default async function ProjectDetailPage({
                     </span>
                   </summary>
                   <div className="px-3 pb-3 space-y-3">
-                    {/* Proportional row map */}
+                    {benchStrip && (
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                          Pew / Rail
+                        </div>
+                        <div className="relative flex items-center gap-px overflow-visible border rounded p-2">
+                          {benchStrip.map((seg) =>
+                            seg.variant === "gap" ? (
+                              <div
+                                key={seg.id}
+                                className="relative flex min-h-[8px] min-w-0 items-center justify-center overflow-visible"
+                                style={{ flex: seg.capacity }}
+                              >
+                                {showSpanningPillarOnBench ? (
+                                  <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
+                                    <PillarGapLabel spanning />
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : (
+                              <div
+                                key={seg.id}
+                                className={`rounded-sm min-h-[8px] ${pewRailColorClass}`}
+                                style={{ flex: seg.capacity }}
+                                title="Pew / Rail"
+                              />
+                            ),
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Proportional kneeler map */}
+                    {row.kneelers.length > 0 ? (
                     <div className="flex items-center gap-px border rounded p-2">
                       {row.kneelers.map((kneeler) => {
+                        const mapLabel = kneeler.label
+                          ? `${kneeler.label} (${kneeler.capacity}p)`
+                          : `${kneeler.capacity}p`;
+                        if (isPillarKneeler(kneeler)) {
+                          return (
+                            <div
+                              key={kneeler.id}
+                              className="flex items-center justify-center min-w-0 py-1"
+                              style={{ flex: kneeler.capacity }}
+                              title="Pillar (gap)"
+                            />
+                          );
+                        }
                         const status = kneelerStatus(kneeler);
                         const total = kneeler.hardware.reduce(
                           (s, h) => s + h.quantity,
@@ -254,15 +340,20 @@ export default async function ProjectDetailPage({
                             key={kneeler.id}
                             className={`rounded border ${kneelerColors[status]} flex items-center justify-center py-1`}
                             style={{ flex: kneeler.capacity }}
-                            title={`${kneeler.capacity}p — ${inst} of ${total} parts`}
+                            title={`${mapLabel} — ${inst} of ${total} parts`}
                           >
-                            <span className="text-[8px] text-muted-foreground">
-                              {kneeler.capacity}p
+                            <span className="text-[8px] text-muted-foreground text-center leading-tight px-0.5">
+                              {mapLabel}
                             </span>
                           </div>
                         );
                       })}
                     </div>
+                    ) : benchStrip ? (
+                      <p className="text-xs text-muted-foreground">
+                        No kneelers in this row; the pillar column continues from the row above.
+                      </p>
+                    ) : null}
 
                     {/* Kneeler details */}
                     <div className="space-y-1">

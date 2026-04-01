@@ -69,11 +69,20 @@ export interface Aisle {
 
 export type RowFrontType = "communionRail" | "pew";
 
+/** When a row has no kneelers but the pew bench still follows column widths (e.g. pillar spans into this row). */
+export interface PillarBenchContinuation {
+  /** Row id in the same section whose kneeler widths to align with */
+  fromRowId: string;
+  /** Kneeler id in that row marking the pillar column */
+  alignKneelerId: string;
+}
+
 export interface PewRow {
   id: string;
   label: string;
   frontType: RowFrontType;
   kneelers: Kneeler[];
+  pillarBenchContinuation?: PillarBenchContinuation;
 }
 
 export interface ChurchOrientation {

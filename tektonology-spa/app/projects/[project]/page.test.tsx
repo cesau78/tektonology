@@ -169,7 +169,7 @@ describe("ProjectDetailPage", () => {
     const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
 
     expect(container).toHaveTextContent("Pew / Rail");
-    expect(container).toHaveTextContent("Unknown");
+    expect(container).toHaveTextContent("Kneeler Parts");
     expect(container).toHaveTextContent("Parts Needed");
     expect(container).toHaveTextContent("Upcoming");
     expect(container).toHaveTextContent("Installed");

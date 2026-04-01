@@ -37,6 +37,8 @@ function loadRootEnv(): Record<string, string> {
 
 const nextConfig: NextConfig = {
   output: "export",
+  trailingSlash: true,
+  skipTrailingSlashRedirect: true,
   images: { unoptimized: true },
   env: loadRootEnv(),
 };
