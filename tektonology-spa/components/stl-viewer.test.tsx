@@ -19,6 +19,7 @@ vi.mock("@react-three/drei", () => ({
       data-auto-rotate={props.autoRotate ? "true" : "false"}
     />
   ),
+  Edges: () => null,
 }));
 
 vi.mock("three/examples/jsm/loaders/STLLoader.js", () => ({
@@ -59,6 +60,7 @@ describe("StlViewer", () => {
     render(<StlViewer url="/test.stl" label="Test Part" />);
     expect(screen.getByTestId("canvas")).toBeInTheDocument();
     expect(document.querySelector("ambientlight")).toBeInTheDocument();
+    expect(document.querySelector("hemispherelight")).toBeInTheDocument();
     expect(document.querySelectorAll("directionallight")).toHaveLength(3);
   });
 

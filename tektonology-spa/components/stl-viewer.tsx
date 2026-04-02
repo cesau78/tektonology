@@ -2,7 +2,7 @@
 
 import { Suspense, useMemo } from "react";
 import { Canvas, useLoader } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { Edges, OrbitControls } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 
 export interface StlPart {
@@ -14,12 +14,24 @@ export interface StlPart {
 function Lights() {
   return (
     <>
-      <ambientLight intensity={1.2} />
-      <directionalLight position={[5, 5, 5]} intensity={1.5} />
-      <directionalLight position={[-3, -1, -3]} intensity={0.8} />
-      <directionalLight position={[0, 5, -5]} intensity={0.6} />
+      <ambientLight intensity={0.55} />
+      <hemisphereLight args={["#f4f4f5", "#a1a1aa", 0.9]} />
+      <directionalLight position={[5, 6, 4]} intensity={2.4} />
+      <directionalLight position={[-4, -2, -5]} intensity={1.1} />
+      <directionalLight position={[0, 4, -6]} intensity={0.95} />
     </>
   );
+}
+
+function stlSurfaceMaterial(color: string) {
+  return (
+    <meshStandardMaterial color={color} roughness={0.38} metalness={0.14} />
+  );
+}
+
+/** Crease outlines so form reads clearly while avoiding every STL triangle edge. */
+function StlEdges() {
+  return <Edges threshold={28} color="#27272a" lineWidth={1.25} />;
 }
 
 function SingleModel({ url, color = "#9ca3af" }: { url: string; color?: string }) {
@@ -40,7 +52,8 @@ function SingleModel({ url, color = "#9ca3af" }: { url: string; color?: string }
 
   return (
     <mesh geometry={centered} scale={scale}>
-      <meshStandardMaterial color={color} />
+      {stlSurfaceMaterial(color)}
+      <StlEdges />
     </mesh>
   );
 }
@@ -80,7 +93,8 @@ function AssemblyModel({ parts }: { parts: StlPart[] }) {
         const pos = parts[i].position ?? [0, 0, 0];
         return (
           <mesh key={parts[i].url} geometry={geo} position={pos as [number, number, number]}>
-            <meshStandardMaterial color={parts[i].color ?? "#9ca3af"} />
+            {stlSurfaceMaterial(parts[i].color ?? "#9ca3af")}
+            <StlEdges />
           </mesh>
         );
       })}
