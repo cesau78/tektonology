@@ -5,7 +5,7 @@ import type { MaintenanceLifecycle } from "@/data/types";
 
 vi.mock("@/lib/maintenance-lifecycle", () => ({
   getMaintenanceLifecycle: (): MaintenanceLifecycle => ({
-    title: "Restoration lifecycle",
+    title: "Restoration Lifecycle",
     intro: "Test intro for any project.",
     phases: [
       {
@@ -17,21 +17,32 @@ vi.mock("@/lib/maintenance-lifecycle", () => ({
       },
     ],
     restorationLoop: {
-      title: "Restoration lifecycle",
+      title: "Restoration Lifecycle",
       centerEyebrow: "Restore",
       centerNote: "Short note.",
       phaseDetails: [
         {
           label: "A",
           description: "Desc A.",
-          subItems: [{ title: "Sub", description: "Sub desc." }],
+          subItems: [
+            { title: "Identify", description: "Id line." },
+            { title: "Tag", description: "Tag line." },
+            { title: "Report", description: "Rep line." },
+          ],
         },
         { label: "B", description: "Desc B.", subItems: [] },
-        { label: "C", description: "Desc C.", subItems: [] },
+        {
+          label: "C",
+          description: "Desc C.",
+          subItems: [
+            { title: "Finish", description: "Finish line." },
+            { title: "Close", description: "Close line." },
+          ],
+        },
       ],
     },
     planningLoop: {
-      title: "Planning lifecycle",
+      title: "Planning Lifecycle",
       centerEyebrow: "Planning",
       centerNote: "Other note.",
       phaseDetails: [
@@ -72,24 +83,39 @@ describe("HomePage", () => {
 
   it("renders the restoration lifecycle section", () => {
     const { container, getByRole } = render(<HomePage />);
-    expect(container).toHaveTextContent("Restoration lifecycle");
+    expect(container).toHaveTextContent("Restoration Lifecycle");
     expect(container).toHaveTextContent("Test intro for any project.");
     expect(container).toHaveTextContent("Short note.");
+    expect(container).toHaveTextContent("Overview");
     expect(getByRole("button", { name: "A" })).toBeInTheDocument();
     expect(container).not.toHaveTextContent("Other note.");
   });
 
-  it("opens planning content when Prepare is chosen", () => {
+  it("opens planning from Prepare", () => {
     const { container, getByRole } = render(<HomePage />);
     fireEvent.click(getByRole("button", { name: "B" }));
+    expect(container).toHaveTextContent("← Back to overview");
     expect(container).toHaveTextContent("Other note.");
     expect(getByRole("button", { name: "D" })).toBeInTheDocument();
   });
 
-  it("expands a lifecycle step from the step boxes", () => {
+  it("drills into a restoration overview phase with sub-steps and matching ring", () => {
     const { container, getByRole } = render(<HomePage />);
     fireEvent.click(getByRole("button", { name: "A" }));
-    expect(container).toHaveTextContent("Desc A.");
-    expect(container).toHaveTextContent("Sub desc.");
+    expect(container).toHaveTextContent("← Back to overview");
+    expect(getByRole("button", { name: "Identify" })).toBeInTheDocument();
+    expect(
+      container.querySelector('figure[aria-label*="A: Identify, then Tag, then Report"]'),
+    ).not.toBeNull();
+  });
+
+  it("drills into Restore phase with its sub-steps", () => {
+    const { container, getByRole } = render(<HomePage />);
+    fireEvent.click(getByRole("button", { name: "C" }));
+    expect(container).toHaveTextContent("← Back to overview");
+    expect(getByRole("button", { name: "Finish" })).toBeInTheDocument();
+    expect(
+      container.querySelector('figure[aria-label*="C: Finish, then Close"]'),
+    ).not.toBeNull();
   });
 });

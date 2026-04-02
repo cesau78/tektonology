@@ -1,5 +1,5 @@
 {
-  "title": "Restoration lifecycle",
+  "title": "Restoration Lifecycle",
   "intro": "A transparent, repeatable process you can apply to any facility or restoration project. Each phase has roles people can take on based on their gifts, time, and resources. Two connected loops describe on-site restoration work and the planning pipeline that funds, designs, and obtains what you need before that work happens.",
   "phases": [
     {
@@ -52,9 +52,9 @@
     }
   ],
   "restorationLoop": {
-    "title": "Restoration lifecycle",
+    "title": "Restoration Lifecycle",
     "centerEyebrow": "Restore",
-    "centerNote": "On site: spot what needs care, prepare the work, then restore in place.",
+    "centerNote": "Spot, Prepare, Restore: find issues, line up the work, complete repairs in place—so maintenance stays traceable and repeatable, not scattered or emergency-only.",
     "phaseDetails": [
       {
         "label": "Spot",
@@ -83,15 +83,15 @@
             "description": "Coordinate dates, shifts, and who is on site so nothing depends on a last-minute scramble."
           },
           {
-            "title": "Meals and beverages",
+            "title": "Meals and Beverages",
             "description": "When it fits the day, organize food and drinks for volunteers and crews."
           },
           {
-            "title": "Sign-ups and events",
+            "title": "Sign-Ups and Events",
             "description": "Let people register for restoration work days and know what to expect."
           },
           {
-            "title": "Promotion and campaigns",
+            "title": "Promotion and Campaigns",
             "description": "Share the need on social media, bulletins, and other channels so the parish knows how to help."
           }
         ]
@@ -101,11 +101,11 @@
         "description": "Do the agreed work on the building and close the loop so what was promised actually gets finished.",
         "subItems": [
           {
-            "title": "Hands-on work",
+            "title": "Hands-On Work",
             "description": "Repair, fabricate, install, and touch the real materials—this is where craft meets the building."
           },
           {
-            "title": "Complete the work items",
+            "title": "Complete the Work Items",
             "description": "Finish the tasks that were scoped and checked off so nothing is left half-done without a reason."
           },
           {
@@ -117,7 +117,7 @@
     ]
   },
   "planningLoop": {
-    "title": "Planning lifecycle",
+    "title": "Planning Lifecycle",
     "centerEyebrow": "Planning",
     "centerNote": "Fund the effort, research and design, then make and procure what restoration will need—parts, materials, fabricated pieces—before and alongside the work on site.",
     "phaseDetails": [
@@ -126,11 +126,11 @@
         "description": "Secure money and transparency so projects are possible and donors can trust how resources are used.",
         "subItems": [
           {
-            "title": "Stewardship and gifts",
+            "title": "Stewardship and Gifts",
             "description": "Channel donations and dedicated maintenance funds toward predictable repair instead of only emergencies."
           },
           {
-            "title": "Transparent ledger",
+            "title": "Transparent Ledger",
             "description": "Keep a view of spending that the community can trust, in a form that respects privacy where needed."
           }
         ]
@@ -140,17 +140,17 @@
         "description": "Figure out what to build, how it should fit, and what can be printed, fabricated, or ordered.",
         "subItems": [
           {
-            "title": "Research and design",
+            "title": "Research and Design",
             "description": "Turn field reports into plans, drawings, and specs that volunteers and vendors can follow."
           },
           {
-            "title": "Try and refine",
+            "title": "Try and Refine",
             "description": "Prototype ideas—3D prints, mock-ups, test fits—before committing to full production."
           }
         ]
       },
       {
-        "label": "Make & procure",
+        "label": "Make & Procure",
         "description": "Bring physical things to the job: make them in-house or buy them, often both in the same initiative.",
         "subItems": [
           {

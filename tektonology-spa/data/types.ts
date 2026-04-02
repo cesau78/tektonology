@@ -172,7 +172,7 @@ export interface MaintenanceLifecycle {
   title: string;
   intro: string;
   phases: MaintenanceLifecyclePhase[];
-  /** On site: spot, prepare, restore. */
+  /** On-site Spot → Prepare → Restore loop; overview narrative (center note) and phase details. */
   restorationLoop: LifecycleLoopDescriptor;
   /** Funding, R&D, and obtaining what is needed before restoration work. */
   planningLoop: LifecycleLoopDescriptor;
