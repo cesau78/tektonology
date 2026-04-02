@@ -33,7 +33,7 @@ vi.mock("next/navigation", () => ({
   useParams: () => mockUseParams(),
 }));
 
-import AccountDetailPage from "./page";
+import AccountDetailPage from "./account-detail-client";
 
 const sampleAccounts = [
   { number: 1000, name: "Cash", type: "asset", balance: 500 },
@@ -453,5 +453,36 @@ describe("AccountDetailPage", () => {
     // Debit cell (index 3) should have value, credit cell (index 4) should be empty
     expect(cells[3].textContent).toBe("$200.00");
     expect(cells[4].textContent).toBe("");
+  });
+});
+
+describe("finance accounts [number] page.tsx (static export)", () => {
+  afterEach(() => {
+    delete process.env.STATIC_EXPORT_FINANCE_ACCOUNT_NUMBERS;
+    vi.resetModules();
+  });
+
+  it("generateStaticParams returns placeholder when env is unset", async () => {
+    delete process.env.STATIC_EXPORT_FINANCE_ACCOUNT_NUMBERS;
+    vi.resetModules();
+    const { generateStaticParams } = await import("./page");
+    expect(generateStaticParams()).toEqual([{ number: "0" }]);
+  });
+
+  it("generateStaticParams uses STATIC_EXPORT_FINANCE_ACCOUNT_NUMBERS when set", async () => {
+    process.env.STATIC_EXPORT_FINANCE_ACCOUNT_NUMBERS = "1000, 2000";
+    vi.resetModules();
+    const { generateStaticParams } = await import("./page");
+    expect(generateStaticParams()).toEqual([{ number: "1000" }, { number: "2000" }]);
+  });
+
+  it("default export renders client subtree", async () => {
+    delete process.env.STATIC_EXPORT_FINANCE_ACCOUNT_NUMBERS;
+    vi.resetModules();
+    mockUseParams.mockReturnValue({ number: "1000" });
+    mockApiFetch.mockReturnValue(new Promise(() => {}));
+    const { default: ServerPage } = await import("./page");
+    render(<ServerPage />);
+    expect(screen.getByText("Loading...")).toBeInTheDocument();
   });
 });

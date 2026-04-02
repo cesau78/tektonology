@@ -34,7 +34,7 @@ vi.mock("next/navigation", () => ({
 
 let mockParams: Record<string, string> = { transactionId: "1" };
 
-import TransactionDetailPage from "./page";
+import TransactionDetailPage from "./transaction-detail-client";
 
 const sampleEntries = [
   {
@@ -333,5 +333,39 @@ describe("TransactionDetailPage", () => {
     });
     // Empty description should not render the dash separator
     expect(view.queryByText(/—/)).not.toBeInTheDocument();
+  });
+});
+
+describe("transaction detail page.tsx (static export)", () => {
+  afterEach(() => {
+    delete process.env.STATIC_EXPORT_JOURNAL_TRANSACTION_IDS;
+    vi.resetModules();
+  });
+
+  it("generateStaticParams returns placeholder when env is unset", async () => {
+    delete process.env.STATIC_EXPORT_JOURNAL_TRANSACTION_IDS;
+    vi.resetModules();
+    const { generateStaticParams } = await import("./page");
+    expect(generateStaticParams()).toEqual([{ transactionId: "0" }]);
+  });
+
+  it("generateStaticParams uses STATIC_EXPORT_JOURNAL_TRANSACTION_IDS when set", async () => {
+    process.env.STATIC_EXPORT_JOURNAL_TRANSACTION_IDS = "1, 2 ,3";
+    vi.resetModules();
+    const { generateStaticParams } = await import("./page");
+    expect(generateStaticParams()).toEqual([
+      { transactionId: "1" },
+      { transactionId: "2" },
+      { transactionId: "3" },
+    ]);
+  });
+
+  it("default export renders client subtree", async () => {
+    delete process.env.STATIC_EXPORT_JOURNAL_TRANSACTION_IDS;
+    vi.resetModules();
+    mockApiFetch.mockReturnValue(new Promise(() => {}));
+    const { default: ServerPage } = await import("./page");
+    render(<ServerPage />);
+    expect(screen.getByText("Loading...")).toBeInTheDocument();
   });
 });
