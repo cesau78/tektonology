@@ -545,6 +545,80 @@ describe("PewMap", () => {
     expect(container.querySelectorAll(".rounded-t-sm").length).toBeGreaterThan(0);
   });
 
+  it("wraps section tiles in Link when projectSlug is set", () => {
+    const { container } = render(
+      <PewMap
+        churchName="Test"
+        orientation={orientation}
+        sections={[makeSection({ id: "west-main", label: "West" })]}
+        partNames={["Kneeler Foot"]}
+        projectSlug="saint-stanislaus"
+      />,
+    );
+    expect(
+      container.querySelector('a[href="/projects/saint-stanislaus/sections/west-main/"]'),
+    ).toBeTruthy();
+  });
+
+  it("omits pew rail strip when showRails is false", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            kneelers: [makeKneeler()],
+          },
+        ],
+      }),
+    ];
+    const { container: full } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+    );
+    const { container: kneel } = render(
+      <PewMap
+        churchName="Test"
+        orientation={orientation}
+        sections={sections}
+        partNames={["Kneeler Foot"]}
+        showRails={false}
+      />,
+    );
+    const fullBars = full.querySelectorAll(".bg-\\[\\#d4b896\\]");
+    const kneelBars = kneel.querySelectorAll(".bg-\\[\\#d4b896\\]");
+    expect(fullBars.length).toBeGreaterThan(0);
+    expect(kneelBars.length).toBe(0);
+  });
+
+  it("renders transparent row spacer when showRails is false and row has no kneelers", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            kneelers: [],
+            pillarBenchContinuation: { fromRowId: "r0", alignKneelerId: "pillar" },
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap
+        churchName="Test"
+        orientation={orientation}
+        sections={sections}
+        partNames={["Kneeler Foot"]}
+        showRails={false}
+      />,
+    );
+    expect(container.querySelector('[aria-hidden="true"].bg-transparent.h-2')).toBeTruthy();
+  });
+
   it("renders section stats (rows, kneelers, pct)", () => {
     const { container } = render(
       <PewMap

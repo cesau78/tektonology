@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import type {
   PewSection,
   PewRow,
@@ -142,15 +143,22 @@ function RowStrip({
   row,
   partFilter,
   section,
+  showRails,
 }: {
   row: PewRow;
   partFilter: string;
   section: PewSection;
+  showRails: boolean;
 }) {
   return (
     <div className="flex w-full min-w-0 flex-col gap-0 overflow-visible">
-      <PewRailStrip row={row} section={section} />
-      {row.kneelers.length > 0 && <KneelerSegments kneelers={row.kneelers} partFilter={partFilter} />}
+      {showRails && <PewRailStrip row={row} section={section} />}
+      {!showRails && row.kneelers.length === 0 ? (
+        <div className="h-2 w-full shrink-0 rounded-sm bg-transparent" aria-hidden />
+      ) : null}
+      {row.kneelers.length > 0 && (
+        <KneelerSegments kneelers={row.kneelers} partFilter={partFilter} />
+      )}
     </div>
   );
 }
@@ -158,9 +166,13 @@ function RowStrip({
 function SectionMapBlock({
   section,
   partFilter,
+  showRails,
+  projectSlug,
 }: {
   section: PewSection;
   partFilter: string;
+  showRails: boolean;
+  projectSlug?: string;
 }) {
   const stats = sectionStats(section, partFilter);
   const mapAlign = section.mapRowAlign ?? "fill";
@@ -169,36 +181,52 @@ function SectionMapBlock({
   const colAlign =
     mapAlign === "start" ? "items-start" : mapAlign === "end" ? "items-end" : "";
 
-  return (
-    <a href={`#${section.id}`} className="block group flex-1 min-w-0">
-      <div className="border rounded-lg p-1.5 group-hover:border-amber-300 transition-colors h-full">
-        <div className="text-[9px] text-muted-foreground mb-1 truncate">
-          {section.label}{" "}
-          <span className="text-[8px]">
-            {section.rows.length}r &middot; {stats.kneelers}k &middot;{" "}
-            {stats.pct}%
-          </span>
-        </div>
-        <div className={`flex flex-col gap-1 ${colAlign}`}>
-          {section.rows.map((row) => {
-            const sum = effectiveRowCapacityForMap(row, section);
-            const widthPct = scaleRows ? alignRowStripWidthPercent(section, sum) : 100;
-            return (
-              <div
-                key={row.id}
-                className={scaleRows ? "min-w-0" : "w-full"}
-                style={scaleRows ? { width: `${widthPct}%` } : undefined}
-              >
-                <div className="w-full min-w-0">
-                  <RowStrip row={row} partFilter={partFilter} section={section} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+  const inner = (
+    <div className="border rounded-lg p-1.5 group-hover:border-amber-300 transition-colors h-full">
+      <div className="text-[9px] text-muted-foreground mb-1 truncate">
+        {section.label}{" "}
+        <span className="text-[8px]">
+          {section.rows.length}r &middot; {stats.kneelers}k &middot;{" "}
+          {stats.pct}%
+        </span>
       </div>
-    </a>
+      <div className={`flex flex-col gap-1 ${colAlign}`}>
+        {section.rows.map((row) => {
+          const sum = effectiveRowCapacityForMap(row, section);
+          const widthPct = scaleRows ? alignRowStripWidthPercent(section, sum) : 100;
+          return (
+            <div
+              key={row.id}
+              className={scaleRows ? "min-w-0" : "w-full"}
+              style={scaleRows ? { width: `${widthPct}%` } : undefined}
+            >
+              <div className="w-full min-w-0">
+                <RowStrip
+                  row={row}
+                  partFilter={partFilter}
+                  section={section}
+                  showRails={showRails}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
+
+  if (projectSlug) {
+    return (
+      <Link
+        href={`/projects/${projectSlug}/sections/${section.id}/`}
+        className="block group flex-1 min-w-0"
+      >
+        {inner}
+      </Link>
+    );
+  }
+
+  return <div className="block flex-1 min-w-0">{inner}</div>;
 }
 
 export function PewMap({
@@ -206,11 +234,20 @@ export function PewMap({
   orientation,
   sections,
   partNames,
+  showRails = true,
+  projectSlug,
+  hideChurchFrame = false,
 }: {
   churchName: string;
   orientation: ChurchOrientation;
   sections: PewSection[];
   partNames: string[];
+  /** When false, only kneeler strips (colored by selected part); no pew/rail row. */
+  showRails?: boolean;
+  /** Section tiles link to `/projects/{slug}/sections/{id}/`. */
+  projectSlug?: string;
+  /** Omit compass and altar/entrance labels (e.g. single-section view). */
+  hideChurchFrame?: boolean;
 }) {
   const searchParams = useSearchParams();
   const initialPart = searchParams.get("part");
@@ -294,17 +331,19 @@ export function PewMap({
           </div>
         </div>
         <div className="mb-4 flex flex-col gap-3 text-xs text-muted-foreground">
-          <div>
-            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5">
-              Pew / Rail
-            </div>
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-1.5">
-                <div className={`w-8 h-3 rounded-sm ${pewRailColorClass}`} />
-                <span>Pew / Rail</span>
+          {showRails && (
+            <div>
+              <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5">
+                Pew / Rail
+              </div>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-1.5">
+                  <div className={`w-8 h-3 rounded-sm ${pewRailColorClass}`} />
+                  <span>Pew / Rail</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
           <div>
             <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5">
               Kneeler Parts
@@ -327,35 +366,37 @@ export function PewMap({
         </div>
         <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4" />
         <div className="relative">
-          {/* Compass Rose */}
-          <div className="absolute top-0 right-0 w-16 h-16 flex items-center justify-center">
-            <div className="relative w-12 h-12 text-[10px] font-medium text-muted-foreground">
-              <span className="absolute top-0 left-1/2 -translate-x-1/2 text-foreground font-bold">
-                {orientation.altar}
-              </span>
-              <span className="absolute bottom-0 left-1/2 -translate-x-1/2">
-                {orientation.entrance}
-              </span>
-              <span className="absolute left-0 top-1/2 -translate-y-1/2">
-                {orientation.left}
-              </span>
-              <span className="absolute right-0 top-1/2 -translate-y-1/2">
-                {orientation.right}
-              </span>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-px h-full bg-neutral-300 dark:bg-neutral-600 absolute" />
-                <div className="h-px w-full bg-neutral-300 dark:bg-neutral-600 absolute" />
+          {!hideChurchFrame && (
+            <>
+              {/* Compass Rose */}
+              <div className="absolute top-0 right-0 w-16 h-16 flex items-center justify-center">
+                <div className="relative w-12 h-12 text-[10px] font-medium text-muted-foreground">
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 text-foreground font-bold">
+                    {orientation.altar}
+                  </span>
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2">
+                    {orientation.entrance}
+                  </span>
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2">
+                    {orientation.left}
+                  </span>
+                  <span className="absolute right-0 top-1/2 -translate-y-1/2">
+                    {orientation.right}
+                  </span>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-px h-full bg-neutral-300 dark:bg-neutral-600 absolute" />
+                    <div className="h-px w-full bg-neutral-300 dark:bg-neutral-600 absolute" />
+                  </div>
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-neutral-400" />
+                </div>
               </div>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-neutral-400" />
-            </div>
-          </div>
 
-          {/* Altar */}
-          <div className="flex justify-center mb-4">
-            <div className="text-xs text-muted-foreground text-center">
-              Altar
-            </div>
-          </div>
+              {/* Altar */}
+              <div className="flex justify-center mb-4">
+                <div className="text-xs text-muted-foreground text-center">Altar</div>
+              </div>
+            </>
+          )}
 
           {/* Church body — rendered group by group */}
           <div className="flex flex-col gap-3">
@@ -383,7 +424,12 @@ export function PewMap({
                     <div className="w-6 shrink-0" />
                     <div className="w-6 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <SectionMapBlock section={fullSection} partFilter={partFilter} />
+                      <SectionMapBlock
+                        section={fullSection}
+                        partFilter={partFilter}
+                        showRails={showRails}
+                        projectSlug={projectSlug}
+                      />
                     </div>
                     <div className="w-6 shrink-0" />
                     <div className="w-6 shrink-0" />
@@ -402,7 +448,12 @@ export function PewMap({
                   {/* West Outer — or spacer to keep alignment */}
                   <div className="min-w-0" style={{ flex: 0.4 }}>
                     {westOuter && (
-                      <SectionMapBlock section={westOuter} partFilter={partFilter} />
+                      <SectionMapBlock
+                        section={westOuter}
+                        partFilter={partFilter}
+                        showRails={showRails}
+                        projectSlug={projectSlug}
+                      />
                     )}
                   </div>
 
@@ -416,22 +467,42 @@ export function PewMap({
                     {alignment === "outer" ? (
                       <>
                         {westSection && (
-                          <SectionMapBlock section={westSection} partFilter={partFilter} />
+                          <SectionMapBlock
+                            section={westSection}
+                            partFilter={partFilter}
+                            showRails={showRails}
+                            projectSlug={projectSlug}
+                          />
                         )}
                         <div className="w-16 shrink-0" />
                         {eastSection && (
-                          <SectionMapBlock section={eastSection} partFilter={partFilter} />
+                          <SectionMapBlock
+                            section={eastSection}
+                            partFilter={partFilter}
+                            showRails={showRails}
+                            projectSlug={projectSlug}
+                          />
                         )}
                       </>
                     ) : (
                       <>
                         {westSection && (
-                          <SectionMapBlock section={westSection} partFilter={partFilter} />
+                          <SectionMapBlock
+                            section={westSection}
+                            partFilter={partFilter}
+                            showRails={showRails}
+                            projectSlug={projectSlug}
+                          />
                         )}
                         {/* Nave */}
                         <div className="w-6 shrink-0 border-x border-dashed border-neutral-300 dark:border-neutral-600" />
                         {eastSection && (
-                          <SectionMapBlock section={eastSection} partFilter={partFilter} />
+                          <SectionMapBlock
+                            section={eastSection}
+                            partFilter={partFilter}
+                            showRails={showRails}
+                            projectSlug={projectSlug}
+                          />
                         )}
                       </>
                     )}
@@ -445,7 +516,12 @@ export function PewMap({
                   {/* East Outer — or spacer to keep alignment */}
                   <div className="min-w-0" style={{ flex: 0.4 }}>
                     {eastOuter && (
-                      <SectionMapBlock section={eastOuter} partFilter={partFilter} />
+                      <SectionMapBlock
+                        section={eastOuter}
+                        partFilter={partFilter}
+                        showRails={showRails}
+                        projectSlug={projectSlug}
+                      />
                     )}
                   </div>
                 </div>
@@ -453,12 +529,11 @@ export function PewMap({
             })}
           </div>
 
-          {/* Entrance */}
-          <div className="flex justify-center mt-4">
-            <div className="text-xs text-muted-foreground">
-              &darr; Entrance
+          {!hideChurchFrame && (
+            <div className="flex justify-center mt-4">
+              <div className="text-xs text-muted-foreground">&darr; Entrance</div>
             </div>
-          </div>
+          )}
         </div>
       </CardContent>
     </Card>
