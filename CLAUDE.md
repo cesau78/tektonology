@@ -2,15 +2,11 @@
 
 ## Imperatives
 
-When making decisions — about design, naming, architecture, or implementation — apply these in order:
-
-1. **Reduce Suffering** — prefer solutions that remove friction, eliminate toil, and avoid creating problems for people downstream.
-2. **Increase Prosperity** — prefer solutions that create lasting value, are reusable, and support the project's mission.
-3. **Increase Understanding** — prefer solutions that are clear, well-named, and easy to reason about over clever or opaque ones.
+Decision heuristics (Reduce Suffering, Increase Prosperity, Increase Understanding) live in **`heuristic-imperatives.md`** at the repository root — that file is the single source of truth. Cursor’s always-on rule points there via `.cursor/rules/tektonology-imperatives.mdc`.
 
 ## General
 
-- This is a church/home maintenance asset repo with 3D-printable solutions.
+- This is a church/home maintenance system (web, data, agents) with a strong 3D-printing strand so parishioners can contribute printable parts.
 - Primary languages: OpenSCAD (models), TypeScript/React (web)
 - Preferred Langugage: NodeJS
 

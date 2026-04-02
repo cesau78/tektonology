@@ -134,3 +134,46 @@ export interface Project {
   description: string;
   layout: ChurchLayout;
 }
+
+/** Site copy for the maintenance lifecycle (build-time JSON under data/site/). */
+export interface MaintenanceLifecyclePhase {
+  phaseNumber: number;
+  title: string;
+  role: string;
+  summary: string;
+  bullets: string[];
+}
+
+/** One sub-process under a lifecycle phase (friendly bullet with its own line of meaning). */
+export interface LifecycleSubProcess {
+  title: string;
+  description: string;
+}
+
+/** One step in a loop with copy for the diagram label plus reader-facing detail. */
+export interface LifecyclePhaseDetail {
+  label: string;
+  description: string;
+  subItems: LifecycleSubProcess[];
+}
+
+/** One circular lifecycle diagram (steps run clockwise). */
+export interface LifecycleLoopDescriptor {
+  /** Heading above the ring. */
+  title: string;
+  /** Small caps label inside the ring. */
+  centerEyebrow: string;
+  centerNote: string;
+  /** Step labels for the ring match `phaseDetails` in order. */
+  phaseDetails: LifecyclePhaseDetail[];
+}
+
+export interface MaintenanceLifecycle {
+  title: string;
+  intro: string;
+  phases: MaintenanceLifecyclePhase[];
+  /** On site: spot, prepare, restore. */
+  restorationLoop: LifecycleLoopDescriptor;
+  /** Funding, R&D, and obtaining what is needed before restoration work. */
+  planningLoop: LifecycleLoopDescriptor;
+}

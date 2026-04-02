@@ -52,6 +52,6 @@ All roles reinforce long-term sustainability.
 
 ## Notes for Future Infographics
 
-- Visualize this as a circular loop: Fund -> Spot -> Approve -> Repair -> Log -> Repeat.
+- **Two connected rings:** (1) **Restoration lifecycle** (on site): Spot → Prepare → Restore; hub label “Restore.” (2) **Planning lifecycle** (getting what you need for restoration): Fund → R&D → Make & procure. Bridge copy connects field restoration to funding, design, and supply.
 - Highlight role sign-up points at each phase.
 - Show how transparency and documentation connect every stage.

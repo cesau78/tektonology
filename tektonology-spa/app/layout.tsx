@@ -16,7 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Tektonology",
-  description: "3D-printable solutions for liturgical furniture — product info, print settings, and assembly guides.",
+  description:
+    "A church maintenance system to organize parishioner efforts—3D-printable parts, print settings, guides, and project tracking.",
 };
 
 export default function RootLayout({

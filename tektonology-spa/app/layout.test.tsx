@@ -48,6 +48,6 @@ describe("RootLayout", () => {
 
   it("exports correct metadata", () => {
     expect(metadata.title).toBe("Tektonology");
-    expect(metadata.description).toContain("3D-printable solutions");
+    expect(metadata.description).toContain("3D-printable");
   });
 });

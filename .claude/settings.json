@@ -42,7 +42,8 @@
       "Bash(node --experimental-test-module-mocks --experimental-test-coverage --test-coverage-branches 100 --test routes.test.js)",
       "Bash(npx vitest:*)",
       "Bash(node --input-type=module -e 'import { readFileSync } from \"\"fs\"\"; const c=JSON.parse\\(readFileSync\\(\"\"./coverage/coverage-summary.json\"\",\"\"utf8\"\"\\)\\); for\\(const [k,v] of Object.entries\\(c\\)\\) { if\\(v.branches && v.branches.pct < 100 && k !== \"\"total\"\"\\) console.log\\(k, v.branches.pct, v.branches.total, v.branches.covered\\); }')",
-      "Bash(python3 -c \":*)"
+      "Bash(python3 -c \":*)",
+      "Bash(git filter-repo:*)"
     ],
     "deny": [
       "Read(**/.env)",

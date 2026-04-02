@@ -1,0 +1,10 @@
+---
+description: Load heuristic imperatives from repo root — decision bar for design and implementation
+alwaysApply: true
+---
+
+# Heuristic imperatives
+
+Follow the imperatives in **`heuristic-imperatives.md`** at the repository root for every design, naming, architecture, and implementation decision. Read that file when you need the exact wording or when tradeoffs are unclear.
+
+For JSON keys, directory layout, Next.js static export, and similar mechanics, use **`CLAUDE.md`** at the repository root.
