@@ -1,0 +1,3 @@
+[submodule ".cursor/skills"]
+	path = .cursor/skills
+	url = https://github.com/cesau78/cesau-skills.git
