@@ -89,6 +89,19 @@ function setupDefaultFetch(data = sampleComponents) {
   });
 }
 
+async function clickAddComponentBatch(container: HTMLElement) {
+  let addBtn: HTMLButtonElement | undefined;
+  await waitFor(() => {
+    addBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Add Component Batch"),
+    ) as HTMLButtonElement | undefined;
+    expect(addBtn).toBeTruthy();
+  });
+  await act(async () => {
+    fireEvent.click(addBtn!);
+  });
+}
+
 describe("ComponentsPage", () => {
   it("shows loading state initially", () => {
     const { container } = render(<ComponentsPage />);
@@ -196,11 +209,7 @@ describe("ComponentsPage", () => {
     await waitFor(() => {
       expect(container.textContent).toContain("Components");
     });
-    // Click add button
-    const addBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("Add Component Batch"),
-    );
-    await act(async () => { fireEvent.click(addBtn!); });
+    await clickAddComponentBatch(container);
 
     // Form should be visible with labels
     expect(container.textContent).toContain("New Component Batch");
@@ -220,10 +229,7 @@ describe("ComponentsPage", () => {
       expect(container.textContent).toContain("Components");
     });
 
-    const addBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("Add Component Batch"),
-    );
-    await act(async () => { fireEvent.click(addBtn!); });
+    await clickAddComponentBatch(container);
 
     // Fill form fields
     const textInputs = container.querySelectorAll("input[type='text']");
@@ -262,10 +268,7 @@ describe("ComponentsPage", () => {
       expect(container.textContent).toContain("Components");
     });
 
-    const addBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("Add Component Batch"),
-    );
-    await act(async () => { fireEvent.click(addBtn!); });
+    await clickAddComponentBatch(container);
     expect(container.textContent).toContain("New Component Batch");
 
     const cancelBtn = Array.from(container.querySelectorAll("button")).find(
@@ -426,10 +429,7 @@ describe("ComponentsPage", () => {
       expect(container.textContent).toContain("Components");
     });
 
-    const addBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("Add Component Batch"),
-    );
-    await act(async () => { fireEvent.click(addBtn!); });
+    await clickAddComponentBatch(container);
 
     // Trigger PrintJobSelect onChange with a job that has components.
     // This exercises the branch at lines 59-63 where job.components.length > 0
@@ -452,14 +452,10 @@ describe("ComponentsPage", () => {
   it("includes printJobId in payload when set", async () => {
     setupDefaultFetch();
     const { container } = render(<ComponentsPage />);
-    let addBtn: HTMLButtonElement | undefined;
     await waitFor(() => {
-      addBtn = Array.from(container.querySelectorAll("button")).find(
-        (b) => b.textContent?.includes("Add Component Batch"),
-      );
-      expect(addBtn).toBeTruthy();
+      expect(container.textContent).toContain("Components");
     });
-    await act(async () => { fireEvent.click(addBtn!); });
+    await clickAddComponentBatch(container);
 
     // Fill part
     const textInputs = container.querySelectorAll("input[type='text']");
