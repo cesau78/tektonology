@@ -7,7 +7,7 @@ $fn = preview ? 32 : 64;
 // PTFE tube dimensions (standard 1.75mm filament tube)
 ptfe_od       = 4.0;   // outer diameter of PTFE tube
 // Slight undersize bore grips tube; filament through stop plate helps retention when crimped
-ptfe_clearance = -0.05;  // per side: negative = interference on OD (tune for your printer/filament)
+ptfe_clearance = -0.02;  // per side: negative = interference on OD (tune for your printer/filament)
 hole_dia      = ptfe_od + ptfe_clearance * 2;
 
 // Tube layout — 2x2 grid
@@ -22,7 +22,7 @@ gap        = 1.0;  // space between flanges for tent fabric
 
 // Flange dimensions
 flange_thick = 2.0;
-flange_extra = 6.0; // extension beyond body each side (+50% vs 4 mm for canvas stability)
+flange_extra = 50.0; // extension beyond body each side (+50% vs 4 mm for canvas stability)
 collar_clearance = 0.15; // clearance per side for collar fit around shaft
 collar_scale     = 1;    // 1 = collar face matches flange footprint for even canvas support
 
@@ -39,10 +39,10 @@ corner_r = 3;
 
 // Snap-fit clip dimensions
 clip_width = spacing;        // width of each clip (distance between two holes)
-clip_thick = 1.6;            // tab thickness (doubled for stronger retention)
+clip_thick = 2.6;            // tab thickness (doubled for stronger retention)
 lip_height = 3.5;            // barb height (catch edge)
 lip_depth  = 0.6;            // barb protrusion beyond clip face (PLA-safe)
-barb_shelf_offset_z = 1;     // shifts barb/catch shelf +Z along tab (toward flange outer face)
+barb_shelf_offset_z = 3;     // shifts barb/catch shelf +Z along tab (toward flange outer face)
 clip_reach = gap + flange_thick + lip_height + barb_shelf_offset_z; // tab through gap + flange + barb
 clip_clearance = 0.2;        // clearance around clip in the flange slot
 
