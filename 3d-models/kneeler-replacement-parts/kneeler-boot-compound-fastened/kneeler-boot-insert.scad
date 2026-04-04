@@ -1,4 +1,5 @@
 include <kneeler-boot-config.scad>
+include <kneeler-stamp-common.scad>
 
 // --- TEKTONOLOGY KNEELER BOOT FOOT: 7-RIB INSERT --- // This is the internal TPU insert that slips into the bottom half of the coupler. It has a main rectangular body with 7 evenly spaced semi-cylindrical ribs on the bottom to create a secure, high-friction fit within the socket. The dimensions are designed to be slightly larger than the socket for a tight fit, and the ribs provide additional grip and stability when kneeling. 
 socket_depth = 5; //depth of the socket to slip into
@@ -16,42 +17,39 @@ flange_depth = socket_depth / 4;  // matches coupler's groove_h (1/4 socket dept
 flange_l = sole_plate_l + (groove_overhang * 2) - flange_clearance;
 flange_w = sole_plate_w + (groove_overhang * 2) - flange_clearance;
 
-module main() {
-    core_depth = socket_depth + core_protrusion; //thickness of main body
-    insert_l = sole_plate_l + tightness;
-    insert_w = sole_plate_w + tightness;
+core_depth = socket_depth + core_protrusion;
+insert_l = sole_plate_l + tightness;
+insert_w = sole_plate_w + tightness;
+insert_z_top = socket_depth / 2 + core_depth / 2;
+insert_stamp_radial_ref = min(insert_l, insert_w) / 2;
 
-
-    // This calculates rib width so the total set fits exactly
-    rib_w = (insert_l - ((ribs - 1))) / ribs;
+module insert_positive() {
     pitch = (insert_l - (2 * radius)) / (ribs - 1);
 
     union() {
-        // THE MAIN BODY (The "Core")
         translate([0, 0, socket_depth/2])
             cube([insert_l, insert_w, core_depth], center=true);
 
-        // SLIDE-IN FLANGE — wider rail that rides in the coupler's groove
-        // Top of flange flush with top of insert core
         translate([0, 0, socket_depth/2 + core_depth/2 - flange_depth/2 - 1])
             minkowski() {
                 cube([flange_l - 2, flange_w - 2, flange_depth], center=true);
                 sphere(r=1.0);
             }
 
-        //SEMI-CYLINDERS
         for (i = [0 : ribs - 1]) {
-            // Start at the left edge + radius, then move by pitch
             x_pos = (i * pitch) - (insert_l/2) + radius;
-
-            //center cylinder at edge of core
             z_axis = -1 * (core_protrusion / 2);
-
             translate([x_pos, 0, z_axis])
                 rotate([90, 0, 0])
                     cylinder(h = insert_w, r = radius, center = true);
         }
+    }
+}
 
+module main() {
+    difference() {
+        insert_positive();
+        part_top_info_stamp_deboss(kneeler_boot_insert_stamp_top, insert_z_top, insert_stamp_radial_ref);
     }
 }
 
