@@ -135,6 +135,34 @@ export interface Project {
   layout: ChurchLayout;
 }
 
+export interface PartCount {
+  insert: number | null;
+  slipper: number | null;
+  cap: number | null;
+  m3Bolt: number | null;
+  m3Nut: number | null;
+}
+
+export interface CumulativeByDate {
+  [date: string]: number;
+}
+
+export interface InventoryTally {
+  date: string;
+  event: string;
+  notes?: string;
+  installed: {
+    total: number;
+    byDate: CumulativeByDate;
+  };
+  assembled: number | null;
+  loose: PartCount;
+  destroyed?: {
+    total: number;
+    byDate: CumulativeByDate;
+  };
+}
+
 /** Site copy for the maintenance lifecycle (build-time JSON under data/site/). */
 export interface MaintenanceLifecyclePhase {
   phaseNumber: number;
