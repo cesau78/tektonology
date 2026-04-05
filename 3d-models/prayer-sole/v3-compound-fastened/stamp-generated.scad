@@ -2,9 +2,9 @@
 // Source: stamp-config.json
 
 info_stamp_line1 = "Tektonology";
-info_stamp_line2 = "Prayer Sole v3.8.1";
-info_stamp_line3 = "Psalm 145:14";
-info_stamp_line4 = "";
+info_stamp_line2 = "";
+info_stamp_line3 = "Prayer Sole v3.8.1";
+info_stamp_line4 = "Psalm 145:14";
 tread_stamp_bottom = false;
 tread_stamp_top = true;
 collar_stamp_bottom = false;
