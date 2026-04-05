@@ -1,44 +1,44 @@
 {
   "id": "kneeler-boot-compound-fastened",
-  "name": "Kneeler Boot - Compound Fastened",
+  "name": "Prayer Sole — Compound Fastened (v3)",
   "category": "Kneeler Replacement Parts",
-  "description": "A three-piece boot system with a rigid PLA upper shell, a soft TPU floor pad, and a mechanical fastener to secure the boot to the kneeler leg — no glue required.",
+  "description": "A three-piece Prayer Sole: rigid PLA collar, soft TPU tread, and a cap secured with mechanical fasteners to the kneeler leg — no glue required.",
   "printSettings": {
-    "bootCap": "Polymaker PLA Pro (Burgundy) | 4 Wall Loops | 35% Gyroid Infill",
-    "bootSlipper": "Polymaker PLA Pro (Burgundy) | 4 Wall Loops | 35% Gyroid Infill",
-    "bootInsert": "TPU 90A (Black) | 4 Wall Loops | 35% Gyroid Infill | Print Speed < 40mm/s"
+    "cap": "Polymaker PLA Pro (Burgundy) | 4 Wall Loops | 35% Gyroid Infill",
+    "collar": "Polymaker PLA Pro (Burgundy) | 4 Wall Loops | 35% Gyroid Infill",
+    "tread": "TPU 90A (Black) | 4 Wall Loops | 35% Gyroid Infill | Print Speed < 40mm/s"
   },
   "assemblyGuide": [
     "Clean surfaces: remove any stringing from the internal wedge cavity.",
-    "Press-Fit: press the TPU floor pad wedge into the PLA cavity until flush.",
-    "Slide the boot assembly onto the kneeler leg.",
+    "Press-fit: press the TPU tread into the PLA cavity until flush.",
+    "Slide the assembly onto the kneeler leg.",
     "Secure with the included fastener — no adhesive needed."
   ],
   "stlDownloadUrls": [
     {
-      "label": "Boot Cap (PLA)",
-      "url": "/stl/kneeler-boot-cap.stl",
+      "label": "Cap (PLA)",
+      "url": "/stl/cap.stl",
       "color": "#800000"
     },
     {
-      "label": "Boot Insert (TPU)",
-      "url": "/stl/kneeler-boot-insert.stl",
+      "label": "Tread (TPU)",
+      "url": "/stl/tread.stl",
       "color": "#1a1a1a"
     },
     {
-      "label": "Boot Slipper (PLA)",
-      "url": "/stl/kneeler-boot-slipper.stl",
+      "label": "Collar (PLA)",
+      "url": "/stl/collar.stl",
       "color": "#800000"
     }
   ],
   "purchaseLinks": [],
   "assemblyView": {
-    "label": "Assembled Boot",
+    "label": "Assembled Prayer Sole",
     "rotation": [270, 75, 0],
     "parts": [
-      { "url": "/stl/kneeler-boot-cap.stl", "color": "#800000" },
-      { "url": "/stl/kneeler-boot-insert.stl", "color": "#1a1a1a", "position": [0, 0, -6.075] },
-      { "url": "/stl/kneeler-boot-slipper.stl", "color": "#800000" }
+      { "url": "/stl/cap.stl", "color": "#800000" },
+      { "url": "/stl/tread.stl", "color": "#1a1a1a", "position": [0, 0, -6.075] },
+      { "url": "/stl/collar.stl", "color": "#800000" }
     ]
   }
 }

@@ -1,9 +1,9 @@
-// --- TEKTONOLOGY KNEELER BOOT — CAP ---
-// The cap bolts onto the hidden end of the kneeler foot to lock the slipper
+// --- TEKTONOLOGY PRAYER SOLE V3 — CAP ---
+// The cap bolts onto the hidden end of the kneeler foot to lock the collar
 // in place. Two M3 socket-head cap screws thread through side bosses into
-// hex nut pockets in the slipper. The cap lip fills the far short-end gap
-// between the slipper's overhanging lips.
-include <kneeler-boot-config.scad>
+// hex nut pockets in the collar. The cap lip fills the far short-end gap
+// between the collar's overhanging lips.
+include <config.scad>
 
 // =====================================================================
 // CAP FASTENER GEOMETRY
@@ -47,10 +47,10 @@ module alignment_groove() {
         cube([td + tolerance, tw, th]);
 }
 
-// Complementary lip piece — fills the entrance slide cut from the slipper
+// Complementary lip piece — fills the entrance slide cut from the collar
 module entrance_lip_fill() {
     intersection() {
-        slipper_lip();
+        collar_lip();
         translate([sole_plate_l / 2, 0, (total_h / 2) - (sole_plate_h / 2) + tolerance])
             minkowski() {
                 cube([sole_plate_l / 2, leg_w, sole_plate_h], center=true);
@@ -69,7 +69,7 @@ module entrance_lip_fill() {
 module cap() {
     difference() {
         union() {
-            // Cap width matches the bottom groove (wider than slipper center band)
+            // Cap width matches the bottom groove (wider than collar center band)
             intersection() {
                 coupler_shell();
                 cap_half_space();
@@ -77,7 +77,7 @@ module cap() {
                     cube([big * 2, cap_width - (tolerance * 2), big * 2]);
             }
             if (enable_top_lip) cap_lip();
-            // Lip piece that was cut from slipper entrance
+            // Lip piece that was cut from collar entrance
             //if (enable_top_lip) entrance_lip_fill();
             // Fill socket from lip bottom to shell top so groove starts at lip level
             intersection() {

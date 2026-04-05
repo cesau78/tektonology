@@ -1,5 +1,5 @@
-// --- TEKTONOLOGY KNEELER BOOT CONFIG ---
-// Shared parameters and modules for the 2-piece coupler (slipper + cap)
+// --- TEKTONOLOGY PRAYER SOLE V3 CONFIG ---
+// Shared parameters and modules for the 2-piece coupler (collar + cap)
 
 tolerance = 0.1; // general tolerance for fit adjustments (mm)
 
@@ -12,7 +12,7 @@ sole_plate_h = 3.5;
 leg_w = 16.5;
 leg_l = 51;
 
-// --- Bottom Slide Groove (shared between coupler + insert) ---
+// --- Bottom Slide Groove (shared between coupler + tread) ---
 groove_overhang = 2;      // groove extends this far beyond socket per side
 
 // --- Performance Settings ---
@@ -34,7 +34,7 @@ $fn = preview ? 32 : 64;
 enable_top_lip = true;
 lip_inset = 1;
 lip_thickness = 3;
-lip_height = 1;  // Z thickness of cap lip relief cut in slipper
+lip_height = 1;  // Z thickness of cap lip relief cut in collar
 
 // --- Two-Piece Split ---
 cap_thickness = 8; // along X axis
@@ -69,7 +69,7 @@ bolt_positions = [[bolt_z, cap_width / 2], [bolt_z, -cap_width / 2]];
 // --- Cap Side Bosses ---
 boss_dia       = head_dia;    // matches cap screw head diameter
 boss_height    = head_height; // adjust with screw availability
-boss_clearance = tolerance; // clearance per side between cap boss and slipper socket
+boss_clearance = tolerance; // clearance per side between cap boss and collar socket
 
 // --- Alignment Tongue ---
 tongue_width     = 10;   // along Y
@@ -162,7 +162,7 @@ module top_lip() {
                     sphere(r=lip_r);
                 }
         }
-        // Remove bottom Minkowski rounding for flat bonded fit to slipper
+        // Remove bottom Minkowski rounding for flat bonded fit to collar
         translate([-big, -big, cut_z])
             cube([big * 2, big * 2, big * 2]);
     }
@@ -172,8 +172,8 @@ module top_lip() {
 // SPLIT LIP MODULES
 // =====================================================================
 
-// Slipper lip: full ring MINUS the far short-end bar (cap's portion).
-module slipper_lip() {
+// Collar lip: full ring MINUS the far short-end bar (cap's portion).
+module collar_lip() {
     intersection() {
         top_lip();
         union() {
@@ -187,7 +187,7 @@ module slipper_lip() {
     }
 }
 
-// Cap lip: only the far short-end bar between the slipper's overhanging lips.
+// Cap lip: only the far short-end bar between the collar's overhanging lips.
 module cap_lip() {
     intersection() {
         top_lip();
@@ -200,7 +200,7 @@ module cap_lip() {
 // HALF-SPACE helpers
 // =====================================================================
 
-module slipper_half_space() {
+module collar_half_space() {
     translate([-big, -big, -big])
         cube([big + split_x, big * 2, big * 2]);
 }
@@ -255,7 +255,7 @@ module debug_nuts() {
     nut_r = nut_af / 2 / cos(30);
     color("green", 0.7)
         for (pos = bolt_positions) {
-            rot = (pos[1] > 0) ? 15 : -15; // mirror matches slipper's mirror([0,m,0])
+            rot = (pos[1] > 0) ? 15 : -15; // mirror matches collar's mirror([0,m,0])
             translate([nut_x, pos[1], pos[0]])
                 rotate([0, 90, 0])
                     rotate([0, 0, rot])

@@ -35,16 +35,16 @@ function build(openscad, scad, { output, defines = {} } = {}) {
 const openscad = findOpenSCAD();
 const ciOverrides = { preview: "false", crosssection_view: "false" };
 
-const fastened = "3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened";
+const fastened = "3d-models/prayer-sole/v3-compound-fastened";
 
-console.log("==> kneeler-boot-compound-fastened (slipper)");
-build(openscad, resolve(`${fastened}/kneeler-boot-slipper.scad`), { defines: ciOverrides });
+console.log("==> prayer-sole v3-compound-fastened (collar)");
+build(openscad, resolve(`${fastened}/collar.scad`), { defines: ciOverrides });
 
-console.log("==> kneeler-boot-compound-fastened (cap)");
-build(openscad, resolve(`${fastened}/kneeler-boot-cap.scad`), { defines: ciOverrides });
+console.log("==> prayer-sole v3-compound-fastened (cap)");
+build(openscad, resolve(`${fastened}/cap.scad`), { defines: ciOverrides });
 
-console.log("==> kneeler-boot-compound-fastened (insert)");
-build(openscad, resolve(`${fastened}/kneeler-boot-insert.scad`), { defines: ciOverrides });
+console.log("==> prayer-sole v3-compound-fastened (tread)");
+build(openscad, resolve(`${fastened}/tread.scad`), { defines: ciOverrides });
 
 console.log("==> kneeler-bushing");
 build(openscad, resolve("3d-models/kneeler-replacement-parts/kneeler-bushing/kneeler-bushing.scad"), { defines: ciOverrides });

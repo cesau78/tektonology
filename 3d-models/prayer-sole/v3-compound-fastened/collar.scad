@@ -1,15 +1,15 @@
-// --- TEKTONOLOGY KNEELER BOOT — SLIPPER ---
-// The slipper slides over the steel kneeler foot from one end.
+// --- TEKTONOLOGY PRAYER SOLE V3 — COLLAR ---
+// The collar slides over the steel kneeler foot from one end.
 // Its top lip extends over the cap on both long sides, creating an
 // interlocking overlap. Hex nut pockets and bolt channels live in the
 // side walls; hardware faces the wall so worshipers never see it.
-include <kneeler-boot-config.scad>
+include <config.scad>
 
 // =====================================================================
-// SLIPPER FASTENER GEOMETRY
+// COLLAR FASTENER GEOMETRY
 // =====================================================================
 
-// Hex nut pocket — centered at nut_x in the slipper body.
+// Hex nut pocket — centered at nut_x in the collar body.
 module hex_nut_pocket(z_pos, y_pos) {
     nut_r = (nut_af + nut_clearance) / 2 / cos(30);
     pocket_depth = nut_thickness + tolerance;
@@ -49,7 +49,7 @@ module hex_nut_slot(z_pos, y_pos) {
         }
 }
 
-// Bolt channel through the slipper — connects the split face to the nut pocket.
+// Bolt channel through the collar — connects the split face to the nut pocket.
 module bolt_channel(z_pos, y_pos) {
     hole_dia = bolt_dia + bolt_clearance;
     // From split face (+ 1mm overshoot) to past the nut pocket
@@ -61,7 +61,7 @@ module bolt_channel(z_pos, y_pos) {
             cylinder(h=channel_length, d=hole_dia);
 }
 
-// Matching cutouts in slipper side walls for the cap bosses
+// Matching cutouts in collar side walls for the cap bosses
 module cap_side_boss_holes() {
     boss_len = outer_extent - split_x;
     for (side = [1, -1])
@@ -72,16 +72,16 @@ module cap_side_boss_holes() {
 
 
 // =====================================================================
-// SLIPPER PIECE
+// COLLAR PIECE
 // =====================================================================
 
-module slipper() {
+module collar() {
     difference() {
         union() {
-            // Slipper half of the shell
+            // Collar half of the shell
             intersection() {
                 coupler_shell();
-                slipper_half_space();
+                collar_half_space();
             }
             // Side walls extend full length over the cap zone
             intersection() {
@@ -89,7 +89,7 @@ module slipper() {
                 cap_half_space();
                 side_bands();
             }
-            if (enable_top_lip) slipper_lip();
+            if (enable_top_lip) collar_lip();
         }
         // Hex nut pockets, slide-in slots, and bolt channels
         // Define once for +Y side, mirror for −Y to guarantee symmetry
@@ -98,7 +98,7 @@ module slipper() {
             hex_nut_slot(bolt_z, cap_width / 2);
             bolt_channel(bolt_z, cap_width / 2);
         }
-        // Boss cutouts in slipper side walls
+        // Boss cutouts in collar side walls
         cap_side_boss_holes();
         // Re-cut top socket through lip
         if (enable_top_lip) top_socket_cut();
@@ -109,7 +109,7 @@ module slipper() {
         //         cube([sole_plate_l / 2, leg_w, sole_plate_h], center=true);
         //         sphere(r=1.0);
         //     }
-        // Relief cut so the cap lip nests flush into the slipper
+        // Relief cut so the cap lip nests flush into the collar
         // Top of this cut aligns with the top of the coupler_shell
         relief_cut_z = (total_h / 2) - (lip_height / 2);
         // X span matches the +X lip ring: inner edge to outer edge (lip_r = 1.0 in top_lip)
@@ -127,4 +127,4 @@ module slipper() {
 // =====================================================================
 //debug_nuts();
 
-crosssection(sole_plate_l) slipper();
+crosssection(sole_plate_l) collar();

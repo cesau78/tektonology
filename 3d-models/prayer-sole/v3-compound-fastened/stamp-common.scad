@@ -1,7 +1,7 @@
-// Product info deboss (lines from stamp_generated.scad; export script writes it).
+// Product info deboss (lines from stamp-generated.scad; export script writes it).
 // Top face: mates against coupler — hidden when assembled.
 
-include <stamp_generated.scad>
+include <stamp-generated.scad>
 
 kbc_info_stamp_depth = 0.5;
 
@@ -16,7 +16,7 @@ kbc_mark_rule_stroke_scale = 0.132;
 kbc_mark_rule_right_inset = 0.40;
 // Line 1 uses valign=center; this estimates how far below that center the lowest descender (e.g. “y”) ends, in × line1 size. Rule top is placed flush with that Y.
 kbc_mark_rule_line1_descender_factor = 0.50;
-// Rectangular insert: keep 0 so the stack stays centered on the top face (+Y rim shift is for round parts).
+// Rectangular tread: keep 0 so the stack stays centered on the top face (+Y rim shift is for round parts).
 kbc_mark_radial_shift_fraction = 0;
 kbc_mark_font = "Liberation Sans:style=Bold";
 

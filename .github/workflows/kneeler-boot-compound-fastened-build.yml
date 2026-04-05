@@ -7,7 +7,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - "3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened/**"
+      - "3d-models/prayer-sole/v3-compound-fastened/**"
       - ".github/workflows/kneeler-boot-compound-fastened-build.yml"
   workflow_dispatch:
     inputs:
@@ -22,7 +22,7 @@ on:
         type: boolean
         default: true
       verify_product_version:
-        description: "Optional — fail production step unless print-stamp-config.json product_version equals this (e.g. v3.8.1)"
+        description: "Optional — fail production step unless stamp-config.json product_version equals this (e.g. v3.8.1)"
         required: false
         type: string
         default: ""
@@ -44,26 +44,26 @@ jobs:
           sudo apt-get install -y openscad jq
 
       - name: Stamp sync and prototype STL export
-        working-directory: 3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened
+        working-directory: 3d-models/prayer-sole/v3-compound-fastened
         run: |
           chmod +x scripts/export-open-scad-stl.sh
           ./scripts/export-open-scad-stl.sh
 
       - name: Verify product_version (optional)
         if: github.event_name == 'workflow_dispatch' && inputs.run_production_export && inputs.verify_product_version != ''
-        working-directory: 3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened
+        working-directory: 3d-models/prayer-sole/v3-compound-fastened
         run: |
-          cfg="$(jq -r '.product_version' print-stamp-config.json | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          cfg="$(jq -r '.product_version' stamp-config.json | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           want="$(echo "${{ inputs.verify_product_version }}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           if [[ "$cfg" != "$want" ]]; then
-            echo "::error::print-stamp-config.json has product_version='$cfg', expected '$want'"
+            echo "::error::stamp-config.json has product_version='$cfg', expected '$want'"
             exit 1
           fi
           echo "product_version matches: $cfg"
 
       - name: Production STL export
         if: github.event_name == 'workflow_dispatch' && inputs.run_production_export
-        working-directory: 3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened
+        working-directory: 3d-models/prayer-sole/v3-compound-fastened
         env:
           KBCF_PRODUCTION: "1"
         run: |
@@ -75,6 +75,6 @@ jobs:
         with:
           name: kneeler-boot-compound-fastened-build
           path: |
-            3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened/latest-builds/**/*.stl
-            3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened/latest-builds/**/*.md
-            3d-models/kneeler-replacement-parts/kneeler-boot-compound-fastened/stamp_generated.scad
+            3d-models/prayer-sole/v3-compound-fastened/latest-builds/**/*.stl
+            3d-models/prayer-sole/v3-compound-fastened/latest-builds/**/*.md
+            3d-models/prayer-sole/v3-compound-fastened/stamp-generated.scad

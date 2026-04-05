@@ -1,0 +1,26 @@
+{
+  "brand_name": "Tektonology",
+  "product_name": "",
+  "product_version": "v3.8.1",
+  "stamp_show_version_line": false,
+  "stamp_line3": "Kneeler Soul v3.8.1",
+  "stamp_line4": "Psalm 145:14",
+  "preview": false,
+  "exports": [
+    {
+      "scad": "tread.scad",
+      "stl": "latest-builds/{version_folder}/tread.stl",
+      "stamp": { "face": "top" }
+    },
+    {
+      "scad": "collar.scad",
+      "stl": "latest-builds/{version_folder}/collar.stl",
+      "stamp": null
+    },
+    {
+      "scad": "cap.scad",
+      "stl": "latest-builds/{version_folder}/cap.stl",
+      "stamp": null
+    }
+  ]
+}

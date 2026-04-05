@@ -136,8 +136,8 @@ export interface Project {
 }
 
 export interface PartCount {
-  insert: number | null;
-  slipper: number | null;
+  tread: number | null;
+  collar: number | null;
   cap: number | null;
   m3Bolt: number | null;
   m3Nut: number | null;

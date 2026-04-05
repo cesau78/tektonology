@@ -1,7 +1,9 @@
-include <kneeler-boot-config.scad>
-include <kneeler-stamp-common.scad>
+include <config.scad>
+include <stamp-common.scad>
 
-// --- TEKTONOLOGY KNEELER BOOT FOOT: 7-RIB INSERT --- // This is the internal TPU insert that slips into the bottom half of the coupler. It has a main rectangular body with 7 evenly spaced semi-cylindrical ribs on the bottom to create a secure, high-friction fit within the socket. The dimensions are designed to be slightly larger than the socket for a tight fit, and the ribs provide additional grip and stability when kneeling. 
+// --- TEKTONOLOGY PRAYER SOLE V3 — TREAD (TPU) ---
+// Soft tread that keys into the bottom of the coupler: ribs for grip on the floor,
+// optional debossed stamp on the top flat (faces into the socket, hidden when assembled).
 socket_depth = 5; //depth of the socket to slip into
 core_protrusion = 2; //core extension beyond the socket
 
@@ -18,17 +20,17 @@ flange_l = sole_plate_l + (groove_overhang * 2) - flange_clearance;
 flange_w = sole_plate_w + (groove_overhang * 2) - flange_clearance;
 
 core_depth = socket_depth + core_protrusion;
-insert_l = sole_plate_l + tightness;
-insert_w = sole_plate_w + tightness;
-insert_z_top = socket_depth / 2 + core_depth / 2;
-insert_stamp_radial_ref = min(insert_l, insert_w) / 2;
+tread_l = sole_plate_l + tightness;
+tread_w = sole_plate_w + tightness;
+tread_z_top = socket_depth / 2 + core_depth / 2;
+tread_stamp_radial_ref = min(tread_l, tread_w) / 2;
 
-module insert_positive() {
-    pitch = (insert_l - (2 * radius)) / (ribs - 1);
+module tread_positive() {
+    pitch = (tread_l - (2 * radius)) / (ribs - 1);
 
     union() {
         translate([0, 0, socket_depth/2])
-            cube([insert_l, insert_w, core_depth], center=true);
+            cube([tread_l, tread_w, core_depth], center=true);
 
         translate([0, 0, socket_depth/2 + core_depth/2 - flange_depth/2 - 1])
             minkowski() {
@@ -37,19 +39,19 @@ module insert_positive() {
             }
 
         for (i = [0 : ribs - 1]) {
-            x_pos = (i * pitch) - (insert_l/2) + radius;
+            x_pos = (i * pitch) - (tread_l/2) + radius;
             z_axis = -1 * (core_protrusion / 2);
             translate([x_pos, 0, z_axis])
                 rotate([90, 0, 0])
-                    cylinder(h = insert_w, r = radius, center = true);
+                    cylinder(h = tread_w, r = radius, center = true);
         }
     }
 }
 
 module main() {
     difference() {
-        insert_positive();
-        part_top_info_stamp_deboss(kneeler_boot_insert_stamp_top, insert_z_top, insert_stamp_radial_ref);
+        tread_positive();
+        part_top_info_stamp_deboss(tread_stamp_top, tread_z_top, tread_stamp_radial_ref);
     }
 }
 
