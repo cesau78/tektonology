@@ -19,13 +19,16 @@ kbc_mark_rule_line1_descender_factor = 0.50;
 // Rectangular tread: keep 0 so the stack stays centered on the top face (+Y rim shift is for round parts).
 kbc_mark_radial_shift_fraction = 0;
 kbc_mark_font = "Liberation Sans:style=Bold";
-// Per-line horizontal alignment override (default "center" for all).
+// Per-line overrides (custom treads can redefine these after include).
+info_stamp_line1_size = kbc_mark_size;
+info_stamp_line1_rule = true;
+info_stamp_gap_1_2 = kbc_mark_gap_1_2;
 info_stamp_line4_halign = "center";
 
 // Deboss on the top flat (z = z_top), read from above into the coupler socket.
 module part_top_info_stamp_deboss(enable, z_top, radial_ref) {
     depth = kbc_info_stamp_depth + 0.02;
-    y1 = kbc_mark_gap_1_2;
+    y1 = info_stamp_gap_1_2;
     y2 = 0;
     y3 = -kbc_mark_gap_2_3;
     y4 = y3 - kbc_mark_gap_2_3;
@@ -37,7 +40,7 @@ module part_top_info_stamp_deboss(enable, z_top, radial_ref) {
     stamp_shift_y = radial_ref * kbc_mark_radial_shift_fraction;
     // Vertical center of line stack (glyph centers ± half-em); shifts block so midline sits at Y=0 before radial nudge.
     stamp_bbox_top =
-        (info_stamp_line1 != "") ? (y1 + kbc_mark_size / 2)
+        (info_stamp_line1 != "") ? (y1 + info_stamp_line1_size / 2)
         : (info_stamp_line2 != "") ? (y2 + kbc_mark_size_secondary / 2)
         : (info_stamp_line3 != "") ? (y_text_3 + kbc_mark_size_secondary / 2)
         : (y_text_4 + kbc_mark_size_tertiary / 2);
@@ -45,7 +48,7 @@ module part_top_info_stamp_deboss(enable, z_top, radial_ref) {
         (info_stamp_line4 != "") ? (y_text_4 - kbc_mark_size_tertiary / 2)
         : (info_stamp_line3 != "") ? (y_text_3 - kbc_mark_size_secondary / 2)
         : (info_stamp_line2 != "") ? (y2 - kbc_mark_size_secondary / 2)
-        : (y1 - kbc_mark_size / 2);
+        : (y1 - info_stamp_line1_size / 2);
     stamp_vertical_center_adj = -(stamp_bbox_top + stamp_bbox_bot) / 2;
     has_any = info_stamp_line1 != "" || info_stamp_line2 != "" || info_stamp_line3 != "" || info_stamp_line4 != "";
     if (enable && has_any) {
@@ -57,11 +60,11 @@ module part_top_info_stamp_deboss(enable, z_top, radial_ref) {
                     linear_extrude(depth)
                         translate([0, ys[0], 0])
                             text(info_stamp_line1,
-                                 size = kbc_mark_size,
+                                 size = info_stamp_line1_size,
                                  font = kbc_mark_font,
                                  halign = "center",
                                  valign = "center");
-                if (info_stamp_line1 != "" && (info_stamp_line2 != "" || info_stamp_line3 != ""))
+                if (info_stamp_line1_rule && info_stamp_line1 != "" && (info_stamp_line2 != "" || info_stamp_line3 != ""))
                     linear_extrude(depth)
                         let (
                             nch = max(len(info_stamp_line1), 1),

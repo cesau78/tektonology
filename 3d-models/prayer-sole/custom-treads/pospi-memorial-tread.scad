@@ -7,10 +7,13 @@ include <../v3-compound-fastened/tread.scad>
 
 // Custom stamp text (overrides stamp-generated.scad defaults)
 info_stamp_line1 = "In loving memory of";
-info_stamp_line2 = "Irene and Leni Pospi";
-info_stamp_line3 = "";
-info_stamp_line4 = "Tektonology";
-info_stamp_line4_halign = "right";
+info_stamp_line1_size = kbc_mark_size_secondary;
+info_stamp_line1_rule = false;
+info_stamp_gap_1_2 = kbc_mark_size_secondary * 1.5;
+kbc_mark_gap_2_3 = kbc_mark_size_secondary * 1.5;
+info_stamp_line2 = "Irene and Leonard";
+info_stamp_line3 = "Pospi";
+info_stamp_line4 = "";
 
 // Enable stamp on tread top face
 tread_stamp_top = true;
