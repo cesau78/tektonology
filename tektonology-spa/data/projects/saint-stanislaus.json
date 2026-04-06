@@ -1266,7 +1266,156 @@
               "pew",
               "pew"
             ],
-            "kneelers": [],
+            "kneelers": [
+              {
+                "id": "r8-w1",
+                "capacity": 3,
+                "hardware": [
+                  {
+                    "partId": "kneeler-boot-compound-fastened",
+                    "name": "Kneeler Foot",
+                    "quantity": 3,
+                    "status": "upcoming",
+                    "date": "2026-04-12"
+                  },
+                  {
+                    "partId": "kneeler-bushing",
+                    "name": "Kneeler Bushing",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "kneeler-spacer",
+                    "name": "Spacer",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "kneeler-pew-plate",
+                    "name": "Kneeler Plate",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "impact-absorber",
+                    "name": "Impact Absorber",
+                    "quantity": 2,
+                    "status": "unknown"
+                  }
+                ]
+              },
+              {
+                "id": "r8-w2",
+                "capacity": 3,
+                "hardware": [
+                  {
+                    "partId": "kneeler-boot-compound-fastened",
+                    "name": "Kneeler Foot",
+                    "quantity": 3,
+                    "status": "upcoming",
+                    "date": "2026-04-12"
+                  },
+                  {
+                    "partId": "kneeler-bushing",
+                    "name": "Kneeler Bushing",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "kneeler-spacer",
+                    "name": "Spacer",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "kneeler-pew-plate",
+                    "name": "Kneeler Plate",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "impact-absorber",
+                    "name": "Impact Absorber",
+                    "quantity": 2,
+                    "status": "unknown"
+                  }
+                ]
+              },
+              {
+                "id": "r8-w3",
+                "capacity": 3,
+                "hardware": [
+                  {
+                    "partId": "kneeler-boot-compound-fastened",
+                    "name": "Kneeler Foot",
+                    "quantity": 3,
+                    "status": "upcoming",
+                    "date": "2026-04-12"
+                  },
+                  {
+                    "partId": "kneeler-bushing",
+                    "name": "Kneeler Bushing",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "kneeler-spacer",
+                    "name": "Spacer",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "kneeler-pew-plate",
+                    "name": "Kneeler Plate",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "impact-absorber",
+                    "name": "Impact Absorber",
+                    "quantity": 2,
+                    "status": "unknown"
+                  }
+                ]
+              },
+              {
+                "id": "r8-w4",
+                "capacity": 3,
+                "hardware": [
+                  {
+                    "partId": "kneeler-boot-compound-fastened",
+                    "name": "Kneeler Foot",
+                    "quantity": 3,
+                    "status": "upcoming",
+                    "date": "2026-04-12"
+                  },
+                  {
+                    "partId": "kneeler-bushing",
+                    "name": "Kneeler Bushing",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "kneeler-spacer",
+                    "name": "Spacer",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "kneeler-pew-plate",
+                    "name": "Kneeler Plate",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "impact-absorber",
+                    "name": "Impact Absorber",
+                    "quantity": 2,
+                    "status": "unknown"
+                  }
+                ]
+              }
+            ],
             "pillarBenchContinuation": {
               "fromRowId": "row-9",
               "alignKneelerId": "r9-w2pillar"
@@ -2517,7 +2666,156 @@
               "gap",
               "pew"
             ],
-            "kneelers": [],
+            "kneelers": [
+              {
+                "id": "r8-e1",
+                "capacity": 3,
+                "hardware": [
+                  {
+                    "partId": "kneeler-boot-compound-fastened",
+                    "name": "Kneeler Foot",
+                    "quantity": 3,
+                    "status": "upcoming",
+                    "date": "2026-04-12"
+                  },
+                  {
+                    "partId": "kneeler-bushing",
+                    "name": "Kneeler Bushing",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "kneeler-spacer",
+                    "name": "Spacer",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "kneeler-pew-plate",
+                    "name": "Kneeler Plate",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "impact-absorber",
+                    "name": "Impact Absorber",
+                    "quantity": 2,
+                    "status": "unknown"
+                  }
+                ]
+              },
+              {
+                "id": "r8-e2",
+                "capacity": 3,
+                "hardware": [
+                  {
+                    "partId": "kneeler-boot-compound-fastened",
+                    "name": "Kneeler Foot",
+                    "quantity": 3,
+                    "status": "upcoming",
+                    "date": "2026-04-12"
+                  },
+                  {
+                    "partId": "kneeler-bushing",
+                    "name": "Kneeler Bushing",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "kneeler-spacer",
+                    "name": "Spacer",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "kneeler-pew-plate",
+                    "name": "Kneeler Plate",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "impact-absorber",
+                    "name": "Impact Absorber",
+                    "quantity": 2,
+                    "status": "unknown"
+                  }
+                ]
+              },
+              {
+                "id": "r8-e3",
+                "capacity": 3,
+                "hardware": [
+                  {
+                    "partId": "kneeler-boot-compound-fastened",
+                    "name": "Kneeler Foot",
+                    "quantity": 3,
+                    "status": "upcoming",
+                    "date": "2026-04-12"
+                  },
+                  {
+                    "partId": "kneeler-bushing",
+                    "name": "Kneeler Bushing",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "kneeler-spacer",
+                    "name": "Spacer",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "kneeler-pew-plate",
+                    "name": "Kneeler Plate",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "impact-absorber",
+                    "name": "Impact Absorber",
+                    "quantity": 2,
+                    "status": "unknown"
+                  }
+                ]
+              },
+              {
+                "id": "r8-e4",
+                "capacity": 3,
+                "hardware": [
+                  {
+                    "partId": "kneeler-boot-compound-fastened",
+                    "name": "Kneeler Foot",
+                    "quantity": 3,
+                    "status": "upcoming",
+                    "date": "2026-04-12"
+                  },
+                  {
+                    "partId": "kneeler-bushing",
+                    "name": "Kneeler Bushing",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "kneeler-spacer",
+                    "name": "Spacer",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "kneeler-pew-plate",
+                    "name": "Kneeler Plate",
+                    "quantity": 2,
+                    "status": "unknown"
+                  },
+                  {
+                    "partId": "impact-absorber",
+                    "name": "Impact Absorber",
+                    "quantity": 2,
+                    "status": "unknown"
+                  }
+                ]
+              }
+            ],
             "pillarBenchContinuation": {
               "fromRowId": "row-9e",
               "alignKneelerId": "r9-e4pillar"
