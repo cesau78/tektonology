@@ -19,6 +19,8 @@ kbc_mark_rule_line1_descender_factor = 0.50;
 // Rectangular tread: keep 0 so the stack stays centered on the top face (+Y rim shift is for round parts).
 kbc_mark_radial_shift_fraction = 0;
 kbc_mark_font = "Liberation Sans:style=Bold";
+// Per-line horizontal alignment override (default "center" for all).
+info_stamp_line4_halign = "center";
 
 // Deboss on the top flat (z = z_top), read from above into the coupler socket.
 module part_top_info_stamp_deboss(enable, z_top, radial_ref) {
@@ -93,11 +95,17 @@ module part_top_info_stamp_deboss(enable, z_top, radial_ref) {
                                  valign = "center");
                 if (info_stamp_line4 != "")
                     linear_extrude(depth)
-                        translate([0, y_text_4, 0])
+                        let (
+                            l4_halign = info_stamp_line4_halign,
+                            l1_adv = len(info_stamp_line1) * kbc_mark_size *
+                                     kbc_mark_rule_adv_per_char,
+                            l4_x = l4_halign == "right" ? l1_adv / 2 : 0
+                        )
+                        translate([l4_x, y_text_4, 0])
                             text(info_stamp_line4,
                                  size = kbc_mark_size_tertiary,
                                  font = kbc_mark_font,
-                                 halign = "center",
+                                 halign = l4_halign,
                                  valign = "center");
             }
     }
