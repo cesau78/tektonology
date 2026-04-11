@@ -71,6 +71,22 @@ boss_dia       = head_dia;    // matches cap screw head diameter
 boss_height    = head_height; // adjust with screw availability
 boss_clearance = tolerance; // clearance per side between cap boss and collar socket
 
+// --- Cap print supports (snap-off where noted) ---
+boss_print_support_enable = true;
+// Built-in struts in the socket-head pocket (+X from the cap end inward for the screw head).
+boss_support_socket_pocket_enable = true;
+boss_support_socket_count   = 3;    // radial ribs per screw (120° spacing)
+boss_support_socket_tip     = 0.36; // mm — thin at +X end for snap-out
+
+// Optional: side-boss flank struts (usually off; pocket supports are the main fix).
+boss_support_boss_flank_enable = false;
+// When flank on: "y" | "z" | "x" | "notch" — see cap.scad
+boss_support_stack_axis   = "y";
+boss_support_count        = 3;    // fins along X per boss (>=1)
+boss_support_thickness    = 0.5;  // mm along bolt axis (X)
+boss_support_y_offset     = 2.1;  // mm outward from boss center in Y (must be < boss_dia/2)
+boss_support_tip          = 0.38; // mm — thin end at boss for clean snap
+
 // --- Alignment Tongue ---
 tongue_width     = 10;   // along Y
 tongue_height    = 6;    // along Z
