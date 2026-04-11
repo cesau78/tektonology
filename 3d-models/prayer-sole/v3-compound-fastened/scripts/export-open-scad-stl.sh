@@ -35,7 +35,13 @@ stem_from_scad() {
 }
 
 cd "$MODEL_DIR"
-PREVIEW="$(jq -r '.preview' "$CONFIG")"
+PREVIEW="$(jq -r '.preview // true' "$CONFIG")"
+# Local / CI prototype: low $fn (preview=true). Production (KBCF_PRODUCTION=1): preview=false, $fn=128 in config.scad.
+if [[ "${KBCF_PRODUCTION:-}" == "1" ]]; then
+  SCAD_PREVIEW="false"
+else
+  SCAD_PREVIEW="$PREVIEW"
+fi
 
 BRAND="$(jq -r '.brand_name' "$CONFIG")"
 PROD="$(jq -r '.product_name' "$CONFIG")"
@@ -96,7 +102,7 @@ if ! command -v openscad >/dev/null 2>&1; then
   exit 1
 fi
 
-EXPORT_DEFS=(-D "mesh_preview=false" -D "crosssection_view=false")
+EXPORT_DEFS=(-D "mesh_preview=false" -D "crosssection_view=false" -D "preview=$SCAD_PREVIEW")
 
 while IFS= read -r row; do
   scad="$(echo "$row" | jq -r '.scad')"

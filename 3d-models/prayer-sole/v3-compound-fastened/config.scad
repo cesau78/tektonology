@@ -16,7 +16,8 @@ leg_l = 51;
 groove_overhang = 2;      // groove extends this far beyond socket per side
 
 // --- Performance Settings ---
-preview = false; //set preview=true for faster rendering with lower detail, or false for full detail.
+// Default matches stamp-config `preview`; export scripts pass -D preview= for CI (see scripts/export-open-scad-stl.sh).
+preview = false; // true = fast mesh ($fn=32); false = production ($fn=128)
 crosssection_view = false; // Set to true to cut the model along a plane and show only one side
 crosssection_axis = "y"; // axis: 'x', 'y', or 'z'
 crosssection_pos = 12; // position (mm) along the chosen axis where the cut occurs (default 0 = origin)
@@ -28,7 +29,7 @@ floor_thickness = 3.0; // thickness of the shell floor under the bottom socket
 bottom_target_depth = 6.35;
 total_h = sole_plate_h + bottom_target_depth + floor_thickness;
 r = 2.0;
-$fn = preview ? 32 : 64;
+$fn = preview ? 32 : 128;
 
 // --- Lip Parameters ---
 enable_top_lip = true;

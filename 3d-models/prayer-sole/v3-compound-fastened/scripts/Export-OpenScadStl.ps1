@@ -104,7 +104,15 @@ if (-not $openscad) {
     throw "OpenSCAD not found. Set OPENSCAD_PATH or install OpenSCAD."
 }
 
-$exportDefines = @("-D", "mesh_preview=false", "-D", "crosssection_view=false")
+# Match export-open-scad-stl.sh: production forces preview=false ($fn=128); local uses stamp-config preview (default true, $fn=32).
+$scadPreview = if ($isProduction) {
+    "false"
+} elseif (($null -eq $cfg.preview) -or ($cfg.preview -eq $true)) {
+    "true"
+} else {
+    "false"
+}
+$exportDefines = @("-D", "mesh_preview=false", "-D", "crosssection_view=false", "-D", "preview=$scadPreview")
 $versionFolder = if ($isProduction) { $verTag } else { "{0}-prototype" -f $verTag }
 
 foreach ($exp in $exports) {

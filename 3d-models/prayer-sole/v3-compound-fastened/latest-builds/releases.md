@@ -4,8 +4,10 @@ STL exports for the fastened Prayer Sole system (TPU tread + PLA collar shell + 
 
 ## Layout
 
-- **`v3.x.y/`** — production exports (`KBCF_PRODUCTION=1` / production path in CI).
-- **`v3.x.y-prototype/`** — default local / CI push exports (may include “Prototype” on line 3 when preview mode applies).
+- **`v3.x.y/`** — production exports: `KBCF_PRODUCTION=1`, OpenSCAD **`preview=false`**, **`$fn=128`** (slow mesh).
+- **`v3.x.y-prototype/`** — local default and first CI step: no `KBCF_PRODUCTION`, uses **`stamp-config.json` → `preview`** (committed default **`true`**), **`$fn=32`**, faster STLs.
+
+GitHub Actions on **push to `main`** runs prototype export, a smoke render, then production export. **Manual workflow** can skip production via the dispatch input.
 
 See **`releases.md`** in each version folder for commit/tag notes when present.
 

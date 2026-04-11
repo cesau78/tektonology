@@ -1,7 +1,11 @@
-# Ordered build: (1) stamp sync + prototype STL export, (2) optional production STL export.
-# Push to main runs (1). Use Actions → Run workflow to also run (2).
+# Ordered build: (1) stamp sync + prototype STL export (preview, $fn=32), (2) smoke render,
+# (3) production STL export ($fn=128). Push to main runs all three; production STLs are committed
+# when they change.
 
 name: Kneeler boot compound fastened — build
+
+permissions:
+  contents: write
 
 on:
   push:
@@ -30,7 +34,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 360
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,6 +53,14 @@ jobs:
           chmod +x scripts/export-open-scad-stl.sh
           ./scripts/export-open-scad-stl.sh
 
+      - name: Validate coupler (smoke render)
+        run: |
+          OUT_DIR="$GITHUB_WORKSPACE/3d-models/prayer-sole/v3-compound-fastened/.ci-validation"
+          mkdir -p "$OUT_DIR"
+          openscad -o "$OUT_DIR/coupler.png" --imgsize=640,480 --autocenter --viewall \
+            -D "preview=true" -D "crosssection_view=false" \
+            "$GITHUB_WORKSPACE/3d-models/prayer-sole/v3-compound-fastened/coupler.scad"
+
       - name: Verify product_version (optional)
         if: github.event_name == 'workflow_dispatch' && inputs.run_production_export && inputs.verify_product_version != ''
         working-directory: 3d-models/prayer-sole/v3-compound-fastened
@@ -62,7 +74,9 @@ jobs:
           echo "product_version matches: $cfg"
 
       - name: Production STL export
-        if: github.event_name == 'workflow_dispatch' && inputs.run_production_export
+        if: >-
+          github.event_name == 'push'
+          || (github.event_name == 'workflow_dispatch' && inputs.run_production_export)
         working-directory: 3d-models/prayer-sole/v3-compound-fastened
         env:
           KBCF_PRODUCTION: "1"
@@ -77,4 +91,24 @@ jobs:
           path: |
             3d-models/prayer-sole/v3-compound-fastened/latest-builds/**/*.stl
             3d-models/prayer-sole/v3-compound-fastened/latest-builds/**/*.md
+            3d-models/prayer-sole/v3-compound-fastened/.ci-validation/coupler.png
             3d-models/prayer-sole/v3-compound-fastened/stamp-generated.scad
+
+      - name: Commit and push production builds
+        if: >-
+          github.event_name == 'push'
+          || (github.event_name == 'workflow_dispatch' && inputs.run_production_export)
+        working-directory: 3d-models/prayer-sole/v3-compound-fastened
+        env:
+          PUSH_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          VER="$(jq -r '.product_version' stamp-config.json | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          git add "latest-builds/$VER/"
+          if git diff --cached --quiet; then
+            echo "No production STL changes to commit."
+          else
+            git commit -m "build: production STLs for $VER [skip ci]"
+            git push origin "HEAD:refs/heads/$PUSH_REF"
+          fi

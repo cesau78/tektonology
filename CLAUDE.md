@@ -34,6 +34,10 @@ tektonology-spa/               # Next.js static site (tektonology.com)
     batches/                   # One JSON file per print batch
 ```
 
+## Prayer Sole v3 (compound fastened) — STL export
+
+**Preview vs production:** local / default CI step uses `stamp-config.json` **`preview`: `true`** (fast mesh, `$fn=32`) and writes **`latest-builds/<version>-prototype/`**. **`KBCF_PRODUCTION=1`** forces **`preview=false`**, **`$fn=128`**, and **`latest-builds/<version>/`**. GitHub Actions `kneeler-boot-compound-fastened-build.yml` runs prototype export on every push to `main`, then production export and may commit updated production STLs.
+
 ## Web / Next.js
 
 - Static export only (`output: "export"`) — no server-side runtime.
