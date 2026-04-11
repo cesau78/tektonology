@@ -77,6 +77,10 @@ boss_print_support_enable = true;
 boss_support_socket_pocket_enable = true;
 boss_support_socket_count   = 3;    // radial ribs per screw (120° spacing)
 boss_support_socket_tip     = 0.36; // mm — thin at +X end for snap-out
+// Pocket math extends slightly past the shell; keep rib tips inside the real outer cap (+X).
+boss_support_socket_outer_inset = 0.5; // mm inside outer_extent for rib outer anchor
+// Nib −X past pocket plane: smaller if that end face is on the bed so prongs don’t “hang past” it.
+boss_support_socket_nib_past_plane = 0.12;
 
 // Optional: side-boss flank struts (usually off; pocket supports are the main fix).
 boss_support_boss_flank_enable = false;

@@ -41,34 +41,45 @@ module cap_side_bosses() {
                 cylinder(h=boss_len, d=boss_dia, center=true);
 }
 
-// Thin ribs inside the screw head pocket (same cylinder as bolt_head_pocket_hole), along +X
-// from the inner pocket toward the outer opening — snap off after print. Unioned after the
-// main difference() so they are not removed by the head-pocket cut; shaft hole is re-cut.
+// Thin ribs inside the screw head pocket — unioned after the main difference() so the head
+// cut does not remove them; shaft is re-cut. Each rib is hull(anchor, tip) clipped to the exact
+// pocket cylinder plus a −X “nib” that overlaps solid past the pocket plane (outside the M3
+// shaft in Y) so the mesh is not floating; clip uses full head diameter so ribs meet the wall.
 module cap_socket_head_pocket_supports() {
     if (boss_print_support_enable && boss_support_socket_pocket_enable && boss_support_socket_count >= 1) {
         x_ps = outer_extent - head_height + tolerance;
         pocket_len = head_height + 1;
         x_pe = x_ps + pocket_len;
+        // Rib outer end: pocket math runs past the minkowski shell; clamp to real cap +X.
+        x_tip = min(x_pe - 0.35, outer_extent - boss_support_socket_outer_inset);
+        nib_x = boss_support_socket_nib_past_plane + 0.175;
+        nib_th = 0.35;
         head_r = head_pocket_diameter / 2;
         difference() {
             union() {
                 for (pos = bolt_positions) {
                     z_p = pos[0];
                     y_p = pos[1];
+                    // Nib just −X of pocket plane, in ±Y past shaft radius, merges with shell
+                    y_nib = y_p + 2.08 * sign(y_p);
                     for (k = [0 : boss_support_socket_count - 1]) {
                         a = 90 + k * 120;
                         dy = cos(a) * (head_r - 0.42);
                         dz = sin(a) * (head_r - 0.42);
                         intersection() {
                             hull() {
-                                translate([x_ps + 0.55, y_p + dy * 0.22, z_p + dz * 0.22])
-                                    cube([0.65, 0.48, 0.48], center=true);
-                                translate([x_pe - 0.5, y_p + dy, z_p + dz])
+                                translate([x_ps - nib_x, y_nib, z_p])
+                                    cube([nib_th, 0.72, 0.72], center=true);
+                                translate([x_tip, y_p + dy, z_p + dz])
                                     cube([0.65, boss_support_socket_tip, boss_support_socket_tip], center=true);
                             }
-                            translate([x_ps, y_p, z_p])
-                                rotate([0, 90, 0])
-                                    cylinder(h=pocket_len + 0.02, d=head_pocket_diameter - 0.08);
+                            union() {
+                                translate([x_ps, y_p, z_p])
+                                    rotate([0, 90, 0])
+                                        cylinder(h=pocket_len + 0.02, d=head_pocket_diameter);
+                                translate([x_ps - nib_x, y_nib, z_p])
+                                    cube([nib_th, 0.72, 0.72], center=true);
+                            }
                         }
                     }
                 }
