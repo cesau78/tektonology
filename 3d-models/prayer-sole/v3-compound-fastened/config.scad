@@ -74,23 +74,13 @@ boss_clearance = tolerance; // clearance per side between cap boss and collar so
 
 // --- Cap print supports (snap-off where noted) ---
 boss_print_support_enable = true;
-// Built-in struts in the socket-head pocket (+X from the cap end inward for the screw head).
-boss_support_socket_pocket_enable = true;
-boss_support_socket_count   = 3;    // radial ribs per screw (120° spacing)
-boss_support_socket_tip     = 0.36; // mm — thin at +X end for snap-out
-// Pocket math extends slightly past the shell; keep rib tips inside the real outer cap (+X).
-boss_support_socket_outer_inset = 0.5; // mm inside outer_extent for rib outer anchor
-// Nib −X past pocket plane: smaller if that end face is on the bed so prongs don’t “hang past” it.
-boss_support_socket_nib_past_plane = 0.12;
-
-// Optional: side-boss flank struts (usually off; pocket supports are the main fix).
-boss_support_boss_flank_enable = false;
-// When flank on: "y" | "z" | "x" | "notch" — see cap.scad
-boss_support_stack_axis   = "y";
-boss_support_count        = 3;    // fins along X per boss (>=1)
-boss_support_thickness    = 0.5;  // mm along bolt axis (X)
-boss_support_y_offset     = 2.1;  // mm outward from boss center in Y (must be < boss_dia/2)
-boss_support_tip          = 0.38; // mm — thin end at boss for clean snap
+// Support pillars for boss edges — designed for X-down printing.  Straight
+// tapered pillars on the outer boss circumference, from the bed face (+X)
+// to the pocket ceiling; connected at their bases for bed adhesion.
+boss_support_boss_flank_enable = true;
+tree_base_width      = 1.0;       // YZ extent of each pillar at bed face (mm)
+tree_branch_tip      = 0.35;      // tip cube size at boss contact — snap-off point (mm)
+tree_branch_angles   = [-45, -22, 0, 22, 45]; // angles around outer boss half-circle (degrees)
 
 // --- Alignment Tongue ---
 tongue_width     = 10;   // along Y

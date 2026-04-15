@@ -41,133 +41,53 @@ module cap_side_bosses() {
                 cylinder(h=boss_len, d=boss_dia, center=true);
 }
 
-// Thin ribs inside the screw head pocket — unioned after the main difference() so the head
-// cut does not remove them; shaft is re-cut. Each rib is hull(anchor, tip) clipped to the exact
-// pocket cylinder plus a −X “nib” that overlaps solid past the pocket plane (outside the M3
-// shaft in Y) so the mesh is not floating; clip uses full head diameter so ribs meet the wall.
-module cap_socket_head_pocket_supports() {
-    if (boss_print_support_enable && boss_support_socket_pocket_enable && boss_support_socket_count >= 1) {
-        x_ps = outer_extent - head_height + tolerance;
-        pocket_len = head_height + 1;
-        x_pe = x_ps + pocket_len;
-        // Rib outer end: pocket math runs past the minkowski shell; clamp to real cap +X.
-        x_tip = min(x_pe - 0.35, outer_extent - boss_support_socket_outer_inset);
-        nib_x = boss_support_socket_nib_past_plane + 0.175;
-        nib_th = 0.35;
-        head_r = head_pocket_diameter / 2;
+// Support pillars for boss edges — designed for X-down printing.  Straight
+// tapered pillars run from the bed face (+X) to the boss/pocket ceiling,
+// positioned on the outer boss circumference and connected at the base for
+// bed adhesion.  Thin tips at the boss face snap off cleanly.
+// Placed in the outer union so tips survive the screw-head pocket cut.
+module cap_boss_support_trees() {
+    if (boss_print_support_enable && boss_support_boss_flank_enable) {
+        r = boss_dia / 2;
+        x_bed = outer_extent;
+        x_ceiling = outer_extent - head_height + tolerance;
+
         difference() {
             union() {
-                for (pos = bolt_positions) {
-                    z_p = pos[0];
-                    y_p = pos[1];
-                    // Nib just −X of pocket plane, in ±Y past shaft radius, merges with shell
-                    y_nib = y_p + 2.08 * sign(y_p);
-                    for (k = [0 : boss_support_socket_count - 1]) {
-                        a = 90 + k * 120;
-                        dy = cos(a) * (head_r - 0.42);
-                        dz = sin(a) * (head_r - 0.42);
-                        intersection() {
-                            hull() {
-                                translate([x_ps - nib_x, y_nib, z_p])
-                                    cube([nib_th, 0.72, 0.72], center=true);
-                                translate([x_tip, y_p + dy, z_p + dz])
-                                    cube([0.65, boss_support_socket_tip, boss_support_socket_tip], center=true);
-                            }
-                            union() {
-                                translate([x_ps, y_p, z_p])
-                                    rotate([0, 90, 0])
-                                        cylinder(h=pocket_len + 0.02, d=head_pocket_diameter);
-                                translate([x_ps - nib_x, y_nib, z_p])
-                                    cube([nib_th, 0.72, 0.72], center=true);
-                            }
+                for (side = [1, -1]) {
+                    y_boss = side * cap_width / 2;
+
+                    // Tapered pillars from bed face to boss/pocket ceiling
+                    for (a = tree_branch_angles) {
+                        tip_y = y_boss + side * cos(a) * (r - 0.15);
+                        tip_z = bolt_z + sin(a) * (r - 0.15);
+                        hull() {
+                            translate([x_bed, tip_y, tip_z])
+                                cube([0.01, tree_base_width, tree_base_width], center=true);
+                            translate([x_ceiling + 0.05, tip_y, tip_z])
+                                cube([tree_branch_tip, tree_branch_tip, tree_branch_tip], center=true);
+                        }
+                    }
+
+                    // Bridges linking adjacent pillar bases on the bed face
+                    for (i = [0 : len(tree_branch_angles) - 2]) {
+                        a1 = tree_branch_angles[i];
+                        a2 = tree_branch_angles[i + 1];
+                        y1 = y_boss + side * cos(a1) * (r - 0.15);
+                        z1 = bolt_z + sin(a1) * (r - 0.15);
+                        y2 = y_boss + side * cos(a2) * (r - 0.15);
+                        z2 = bolt_z + sin(a2) * (r - 0.15);
+                        hull() {
+                            translate([x_bed - 0.15, y1, z1])
+                                cube([0.3, tree_base_width * 0.4, tree_base_width * 0.4], center=true);
+                            translate([x_bed - 0.15, y2, z2])
+                                cube([0.3, tree_base_width * 0.4, tree_base_width * 0.4], center=true);
                         }
                     }
                 }
             }
             for (pos = bolt_positions)
                 bolt_shaft_hole(pos[0], pos[1]);
-        }
-    }
-}
-
-
-// Optional side-boss flank supports — see boss_support_stack_axis in config.scad.
-module cap_boss_support_fins() {
-    if (boss_print_support_enable && boss_support_boss_flank_enable && boss_support_count >= 1) {
-        boss_len = outer_extent - split_x;
-        r = boss_dia / 2;
-        hole_r = (bolt_dia + bolt_clearance) / 2;
-        y_fin_mag = cap_width / 2 + max(boss_support_y_offset, hole_r + 0.45);
-        if (boss_support_y_offset >= r - 0.05) {
-            echo("WARNING: boss_support_y_offset must be < boss_dia/2 for boss print supports.");
-        } else {
-            dz_arc = sqrt(r * r - (y_fin_mag - cap_width / 2) * (y_fin_mag - cap_width / 2));
-            z_attach = bolt_z - dz_arc + 0.5;
-            z_floor = bolt_z - r - 1.15;
-            span = max(boss_len - 6, 0.5);
-            // Inward Y end: inside shell, outside boss cylinder in Y
-            y_in_mag = cap_width / 2 - r - 0.55;
-            z_band = 0.52;
-            z_low_c = z_floor + z_band / 2 + 0.08;
-            z_hi_c = min(bolt_z + hole_r + 0.85, bolt_z + r - 0.15);
-
-            for (side = [1, -1]) {
-                y_fin = side * y_fin_mag;
-                y_in = side * y_in_mag;
-                for (i = [0 : boss_support_count - 1]) {
-                    t = (boss_support_count <= 1) ? 0.5 : i / (boss_support_count - 1);
-                    xi = split_x + 3 + t * span;
-
-                    if (boss_support_stack_axis == "z") {
-                        hull() {
-                            translate([xi, y_fin, z_floor + 0.35])
-                                cube([boss_support_thickness, 0.72, 0.7], center=true);
-                            translate([xi, y_fin, z_attach])
-                                cube([boss_support_thickness, boss_support_tip, boss_support_tip], center=true);
-                        }
-                    } else if (boss_support_stack_axis == "y") {
-                        // Low-Z band: clears M3 shaft in YZ
-                        hull() {
-                            translate([xi, y_fin, z_low_c])
-                                cube([boss_support_thickness, boss_support_tip, z_band], center=true);
-                            translate([xi, y_in, z_low_c])
-                                cube([boss_support_thickness, 0.72, z_band], center=true);
-                        }
-                        // High-Z band
-                        hull() {
-                            translate([xi, y_fin, z_hi_c])
-                                cube([boss_support_thickness, boss_support_tip, z_band], center=true);
-                            translate([xi, y_in, z_hi_c])
-                                cube([boss_support_thickness, 0.72, z_band], center=true);
-                        }
-                    } else if (boss_support_stack_axis == "x") {
-                        // Along boss axis: tie shell (+X) to outer flank; ends before socket-head pocket.
-                        x_in = split_x + 1.2;
-                        x_out = outer_extent - head_height - 1.8;
-                        z_sp = 0.5;
-                        tz = (boss_support_count <= 1) ? 0.5 : i / (boss_support_count - 1);
-                        zk = z_low_c + tz * (z_hi_c - z_low_c);
-                        translate([(x_in + x_out) / 2, y_fin, zk])
-                            cube([x_out - x_in, 0.55, z_sp], center=true);
-                    } else if (boss_support_stack_axis == "notch") {
-                        // Crevice under boss then up outer Y — only if that crevice faces the bed.
-                        hull() {
-                            translate([xi, y_in, z_floor + 0.35])
-                                cube([boss_support_thickness, 0.72, 0.65], center=true);
-                            translate([xi, y_fin, z_low_c])
-                                cube([boss_support_thickness, boss_support_tip, z_band], center=true);
-                        }
-                        hull() {
-                            translate([xi, y_fin, z_low_c])
-                                cube([boss_support_thickness, boss_support_tip, z_band], center=true);
-                            translate([xi, y_fin, z_attach])
-                                cube([boss_support_thickness, boss_support_tip, boss_support_tip], center=true);
-                        }
-                    } else {
-                        echo("WARNING: boss_support_stack_axis must be \"x\", \"z\", \"y\", or \"notch\".");
-                    }
-                }
-            }
         }
     }
 }
@@ -226,7 +146,6 @@ module cap() {
                 }
                 // Side bosses — half-cylinders at cap Y edges
                 cap_side_bosses();
-                cap_boss_support_fins();
             }
             for (pos = bolt_positions)
                 bolt_hole(pos[0], pos[1]);
@@ -234,7 +153,7 @@ module cap() {
             if (enable_top_lip) top_socket_cut();
             //alignment_groove();
         }
-        cap_socket_head_pocket_supports();
+        cap_boss_support_trees();
     }
 }
 
