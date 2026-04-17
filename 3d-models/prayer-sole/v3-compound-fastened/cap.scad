@@ -52,72 +52,76 @@ module cap_boss_support_trees() {
         x_bed = outer_extent;
         x_ceiling = outer_extent - head_height + tolerance;
 
-        difference() {
-            union() {
-                for (side = [1, -1]) {
-                    y_boss = side * cap_width / 2;
+        intersection() {
+            difference() {
+                union() {
+                    for (side = [1, -1]) {
+                        y_boss = side * cap_width / 2;
 
-                    // Tapered pillars from bed face to boss/pocket ceiling
-                    for (a = tree_branch_angles) {
-                        tip_y = y_boss + side * cos(a) * (r - 0.15);
-                        tip_z = bolt_z + sin(a) * (r - 0.15);
-                        hull() {
-                            translate([x_bed, tip_y, tip_z])
-                                cube([0.01, tree_base_width, tree_base_width], center=true);
-                            translate([x_ceiling + 0.05, tip_y, tip_z])
-                                cube([tree_branch_tip, tree_branch_tip, tree_branch_tip], center=true);
+                        // Tapered pillars from bed face to boss/pocket ceiling
+                        for (a = tree_branch_angles) {
+                            tip_y = y_boss + side * cos(a) * (r - 0.15);
+                            tip_z = bolt_z + sin(a) * (r - 0.15);
+                            hull() {
+                                translate([x_bed, tip_y, tip_z])
+                                    cube([0.01, tree_base_width, tree_base_width], center=true);
+                                translate([x_ceiling + 0.05, tip_y, tip_z])
+                                    cube([tree_branch_tip, tree_branch_tip, tree_branch_tip], center=true);
+                            }
                         }
-                    }
 
-                    // Bridges linking adjacent pillar bases on the bed face
-                    for (i = [0 : len(tree_branch_angles) - 2]) {
-                        a1 = tree_branch_angles[i];
-                        a2 = tree_branch_angles[i + 1];
-                        y1 = y_boss + side * cos(a1) * (r - 0.15);
-                        z1 = bolt_z + sin(a1) * (r - 0.15);
-                        y2 = y_boss + side * cos(a2) * (r - 0.15);
-                        z2 = bolt_z + sin(a2) * (r - 0.15);
-                        hull() {
-                            translate([x_bed - 0.15, y1, z1])
-                                cube([0.3, tree_base_width * 0.4, tree_base_width * 0.4], center=true);
-                            translate([x_bed - 0.15, y2, z2])
-                                cube([0.3, tree_base_width * 0.4, tree_base_width * 0.4], center=true);
-                        }
-                    }
-
-                    // Inward-facing brims at the bed face for adhesion,
-                    // hulled pairwise so adjacent brims merge seamlessly
-                    for (i = [0 : len(tree_branch_angles) - 1]) {
-                        a1 = tree_branch_angles[i];
-                        y1 = y_boss + side * cos(a1) * (r - 0.15);
-                        z1 = bolt_z + sin(a1) * (r - 0.15);
-                        if (i < len(tree_branch_angles) - 1) {
+                        // Bridges linking adjacent pillar bases on the bed face
+                        for (i = [0 : len(tree_branch_angles) - 2]) {
+                            a1 = tree_branch_angles[i];
                             a2 = tree_branch_angles[i + 1];
+                            y1 = y_boss + side * cos(a1) * (r - 0.15);
+                            z1 = bolt_z + sin(a1) * (r - 0.15);
                             y2 = y_boss + side * cos(a2) * (r - 0.15);
                             z2 = bolt_z + sin(a2) * (r - 0.15);
                             hull() {
-                                translate([x_bed, y1, z1])
-                                    cube([tree_brim_thickness, tree_base_width, tree_base_width], center=true);
-                                translate([x_bed, y1 - side * tree_brim_width, z1])
-                                    cube([tree_brim_thickness, tree_base_width * 0.5, tree_base_width], center=true);
-                                translate([x_bed, y2, z2])
-                                    cube([tree_brim_thickness, tree_base_width, tree_base_width], center=true);
-                                translate([x_bed, y2 - side * tree_brim_width, z2])
-                                    cube([tree_brim_thickness, tree_base_width * 0.5, tree_base_width], center=true);
+                                translate([x_bed - 0.15, y1, z1])
+                                    cube([0.3, tree_base_width * 0.4, tree_base_width * 0.4], center=true);
+                                translate([x_bed - 0.15, y2, z2])
+                                    cube([0.3, tree_base_width * 0.4, tree_base_width * 0.4], center=true);
                             }
-                        } else {
-                            hull() {
-                                translate([x_bed, y1, z1])
-                                    cube([tree_brim_thickness, tree_base_width, tree_base_width], center=true);
-                                translate([x_bed, y1 - side * tree_brim_width, z1])
-                                    cube([tree_brim_thickness, tree_base_width * 0.5, tree_base_width], center=true);
+                        }
+
+                        // Inward-facing brims at the bed face for adhesion,
+                        // hulled pairwise so adjacent brims merge seamlessly
+                        for (i = [0 : len(tree_branch_angles) - 1]) {
+                            a1 = tree_branch_angles[i];
+                            y1 = y_boss + side * cos(a1) * (r - 0.15);
+                            z1 = bolt_z + sin(a1) * (r - 0.15);
+                            if (i < len(tree_branch_angles) - 1) {
+                                a2 = tree_branch_angles[i + 1];
+                                y2 = y_boss + side * cos(a2) * (r - 0.15);
+                                z2 = bolt_z + sin(a2) * (r - 0.15);
+                                hull() {
+                                    translate([x_bed, y1, z1])
+                                        cube([tree_brim_thickness, tree_base_width, tree_base_width], center=true);
+                                    translate([x_bed, y1 - side * tree_brim_width, z1])
+                                        cube([tree_brim_thickness, tree_base_width * 0.5, tree_base_width], center=true);
+                                    translate([x_bed, y2, z2])
+                                        cube([tree_brim_thickness, tree_base_width, tree_base_width], center=true);
+                                    translate([x_bed, y2 - side * tree_brim_width, z2])
+                                        cube([tree_brim_thickness, tree_base_width * 0.5, tree_base_width], center=true);
+                                }
+                            } else {
+                                hull() {
+                                    translate([x_bed, y1, z1])
+                                        cube([tree_brim_thickness, tree_base_width, tree_base_width], center=true);
+                                    translate([x_bed, y1 - side * tree_brim_width, z1])
+                                        cube([tree_brim_thickness, tree_base_width * 0.5, tree_base_width], center=true);
+                                }
                             }
                         }
                     }
                 }
+                for (pos = bolt_positions)
+                    bolt_shaft_hole(pos[0], pos[1]);
             }
-            for (pos = bolt_positions)
-                bolt_shaft_hole(pos[0], pos[1]);
+            translate([-big, -big, -big])
+                cube([big + outer_extent, big * 2, big * 2]);
         }
     }
 }
