@@ -81,6 +81,8 @@ boss_support_boss_flank_enable = true;
 tree_base_width      = 1.0;       // YZ extent of each pillar at bed face (mm)
 tree_branch_tip      = 0.35;      // tip cube size at boss contact — snap-off point (mm)
 tree_branch_angles   = [-45, -22, 0, 22, 45]; // angles around outer boss half-circle (degrees)
+tree_brim_width      = 2.0;       // inward extension of brim from each pillar base (mm)
+tree_brim_thickness  = 0.3;       // X-direction thickness of brim at bed face (~1 layer height)
 
 // --- Alignment Tongue ---
 tongue_width     = 10;   // along Y

@@ -84,6 +84,36 @@ module cap_boss_support_trees() {
                                 cube([0.3, tree_base_width * 0.4, tree_base_width * 0.4], center=true);
                         }
                     }
+
+                    // Inward-facing brims at the bed face for adhesion,
+                    // hulled pairwise so adjacent brims merge seamlessly
+                    for (i = [0 : len(tree_branch_angles) - 1]) {
+                        a1 = tree_branch_angles[i];
+                        y1 = y_boss + side * cos(a1) * (r - 0.15);
+                        z1 = bolt_z + sin(a1) * (r - 0.15);
+                        if (i < len(tree_branch_angles) - 1) {
+                            a2 = tree_branch_angles[i + 1];
+                            y2 = y_boss + side * cos(a2) * (r - 0.15);
+                            z2 = bolt_z + sin(a2) * (r - 0.15);
+                            hull() {
+                                translate([x_bed, y1, z1])
+                                    cube([tree_brim_thickness, tree_base_width, tree_base_width], center=true);
+                                translate([x_bed, y1 - side * tree_brim_width, z1])
+                                    cube([tree_brim_thickness, tree_base_width * 0.5, tree_base_width], center=true);
+                                translate([x_bed, y2, z2])
+                                    cube([tree_brim_thickness, tree_base_width, tree_base_width], center=true);
+                                translate([x_bed, y2 - side * tree_brim_width, z2])
+                                    cube([tree_brim_thickness, tree_base_width * 0.5, tree_base_width], center=true);
+                            }
+                        } else {
+                            hull() {
+                                translate([x_bed, y1, z1])
+                                    cube([tree_brim_thickness, tree_base_width, tree_base_width], center=true);
+                                translate([x_bed, y1 - side * tree_brim_width, z1])
+                                    cube([tree_brim_thickness, tree_base_width * 0.5, tree_base_width], center=true);
+                            }
+                        }
+                    }
                 }
             }
             for (pos = bolt_positions)
