@@ -6,8 +6,8 @@ include <../../tread.scad>
 // Non-empty profile replaces stamp-generated line1..4 for this render.
 info_stamp_profile = [
     ["In Loving Memory of", 3.5],
-    ["Leonard and Irene", 4],
-    ["Pospie", 4]
+    ["Leonard and Irene", 3.5],
+    ["Pospie", 3.5]
 ];
 info_stamp_gaps = [5.5, 5.5, 5.5];
 info_stamp_line1_rule = false;

@@ -5,7 +5,7 @@ include <../../tread.scad>
 
 info_stamp_profile = [
     ["P.T.L. ", 6.5, "Segoe UI Symbol:style=Regular"],
-    ["Praise the Lord", 2.5]
+    ["Praise the Lord", 4]
 ];
 info_stamp_gaps = [8];
 info_stamp_line1_rule = false;
