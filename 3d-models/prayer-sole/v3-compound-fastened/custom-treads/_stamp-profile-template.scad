@@ -18,6 +18,9 @@
 //
 // info_stamp_line1_rule = true;
 // tread_stamp_top = true;
+//
+// --- Two-color (text inlay) ---
+// render_text_inlay = true;  // renders only the text as a positive body (export as second STL for white filament)
 
 // --- Legacy form (export / JSON workflow): leave profile empty, set line1..4 + per-line vars in stamp-generated or overrides ---
 // info_stamp_profile = [];

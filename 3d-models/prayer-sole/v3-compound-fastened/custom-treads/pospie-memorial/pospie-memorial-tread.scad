@@ -1,7 +1,7 @@
 // --- CUSTOM TREAD: Pospie Memorial ---
-// Personalized tread: geometry from ../tread.scad. Stamp via info_stamp_profile (see _stamp-profile-template.scad).
+// Personalized tread: geometry from ../../tread.scad. Stamp via info_stamp_profile (see ../_stamp-profile-template.scad).
 
-include <../tread.scad>
+include <../../tread.scad>
 
 // Non-empty profile replaces stamp-generated line1..4 for this render.
 info_stamp_profile = [

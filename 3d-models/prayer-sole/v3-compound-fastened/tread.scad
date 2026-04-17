@@ -48,10 +48,19 @@ module tread_positive() {
     }
 }
 
+render_text_inlay = false;
+
 module main() {
-    difference() {
-        tread_positive();
-        part_top_info_stamp_deboss(tread_stamp_top, tread_z_top, tread_stamp_radial_ref);
+    if (render_text_inlay) {
+        intersection() {
+            tread_positive();
+            part_top_info_stamp_deboss(tread_stamp_top, tread_z_top, tread_stamp_radial_ref);
+        }
+    } else {
+        difference() {
+            tread_positive();
+            part_top_info_stamp_deboss(tread_stamp_top, tread_z_top, tread_stamp_radial_ref);
+        }
     }
 }
 
