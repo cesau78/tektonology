@@ -52,21 +52,36 @@ function Format-Segment($seg) {
     $hasSc   = ($null -ne $seg.sc) -and ($seg.sc -ne 0)
     $hasSp   = ($null -ne $seg.spacing) -and ($seg.spacing -ne 1)
     $hasUl   = ($null -ne $seg.underline) -and ($seg.underline -eq $true)
+    $hasUlS  = ($null -ne $seg.underline_scale) -and ($seg.underline_scale -ne 1)
+    $hasUlO  = ($null -ne $seg.underline_x_offset) -and ($seg.underline_x_offset -ne 0)
+    $hasUlYO = ($null -ne $seg.underline_y_offset) -and ($seg.underline_y_offset -ne 0)
+    $anyUlExt = $hasUlS -or $hasUlO -or $hasUlYO
 
-    if ($hasFont -or $hasSc -or $hasSp -or $hasUl) {
+    if ($hasFont -or $hasSc -or $hasSp -or $hasUl -or $anyUlExt) {
         $font = if ($hasFont) { $seg.font } else { "" }
         $parts += """$(Escape-ScadString $font)"""
     }
-    if ($hasSc -or $hasSp -or $hasUl) {
+    if ($hasSc -or $hasSp -or $hasUl -or $anyUlExt) {
         $sc = if ($hasSc) { $seg.sc } else { 0 }
         $parts += "$sc"
     }
-    if ($hasSp -or $hasUl) {
+    if ($hasSp -or $hasUl -or $anyUlExt) {
         $sp = if ($hasSp) { $seg.spacing } else { 1 }
         $parts += "$sp"
     }
-    if ($hasUl) {
+    if ($hasUl -or $anyUlExt) {
         $parts += "true"
+    }
+    if ($anyUlExt) {
+        $uls = if ($hasUlS) { $seg.underline_scale } else { 1 }
+        $parts += "$uls"
+    }
+    if ($hasUlO -or $hasUlYO) {
+        $ulo = if ($hasUlO) { $seg.underline_x_offset } else { 0 }
+        $parts += "$ulo"
+    }
+    if ($hasUlYO) {
+        $parts += "$($seg.underline_y_offset)"
     }
 
     return "[" + ($parts -join ", ") + "]"
@@ -90,19 +105,28 @@ function Convert-OneProfile([string]$jsonFile) {
         $row = $rows[$ri]
         $halign = if ($null -ne $row.halign) { $row.halign } else { "center" }
         $valign = if ($null -ne $row.valign) { $row.valign } else { "middle" }
+        $hasXO = ($null -ne $row.x_offset) -and ($row.x_offset -ne 0)
+        $hasYO = ($null -ne $row.y_offset) -and ($row.y_offset -ne 0)
         [void]$sb.Append("    [""$halign"", ""$valign"", [")
         $segs = @($row.segments)
         if ($segs.Count -eq 1) {
             [void]$sb.AppendLine("")
             [void]$sb.AppendLine("        $(Format-Segment $segs[0]),")
-            [void]$sb.AppendLine("    ]],")
         } else {
             [void]$sb.AppendLine("")
             for ($si = 0; $si -lt $segs.Count; $si++) {
                 [void]$sb.AppendLine("        $(Format-Segment $segs[$si]),")
             }
-            [void]$sb.AppendLine("    ]],")
         }
+        $rowTrail = "]"
+        if ($hasXO -or $hasYO) {
+            $xo = if ($hasXO) { $row.x_offset } else { 0 }
+            $rowTrail += ", $xo"
+        }
+        if ($hasYO) {
+            $rowTrail += ", $($row.y_offset)"
+        }
+        [void]$sb.AppendLine("    $rowTrail],")
     }
     [void]$sb.AppendLine("];")
 

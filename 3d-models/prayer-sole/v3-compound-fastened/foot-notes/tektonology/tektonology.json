@@ -3,9 +3,11 @@
     {
       "margin_bottom": 2.5,
       "halign": "center",
-      "valign": "middle",
+      "valign": "top",
+      "x_offset": -2,
       "segments": [
-        { "text": "Tektonology", "font": "Open Sans:style=Bold", "size": 5, "spacing": 1.1, "underline": true }
+        { "text": "T", "font": "Open Sans:style=Bold", "size": 6.8, "spacing": 1.1},
+        { "text": "ektonology", "font": "Open Sans:style=Bold", "size": 5, "spacing": 1.1, "underline": true, "underline_scale": 1.05, "underline_x_offset": -2,"underline_y_offset": 0.7 }
       ]
     },
     {

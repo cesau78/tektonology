@@ -2,9 +2,10 @@
 // Regenerate: scripts/Convert-StampProfile.ps1
 
 info_stamp_profile = [
-    ["center", "middle", [
-        ["Tektonology", 5, "Open Sans:style=Bold", 0, 1.1, true],
-    ]],
+    ["center", "top", [
+        ["T", 6.8, "Open Sans:style=Bold", 0, 1.1],
+        ["ektonology", 5, "Open Sans:style=Bold", 0, 1.1, true, 1.05, -2, 0.7],
+    ], -2],
     ["center", "middle", [
         ["Prayer Sole v3.8.6", 3.5, "Consolas:style=Bold", 3, 1.25],
     ]],

@@ -25,7 +25,9 @@
 //      valign        (optional)  "top" | "middle" | "bottom"  (default "middle")
 //      margin_top    (optional)  number — spacing above (default 0)
 //      margin_bottom (optional)  number — spacing below (default 0)
-//      segments      (required)  array of segment objects
+//      x_offset      (optional)  number — nudge entire row horizontally (+ right, - left, default 0)
+    //      y_offset      (optional)  number — nudge entire row vertically (+ down, - up, default 0)
+    //      segments      (required)  array of segment objects
 //
 //    Segment keys:
 //      text      (required)  string — supports {version} placeholder (resolved from stamp-config.json)
@@ -33,7 +35,10 @@
 //      font      (optional)  string — defaults to kbc_mark_font
 //      sc        (optional)  number — smallcaps size (0 = off)
 //      spacing   (optional)  number — inter-character spacing (1 = normal)
-//      underline (optional)  bool   — draw an underline beneath this segment (default false)
+//      underline        (optional)  bool   — draw an underline beneath this segment (default false)
+    //      underline_scale  (optional)  number — scale the underline width (1 = full, 0.9 = 90%, default 1)
+    //      underline_x_offset (optional)  number — horizontal shift in model units (+ right, - left, default 0)
+    //      underline_y_offset (optional)  number — vertical shift in model units (+ down, - up, default 0)
 //
 //    Template variables:
 //      {version}  — replaced with product_version from stamp-config.json
@@ -55,9 +60,9 @@
 //
 // --- Segmented form ---
 // Each row: [halign, valign, [segment, ...]]
-// Each segment: [text, size, font, sc, spacing, underline]
+// Each segment: [text, size, font, sc, spacing, underline, underline_scale, underline_x_offset, underline_y_offset]
 //   — only text and size are required; font defaults to kbc_mark_font,
-//     smallcaps defaults to 0, spacing to 1, underline to false.
+//     smallcaps defaults to 0, spacing to 1, underline to false, scale to 1, offsets to 0.
 // halign: "left", "center", or "right"  (horizontal alignment of the row)
 // valign: "top", "middle", or "bottom"  (vertical alignment of segments within the row)
 //

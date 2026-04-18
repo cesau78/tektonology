@@ -184,11 +184,13 @@ module _smallcaps_line(s, size, sc_size, font, halign="center", spacing=1) {
         }
 }
 
-module _stamp_text(s, size, sc_size, font, halign, spacing=1) {
+function _map_valign(v) = v == "top" ? "top" : v == "bottom" ? "bottom" : "center";
+
+module _stamp_text(s, size, sc_size, font, halign, spacing=1, valign="center") {
     if (sc_size > 0)
         _smallcaps_line(s, size, sc_size, font, halign, spacing);
     else
-        text(s, size=size, font=font, halign=halign, valign="center", spacing=spacing);
+        text(s, size=size, font=font, halign=halign, valign=valign, spacing=spacing);
 }
 
 // --- Segmented profile format ---
@@ -204,10 +206,15 @@ function _seg_font(seg, def) = len(seg) >= 3 && is_string(seg[2]) ? seg[2] : def
 function _seg_sc(seg) = len(seg) >= 4 && is_num(seg[3]) ? seg[3] : 0;
 function _seg_spacing(seg) = len(seg) >= 5 && is_num(seg[4]) ? seg[4] : 1;
 function _seg_underline(seg) = len(seg) >= 6 && seg[5] == true;
+function _seg_underline_scale(seg) = len(seg) >= 7 && is_num(seg[6]) ? seg[6] : 1;
+function _seg_underline_x_offset(seg) = len(seg) >= 8 && is_num(seg[7]) ? seg[7] : 0;
+function _seg_underline_y_offset(seg) = len(seg) >= 9 && is_num(seg[8]) ? seg[8] : 0;
 
 function _row_halign(row) = row[0];
 function _row_valign(row) = row[1];
 function _row_segments(row) = row[2];
+function _row_x_offset(row) = len(row) >= 4 && is_num(row[3]) ? row[3] : 0;
+function _row_y_offset(row) = len(row) >= 5 && is_num(row[4]) ? row[4] : 0;
 function _row_max_size(row) = max([for (s = _row_segments(row)) _seg_size(s)]);
 
 function _seg_est_width(seg) =
@@ -244,27 +251,33 @@ function _stamp_seg_y(i, gaps, default_gap) =
     i == 0 ? 0 : _stamp_seg_y(i-1, gaps, default_gap) -
     (i-1 < len(gaps) ? gaps[i-1] : default_gap);
 
+// Y of the em-box center relative to the segment origin for each valign mode.
+function _va_center_y(sz, va) =
+    va == "top" ? -sz/2 : va == "bottom" ? sz/2 : 0;
+
 module _stamp_segment_row(segs, halign, valign, default_font) {
-    max_h = _row_max_eff_height(segs);
+    text_va = _map_valign(valign);
+
     // Single-segment rows: use the font engine's native halign for accurate
     // centering (important for proportional fonts). Multi-segment rows must
     // use estimated advances for relative layout.
     if (len(segs) == 1) {
         seg = segs[0];
-        dy = valign == "middle" ? (max_h - _seg_eff_height(seg)) / 2 :
-             valign == "top"    ? (max_h - _seg_eff_height(seg)) : 0;
-        translate([0, dy, 0])
-            _stamp_text(_seg_text(seg), _seg_size(seg), _seg_sc(seg),
-                        _seg_font(seg, default_font), halign, _seg_spacing(seg));
+        _stamp_text(_seg_text(seg), _seg_size(seg), _seg_sc(seg),
+                    _seg_font(seg, default_font), halign, _seg_spacing(seg),
+                    text_va);
         if (_seg_underline(seg)) {
             seg_w = _seg_est_width(seg);
             seg_sz = _seg_size(seg);
             ul_pad = seg_sz * sc_advance_factor * 0.5;
-            ul_w = seg_w + ul_pad;
+            ul_w = (seg_w + ul_pad) * _seg_underline_scale(seg);
+            ul_dx = _seg_underline_x_offset(seg);
+            ul_dy = _seg_underline_y_offset(seg);
             rule_t = max(0.28, seg_sz * kbc_mark_rule_stroke_scale);
-            uy = dy - seg_sz * kbc_mark_rule_line1_descender_factor - rule_t / 2;
+            cy = _va_center_y(seg_sz, text_va);
+            uy = cy - seg_sz * kbc_mark_rule_line1_descender_factor - rule_t / 2 - ul_dy;
             if (ul_w > 1)
-                translate([0, uy, 0])
+                translate([ul_dx, uy, 0])
                     square([ul_w, rule_t], center = true);
         }
     } else {
@@ -273,21 +286,23 @@ module _stamp_segment_row(segs, halign, valign, default_font) {
              (halign == "right") ? -tw : 0;
         for (i = [0 : max(0, len(segs)-1)]) {
             seg = segs[i];
-            dy = valign == "middle" ? (max_h - _seg_eff_height(seg)) / 2 :
-                 valign == "top"    ? (max_h - _seg_eff_height(seg)) : 0;
             seg_x = x0 + _seg_x_at(segs, i);
-            translate([seg_x, dy, 0])
+            translate([seg_x, 0, 0])
                 _stamp_text(_seg_text(seg), _seg_size(seg), _seg_sc(seg),
-                            _seg_font(seg, default_font), "left", _seg_spacing(seg));
+                            _seg_font(seg, default_font), "left", _seg_spacing(seg),
+                            text_va);
             if (_seg_underline(seg)) {
                 seg_w = _seg_est_width(seg);
                 seg_sz = _seg_size(seg);
                 ul_pad = seg_sz * sc_advance_factor * 0.5;
-                ul_w = seg_w + ul_pad;
+                ul_w = (seg_w + ul_pad) * _seg_underline_scale(seg);
+                ul_dx = _seg_underline_x_offset(seg);
+                ul_dy = _seg_underline_y_offset(seg);
                 rule_t = max(0.28, seg_sz * kbc_mark_rule_stroke_scale);
-                uy = dy - seg_sz * kbc_mark_rule_line1_descender_factor - rule_t / 2;
+                cy = _va_center_y(seg_sz, text_va);
+                uy = cy - seg_sz * kbc_mark_rule_line1_descender_factor - rule_t / 2 - ul_dy;
                 if (ul_w > 1)
-                    translate([seg_x + ul_w / 2, uy, 0])
+                    translate([seg_x + ul_w / 2 + ul_dx, uy, 0])
                         square([ul_w, rule_t], center = true);
             }
         }
@@ -315,14 +330,17 @@ module _stamp_deboss_segmented(z_top, radial_ref, text_x_half=0) {
             for (i = [0 : n-1]) {
                 row = info_stamp_profile[i];
                 halign = _row_halign(row);
+                va = _row_valign(row);
                 segs = _row_segments(row);
                 hx = _tx_edge > 0 ? (halign == "left" ? -_tx_edge :
                      halign == "right" ? _tx_edge : 0) : 0;
+                // Gap system assumes valign="center"; compensate for top/bottom
+                // so the row occupies the same vertical space as a centered row.
+                va_adj = _va_center_y(sizes[i], _map_valign(va));
 
                 linear_extrude(depth)
-                    translate([hx, ys[i], 0])
-                        _stamp_segment_row(segs, halign, _row_valign(row),
-                                           kbc_mark_font);
+                    translate([hx + _row_x_offset(row), ys[i] - va_adj - _row_y_offset(row), 0])
+                        _stamp_segment_row(segs, halign, va, kbc_mark_font);
             }
         }
 }
