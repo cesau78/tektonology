@@ -3,7 +3,7 @@
   Converts stamp-profile JSON files to positional-array OpenSCAD (.gen.scad).
 .DESCRIPTION
   Reads one JSON file (via -JsonPath) or discovers all *.json files under
-  custom-treads/ and writes a *-profile.gen.scad next to each source.
+  foot-notes/ and writes a *-profile.gen.scad next to each source.
   The generated file uses the segmented-profile format that stamp-common.scad
   already parses, so no changes to the rendering pipeline are needed.
 
@@ -11,7 +11,7 @@
     {version}  - replaced with product_version from stamp-config.json
 .EXAMPLE
   .\Convert-StampProfile.ps1
-  .\Convert-StampProfile.ps1 -JsonPath ..\custom-treads\praise-the-lord\praise-the-lord.json
+  .\Convert-StampProfile.ps1 -JsonPath ..\foot-notes\praise-the-lord\praise-the-lord.json
 #>
 param(
     [string]$JsonPath = ""
@@ -141,15 +141,15 @@ if (-not [string]::IsNullOrWhiteSpace($JsonPath)) {
     $resolved = (Resolve-Path -LiteralPath $JsonPath).Path
     Convert-OneProfile $resolved
 } else {
-    $customDir = Join-Path $ModelDir "custom-treads"
+    $customDir = Join-Path $ModelDir "foot-notes"
     if (-not (Test-Path -LiteralPath $customDir)) {
-        Write-Host "No custom-treads/ directory found; nothing to do."
+        Write-Host "No foot-notes/ directory found; nothing to do."
         return
     }
     $jsonFiles = Get-ChildItem -LiteralPath $customDir -Recurse -Filter "*.json" |
         Where-Object { $_.Name -ne "_stamp-profile-template.json" }
     if ($jsonFiles.Count -eq 0) {
-        Write-Host "No JSON profile files found under custom-treads/."
+        Write-Host "No JSON profile files found under foot-notes/."
         return
     }
     foreach ($f in $jsonFiles) {

@@ -40,7 +40,7 @@
 //      Example: { "text": "Prayer Sole {version}", "size": 3.5 }
 //
 // 2. Run the converter (or use the file watcher):
-//      scripts/Convert-StampProfile.ps1                    # all custom-treads/*.json
+//      scripts/Convert-StampProfile.ps1                    # all foot-notes/*.json
 //      scripts/Convert-StampProfile.ps1 -JsonPath <file>   # single file
 //      scripts/Watch-StampProfiles.ps1                     # auto-regenerate on save
 //

@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
-  Watches custom-treads/ for JSON changes and auto-regenerates .gen.scad files.
+  Watches foot-notes/ for JSON changes and auto-regenerates .gen.scad files.
 .DESCRIPTION
-  Uses FileSystemWatcher to monitor *.json files under custom-treads/.
+  Uses FileSystemWatcher to monitor *.json files under foot-notes/.
   On any save, runs Convert-StampProfile.ps1 for the changed file.
   Press Ctrl+C to stop.
 .EXAMPLE
@@ -11,7 +11,7 @@
 
 $ErrorActionPreference = "Stop"
 $ModelDir = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
-$WatchDir = Join-Path $ModelDir "custom-treads"
+$WatchDir = Join-Path $ModelDir "foot-notes"
 $ConvertScript = Join-Path $PSScriptRoot "Convert-StampProfile.ps1"
 
 if (-not (Test-Path -LiteralPath $WatchDir)) {
