@@ -112,7 +112,7 @@ function Convert-OneProfile([string]$jsonFile) {
         foreach ($seg in $segs) {
             $scVal = if ($null -ne $seg.sc) { [double]$seg.sc } else { 0 }
             $szVal = [double]$seg.size
-            if ($scVal -gt 0 -and $scVal -lt 3.5) {
+            if ($scVal -gt 0 -and $scVal -lt 3.5 -and $seg.text.Trim() -ne "") {
                 Write-Host ("  WARNING: '{0}' sc={1} (row {2}) -- sc under 3.5 may not print cleanly with TPU inlays" -f $seg.text, $scVal, $ri) -ForegroundColor Yellow
             }
             if ($szVal -gt 0 -and $szVal -lt 3.5 -and $scVal -eq 0 -and $seg.text.Trim() -ne "") {
