@@ -7,10 +7,10 @@ info_stamp_profile = [
         ["ektonology", 5, "Open Sans:style=Bold", 0, 1.1, true, 1.05, -2, 0.7],
     ], -2],
     ["center", "middle", [
-        ["Prayer Sole v3.8.6", 3.5, "Consolas:style=Bold", 3, 1.25],
+        ["Prayer Sole v3.8.6", 3.5, "Consolas:style=Bold", 3.5, 1.25],
     ]],
     ["center", "middle", [
-        ["Psalm 145:14", 3.5, "Consolas:style=Bold", 3, 1.25],
+        ["Psalm 145:14", 3.5, "Consolas:style=Bold", 3.5, 1.25],
     ]],
 ];
 info_stamp_gaps = [6.875, 4.775];

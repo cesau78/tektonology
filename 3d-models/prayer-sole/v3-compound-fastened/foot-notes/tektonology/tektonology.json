@@ -12,13 +12,13 @@
     },
     {
       "segments": [
-        { "text": "Prayer Sole {version}", "font": "Consolas:style=Bold", "size": 3.5, "sc": 3, "spacing": 1.25 }
+        { "text": "Prayer Sole {version}", "font": "Consolas:style=Bold", "size": 3.5, "sc": 3.5, "spacing": 1.25 }
       ],
       "margin_bottom": 0.4
     },
     {
       "segments": [
-        { "text": "Psalm 145:14", "font": "Consolas:style=Bold", "size": 3.5, "sc": 3, "spacing": 1.25 }
+        { "text": "Psalm 145:14", "font": "Consolas:style=Bold", "size": 3.5, "sc": 3.5, "spacing": 1.25 }
       ]
     }
   ]

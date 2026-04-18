@@ -40,7 +40,11 @@
     //      underline_x_offset (optional)  number — horizontal shift in model units (+ right, - left, default 0)
     //      underline_y_offset (optional)  number — vertical shift in model units (+ down, - up, default 0)
 //
-//    Template variables:
+//    Printability (TPU two-color inlay):
+    //      size and sc below 3.5 may not print cleanly — fine details are lost.
+    //      Prefer Bold font weights for sizes under 5. The converter warns on sc/size < 3.5.
+    //
+    //    Template variables:
 //      {version}  — replaced with product_version from stamp-config.json
 //      Example: { "text": "Prayer Sole {version}", "size": 3.5 }
 //
