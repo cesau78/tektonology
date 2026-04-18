@@ -1,6 +1,5 @@
 // --- CUSTOM TREAD: Tektonology (default stamp) ---
-// Uses the default stamp-generated text with two-color support.
+// Edit tektonology.json, then run scripts/Convert-StampProfile.ps1 to regenerate the .gen.scad.
 
 include <../../tread.scad>
-
-tread_stamp_top = true;
+include <tektonology-profile.gen.scad>

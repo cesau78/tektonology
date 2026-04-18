@@ -1,0 +1,23 @@
+{
+  "rows": [
+    {
+      "margin_bottom": 3.625,
+      "halign": "center",
+      "valign": "middle",
+      "segments": [
+        { "text": "P.T.L.", "size": 6.5, "font": "Consolas:style=Bold" }
+      ]
+    },
+    {
+      "halign": "center",
+      "valign": "bottom",
+      "segments": [
+        { "text": "Praise", "size": 4.5, "font": "Consolas:style=Bold", "sc": 3.5, "spacing": 1.4 },
+        { "text": " ", "size": 2.5, "font": "Consolas:style=Bold", "sc": 3.5, "spacing": 1 },
+        { "text": "the", "size": 4.5, "font": "Consolas:style=Bold", "sc": 3.5, "spacing": 1.4 },
+        { "text": " ", "size": 2.5, "font": "Consolas:style=Bold", "sc": 3.5, "spacing": 1 },
+        { "text": "Lord", "size": 4.5, "font": "Consolas:style=Bold", "sc": 3.5, "spacing": 1.4 }
+      ]
+    }
+  ]
+}

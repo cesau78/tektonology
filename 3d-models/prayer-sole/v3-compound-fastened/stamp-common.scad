@@ -49,14 +49,12 @@ info_stamp_line4_spacing = 1.1;
 info_stamp_line1_rule = true;
 info_stamp_gap_1_2 = kbc_mark_gap_1_2;
 
-// Compact custom layouts: non-empty list switches line source to profile rows (legacy line1..4 ignored for text).
-// Each row: [ "text", size, "font", "halign", smallcaps_size, spacing ]
-//   — omit trailing entries to use defaults (font kbc_mark_font, halign center, no smallcaps, spacing 1).
-// Shorthand: if 3rd element is a number, it is smallcaps_size (default font/halign assumed):
-//   ["Praise the Lord", 3.5, 3]      →  smallcaps at size 3, default font/spacing.
-//   ["Praise the Lord", 3.5, 3, 1.1] →  smallcaps at size 3, spacing 1.1.
+// Custom stamp layouts: non-empty list switches line source to profile rows (legacy line1..4 ignored for text).
+// Segmented format (recommended): each row is [halign, valign, [segment, ...]]
+//   Segment: [text, size] or [text, size, font] or [text, size, font, smallcaps_size, spacing]
+// Legacy flat format (auto-detected when row[2] is not a list): ["text", size, "font", "halign", sc, spacing]
 info_stamp_profile = [];
-// Optional [ gap between line1–2, line2–3, line3–4 ]; empty [] uses info_stamp_gap_1_2 + kbc_mark_gap_2_3 / _3_4.
+// Optional [ gap row0–1, row1–2, ... ]; empty [] uses kbc_mark_gap_2_3 (segmented) or per-line defaults (legacy).
 info_stamp_gaps = [];
 
 function stamp_default_size_for_line(i) =
@@ -193,8 +191,152 @@ module _stamp_text(s, size, sc_size, font, halign, spacing=1) {
         text(s, size=size, font=font, halign=halign, valign="center", spacing=spacing);
 }
 
+// --- Segmented profile format ---
+// Row: [halign, valign, [segment, ...]]
+// Segment: [text, size] or [text, size, font] or [text, size, font, smallcaps_size, spacing]
+
+function _is_segmented_profile() =
+    len(info_stamp_profile) > 0 && is_list(info_stamp_profile[0][2]);
+
+function _seg_text(seg) = seg[0];
+function _seg_size(seg) = seg[1];
+function _seg_font(seg, def) = len(seg) >= 3 && is_string(seg[2]) ? seg[2] : def;
+function _seg_sc(seg) = len(seg) >= 4 && is_num(seg[3]) ? seg[3] : 0;
+function _seg_spacing(seg) = len(seg) >= 5 && is_num(seg[4]) ? seg[4] : 1;
+function _seg_underline(seg) = len(seg) >= 6 && seg[5] == true;
+
+function _row_halign(row) = row[0];
+function _row_valign(row) = row[1];
+function _row_segments(row) = row[2];
+function _row_max_size(row) = max([for (s = _row_segments(row)) _seg_size(s)]);
+
+function _seg_est_width(seg) =
+    let(
+        t = _seg_text(seg), sz = _seg_size(seg),
+        sc = _seg_sc(seg), sp = _seg_spacing(seg)
+    )
+    sc > 0 ? _sc_total_w(t, sz, sc, sp) : len(t) * sz * sc_advance_factor * sp;
+
+function _row_total_width(segs, i=0) =
+    i >= len(segs) ? 0 : _seg_est_width(segs[i]) + _row_total_width(segs, i+1);
+
+function _seg_x_at(segs, idx, i=0) =
+    i >= idx ? 0 : _seg_est_width(segs[i]) + _seg_x_at(segs, idx, i+1);
+
+function _row_char_count(segs, i=0) =
+    i >= len(segs) ? 0 : len(_seg_text(segs[i])) + _row_char_count(segs, i+1);
+
+// True when every character in s is a-z (used to decide whether the tallest
+// glyph in a smallcaps segment is size or sc_size).
+function _all_lower(s, i=0) =
+    i >= len(s) ? true :
+    (!_sc_is_lower(s[i]) ? false : _all_lower(s, i+1));
+
+// Effective visual height: the size of the tallest rendered glyph.
+function _seg_eff_height(seg) =
+    let(sc = _seg_sc(seg), sz = _seg_size(seg))
+    sc > 0 ? (_all_lower(_seg_text(seg)) ? sc : sz) : sz;
+
+function _row_max_eff_height(segs, i=0) =
+    i >= len(segs) ? 0 : max(_seg_eff_height(segs[i]), _row_max_eff_height(segs, i+1));
+
+function _stamp_seg_y(i, gaps, default_gap) =
+    i == 0 ? 0 : _stamp_seg_y(i-1, gaps, default_gap) -
+    (i-1 < len(gaps) ? gaps[i-1] : default_gap);
+
+module _stamp_segment_row(segs, halign, valign, default_font) {
+    max_h = _row_max_eff_height(segs);
+    // Single-segment rows: use the font engine's native halign for accurate
+    // centering (important for proportional fonts). Multi-segment rows must
+    // use estimated advances for relative layout.
+    if (len(segs) == 1) {
+        seg = segs[0];
+        dy = valign == "middle" ? (max_h - _seg_eff_height(seg)) / 2 :
+             valign == "top"    ? (max_h - _seg_eff_height(seg)) : 0;
+        translate([0, dy, 0])
+            _stamp_text(_seg_text(seg), _seg_size(seg), _seg_sc(seg),
+                        _seg_font(seg, default_font), halign, _seg_spacing(seg));
+        if (_seg_underline(seg)) {
+            seg_w = _seg_est_width(seg);
+            seg_sz = _seg_size(seg);
+            ul_pad = seg_sz * sc_advance_factor * 0.5;
+            ul_w = seg_w + ul_pad;
+            rule_t = max(0.28, seg_sz * kbc_mark_rule_stroke_scale);
+            uy = dy - seg_sz * kbc_mark_rule_line1_descender_factor - rule_t / 2;
+            if (ul_w > 1)
+                translate([0, uy, 0])
+                    square([ul_w, rule_t], center = true);
+        }
+    } else {
+        tw = _row_total_width(segs);
+        x0 = (halign == "center") ? -tw/2 :
+             (halign == "right") ? -tw : 0;
+        for (i = [0 : max(0, len(segs)-1)]) {
+            seg = segs[i];
+            dy = valign == "middle" ? (max_h - _seg_eff_height(seg)) / 2 :
+                 valign == "top"    ? (max_h - _seg_eff_height(seg)) : 0;
+            seg_x = x0 + _seg_x_at(segs, i);
+            translate([seg_x, dy, 0])
+                _stamp_text(_seg_text(seg), _seg_size(seg), _seg_sc(seg),
+                            _seg_font(seg, default_font), "left", _seg_spacing(seg));
+            if (_seg_underline(seg)) {
+                seg_w = _seg_est_width(seg);
+                seg_sz = _seg_size(seg);
+                ul_pad = seg_sz * sc_advance_factor * 0.5;
+                ul_w = seg_w + ul_pad;
+                rule_t = max(0.28, seg_sz * kbc_mark_rule_stroke_scale);
+                uy = dy - seg_sz * kbc_mark_rule_line1_descender_factor - rule_t / 2;
+                if (ul_w > 1)
+                    translate([seg_x + ul_w / 2, uy, 0])
+                        square([ul_w, rule_t], center = true);
+            }
+        }
+    }
+}
+
+module _stamp_deboss_segmented(z_top, radial_ref, text_x_half=0) {
+    depth = kbc_info_stamp_depth + 0.02;
+    _tx_inset = 1.5;
+    _tx_edge = text_x_half > 0 ? text_x_half - _tx_inset : 0;
+    n = len(info_stamp_profile);
+    default_gap = kbc_mark_gap_2_3;
+    stamp_shift_y = radial_ref * kbc_mark_radial_shift_fraction;
+
+    ys = [for (i = [0:n-1]) _stamp_seg_y(i, info_stamp_gaps, default_gap)];
+    sizes = [for (i = [0:n-1]) _row_max_size(info_stamp_profile[i])];
+    bbox_top = ys[0] + sizes[0] / 2;
+    bbox_bot = ys[n-1] - sizes[n-1] / 2;
+    center_adj = -(bbox_top + bbox_bot) / 2;
+
+    translate([0, stamp_shift_y, z_top + 0.01])
+        rotate([180, 0, 0])
+        mirror([1, 0, 0])
+        translate([0, center_adj, 0]) {
+            for (i = [0 : n-1]) {
+                row = info_stamp_profile[i];
+                halign = _row_halign(row);
+                segs = _row_segments(row);
+                hx = _tx_edge > 0 ? (halign == "left" ? -_tx_edge :
+                     halign == "right" ? _tx_edge : 0) : 0;
+
+                linear_extrude(depth)
+                    translate([hx, ys[i], 0])
+                        _stamp_segment_row(segs, halign, _row_valign(row),
+                                           kbc_mark_font);
+            }
+        }
+}
+
 // Deboss on the top flat (z = z_top), read from above into the coupler socket.
 module part_top_info_stamp_deboss(enable, z_top, radial_ref, text_x_half=0) {
+    if (enable && _is_segmented_profile()) {
+        _stamp_deboss_segmented(z_top, radial_ref, text_x_half);
+    } else {
+        _stamp_deboss_classic(enable, z_top, radial_ref, text_x_half);
+    }
+}
+
+module _stamp_deboss_classic(enable, z_top, radial_ref, text_x_half=0) {
     depth = kbc_info_stamp_depth + 0.02;
     _tx_inset = 1.5;
     _tx_edge = text_x_half > 0 ? text_x_half - _tx_inset : 0;

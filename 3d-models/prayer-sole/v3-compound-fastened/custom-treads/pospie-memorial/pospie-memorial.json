@@ -1,0 +1,31 @@
+{
+  "rows": [
+    {
+      "margin_bottom": 1.5,
+      "halign": "center",
+      "valign": "middle",
+      "segments": [
+        { "text": "In Loving Memory of", "size": 3.5, "font": "Consolas", "sc": 3, "spacing": 1.3 }
+      ]
+    },
+    {
+      "margin_bottom": 1.5,
+      "halign": "center",
+      "valign": "middle",
+      "segments": [
+        { "text": "Leonard", "size": 4.5, "font": "Consolas:style=Bold", "sc": 4, "spacing": 1.3 },
+        { "text": " ", "size": 1, "font": "Consolas", "sc": 3, "spacing": 1.3 },
+        { "text": "and", "size": 4.5, "font": "Consolas", "sc": 3, "spacing": 1.3 },
+        { "text": " ", "size": 1, "font": "Consolas", "sc": 3, "spacing": 1.3 },
+        { "text": "Irene", "size": 4.5, "font": "Consolas:style=Bold", "sc": 4, "spacing": 1.3 }
+      ]
+    },
+    {
+      "halign": "center",
+      "valign": "middle",
+      "segments": [
+        { "text": "Pospie", "size": 4.5, "font": "Consolas:style=Bold", "sc": 4, "spacing": 1.3 }
+      ]
+    }
+  ]
+}

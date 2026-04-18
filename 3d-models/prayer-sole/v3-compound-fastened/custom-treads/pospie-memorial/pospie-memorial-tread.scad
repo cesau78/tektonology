@@ -1,14 +1,6 @@
 // --- CUSTOM TREAD: Pospie Memorial ---
 // Personalized tread: geometry from ../../tread.scad. Stamp via info_stamp_profile (see ../_stamp-profile-template.scad).
+// Edit pospie-memorial.json, then run scripts/Convert-StampProfile.ps1 to regenerate the .gen.scad.
 
 include <../../tread.scad>
-
-// Non-empty profile replaces stamp-generated line1..4 for this render.
-info_stamp_profile = [
-    ["In Loving Memory of", 3.5, "Consolas:style=Bold", "center", 3, 1.1],
-    ["Leonard and Irene", 4.5, "Consolas:style=Bold", "center", 4, 1.1],
-    ["Pospie", 4.5, "Consolas:style=Bold", "center", 4, 1.1],
-];
-info_stamp_gaps = [5.5, 5.5, 5.5];
-info_stamp_line1_rule = false;
-tread_stamp_top = true;
+include <pospie-memorial-profile.gen.scad>
