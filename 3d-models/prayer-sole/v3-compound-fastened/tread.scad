@@ -54,12 +54,12 @@ module main() {
     if (render_text_inlay) {
         intersection() {
             tread_positive();
-            part_top_info_stamp_deboss(tread_stamp_top, tread_z_top, tread_stamp_radial_ref);
+            part_top_info_stamp_deboss(tread_stamp_top, tread_z_top, tread_stamp_radial_ref, tread_l / 2);
         }
     } else {
         difference() {
             tread_positive();
-            part_top_info_stamp_deboss(tread_stamp_top, tread_z_top, tread_stamp_radial_ref);
+            part_top_info_stamp_deboss(tread_stamp_top, tread_z_top, tread_stamp_radial_ref, tread_l / 2);
         }
     }
 }
