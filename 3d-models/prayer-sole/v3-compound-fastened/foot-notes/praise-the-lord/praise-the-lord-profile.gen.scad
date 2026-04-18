@@ -11,6 +11,6 @@ info_stamp_profile = [
         ["the", 4.5, "Consolas:style=Bold", 3.5, 1.4],
         [" ", 2.5, "Consolas:style=Bold", 3.5],
         ["Lord", 4.5, "Consolas:style=Bold", 3.5, 1.4],
-    ]],
+    ], 0, -2],
 ];
 info_stamp_gaps = [8];
