@@ -78,11 +78,17 @@ boss_print_support_enable = true;
 // tapered pillars on the outer boss circumference, from the bed face (+X)
 // to the pocket ceiling; connected at their bases for bed adhesion.
 boss_support_boss_flank_enable = true;
-tree_base_width      = 1.0;       // YZ extent of each pillar at bed face (mm)
-tree_branch_tip      = 0.35;      // tip cube size at boss contact — snap-off point (mm)
-tree_branch_angles   = [-45, -22, 0, 22, 45]; // angles around outer boss half-circle (degrees)
-tree_brim_width      = 2.0;       // inward extension of brim from each pillar base (mm)
-tree_brim_thickness  = 0.3;       // X-direction thickness of brim at bed face (~1 layer height)
+tree_base_width      = 1.25;      // YZ extent of each pillar at bed face (mm)
+tree_branch_tip      = 0.42;     // tip cube size at boss contact — snap-off point (mm)
+tree_branch_angles   = [-45, -30, -15, 0, 15, 30, 45]; // outer half-circle, X-down print
+// Fractions of (boss_rim_radius) for extra pillars on the curved face (inboard of rim). Stay > bolt hole.
+tree_support_radius_fracs = [1.0, 0.82, 0.66];
+tree_inner_tip_scale      = 0.88; // slightly smaller tips on inboard rings (snap-off)
+tree_brim_width      = 3.2;       // inward (+/−Y toward cap center) brim reach (mm)
+// X-down: bed is +X. Keep +X lip small; extend brim −X into the part for adhesion.
+tree_brim_outward_lip = 0.15;     // max +X past outer_extent (do not increase for “wider skirt”)
+tree_brim_inward      = 1.15;     // −X depth of brim into the model from outer_extent (mm)
+tree_bridge_x         = 0.55;     // X thickness of bed-face links between pillar bases (mm)
 
 // --- Alignment Tongue ---
 tongue_width     = 10;   // along Y
