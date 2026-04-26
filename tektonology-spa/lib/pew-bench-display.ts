@@ -48,9 +48,7 @@ export function rowKeyForBenchDisplay(row: PewRow): string {
 /** Numeric row index (e.g. 0 for `r0`, 10 for `r10`) from the same rules as `rowKeyForBenchDisplay`. */
 export function rowNumberForBenchId(row: PewRow): number {
   const key = rowKeyForBenchDisplay(row);
-  const m = key.match(/^r(\d+)$/i);
-  if (m) return parseInt(m[1]!, 10);
-  return 0;
+  return parseInt(key.slice(1), 10) || 0;
 }
 
 /** 1-based index among non-pillar kneelers left-to-right. */
@@ -95,13 +93,12 @@ export function formatKneelerPartStatusForExcel(k: Kneeler, partName: string): s
   const items = k.hardware.filter((h) => h.name === part);
   if (items.length === 0) return "Unknown";
   const st = kneelerStatusForPart(k, part);
-  if (st === "none") return "Unknown";
   const h = items.find((x) => x.status === st) ?? items[0]!;
   return formatHardwareItemStatusForDetails(h);
 }
 
-function pickPriorityHardwareItem(k: Kneeler): HardwareItem | null {
-  if (k.hardware.length === 0) return null;
+/** Requires `k.hardware.length > 0` (see `formatKneelerAggregateStatusForExcel`). */
+function pickPriorityHardwareItem(k: Kneeler): HardwareItem {
   const order: Array<"needed" | "upcoming" | "installed" | "unknown"> = [
     "needed",
     "upcoming",
@@ -112,11 +109,10 @@ function pickPriorityHardwareItem(k: Kneeler): HardwareItem | null {
     const h = k.hardware.find((x) => x.status === st);
     if (h) return h;
   }
-  return k.hardware[0] ?? null;
+  return k.hardware[0]!;
 }
 
 export function formatKneelerAggregateStatusForExcel(k: Kneeler): string {
   if (k.hardware.length === 0) return "Unknown";
-  const h = pickPriorityHardwareItem(k);
-  return h ? formatHardwareItemStatusForDetails(h) : "Unknown";
+  return formatHardwareItemStatusForDetails(pickPriorityHardwareItem(k));
 }

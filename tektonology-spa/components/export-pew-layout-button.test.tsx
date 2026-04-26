@@ -131,4 +131,15 @@ describe("ExportPewLayoutButton", () => {
     await user.click(screen.getByRole("button", { name: /^export$/i }));
     expect(capturedDownload).toBe("p1-map-kneeler-bushing.xlsx");
   });
+
+  it("uses default part file token when part name is only whitespace", async () => {
+    const user = userEvent.setup();
+    let capturedDownload = "";
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      capturedDownload = this.download;
+    });
+    render(<ExportPewLayoutButton project={miniProject} partName="   " />);
+    await user.click(screen.getByRole("button", { name: /^export$/i }));
+    expect(capturedDownload).toBe("p1-map-part.xlsx");
+  });
 });
