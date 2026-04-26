@@ -15,6 +15,15 @@ function partNameFileToken(partName: string) {
   return t || "part";
 }
 
+/** `-yyyymmdd` from local calendar date (at export time). */
+function exportDateFileSuffix(): string {
+  const at = new Date();
+  const y = at.getFullYear();
+  const m = String(at.getMonth() + 1).padStart(2, "0");
+  const d = String(at.getDate()).padStart(2, "0");
+  return `-${y}${m}${d}`;
+}
+
 type Props = {
   project: Project;
   /** If set, only that section (one sheet in the workbook). */
@@ -51,7 +60,7 @@ export function ExportPewLayoutButton({
         try {
           const { buildPewLayoutWorkbook } = await import("@/lib/pew-sections-excel");
           const u8 = await buildPewLayoutWorkbook(project, { sectionId, partName });
-          const name = `${safeFileSegment(project.id)}-map-${partNameFileToken(partName)}.xlsx`;
+          const name = `${safeFileSegment(project.id)}-map-${partNameFileToken(partName)}${exportDateFileSuffix()}.xlsx`;
           const ab = u8.buffer.slice(
             u8.byteOffset,
             u8.byteOffset + u8.byteLength,

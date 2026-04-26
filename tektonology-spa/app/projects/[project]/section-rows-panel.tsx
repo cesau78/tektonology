@@ -1,5 +1,6 @@
 import type { Kneeler, HardwareStatus, PewSection, PewRow } from "@/data/types";
 import { formatBenchPewId, formatHardwareItemStatusForDetails } from "@/lib/pew-bench-display";
+import { labelForRowFrontType } from "@/lib/pew-front-type-labels";
 import {
   pewRailColorClass,
   isPillarKneeler,
@@ -28,11 +29,6 @@ const kneelerColors: Record<HardwareStatus, string> = {
     "bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700",
   installed:
     "bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700",
-};
-
-const frontTypeLabels: Record<string, string> = {
-  communionRail: "Communion Rail",
-  pew: "Pew",
 };
 
 function pewBenchStripForRow(section: PewSection, row: PewRow) {
@@ -89,7 +85,7 @@ export function SectionRowsPanel({ section }: { section: PewSection }) {
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{row.label}</span>
                     <span className="text-[10px] text-muted-foreground">
-                      {frontTypeLabels[row.frontType]}
+                      {labelForRowFrontType(row.frontType)}
                     </span>
                   </div>
                   <span className="text-xs text-muted-foreground">

@@ -67,7 +67,7 @@ export interface Aisle {
   name: string;
 }
 
-export type RowFrontType = "communionRail" | "pew";
+export type RowFrontType = "communionRail" | "pew" | "pewOnly";
 
 /** When a row has no kneelers but the pew bench still follows column widths (e.g. pillar spans into this row). */
 export interface PillarBenchContinuation {

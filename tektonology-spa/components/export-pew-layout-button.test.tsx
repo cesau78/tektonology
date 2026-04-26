@@ -82,7 +82,7 @@ describe("ExportPewLayoutButton", () => {
       sectionId: undefined,
       partName: "P",
     });
-    expect(downloadName).toBe("p1-map-p.xlsx");
+    expect(downloadName).toMatch(/^p1-map-p-\d{8}\.xlsx$/);
     expect(createObjectURL).toHaveBeenCalled();
     expect(click).toHaveBeenCalled();
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:mock");
@@ -118,7 +118,7 @@ describe("ExportPewLayoutButton", () => {
       <ExportPewLayoutButton project={idProject} sectionId="sec-1" partName="Kneeler Foot" />,
     );
     await user.click(screen.getByRole("button", { name: /^export$/i }));
-    expect(capturedDownload).toBe("export-map-kneeler-foot.xlsx");
+    expect(capturedDownload).toMatch(/^export-map-kneeler-foot-\d{8}\.xlsx$/);
   });
 
   it("part token is lowercase and collapses whitespace to a single dash", async () => {
@@ -129,7 +129,7 @@ describe("ExportPewLayoutButton", () => {
     });
     render(<ExportPewLayoutButton project={miniProject} partName="Kneeler  Bushing" />);
     await user.click(screen.getByRole("button", { name: /^export$/i }));
-    expect(capturedDownload).toBe("p1-map-kneeler-bushing.xlsx");
+    expect(capturedDownload).toMatch(/^p1-map-kneeler-bushing-\d{8}\.xlsx$/);
   });
 
   it("uses default part file token when part name is only whitespace", async () => {
@@ -140,6 +140,6 @@ describe("ExportPewLayoutButton", () => {
     });
     render(<ExportPewLayoutButton project={miniProject} partName="   " />);
     await user.click(screen.getByRole("button", { name: /^export$/i }));
-    expect(capturedDownload).toBe("p1-map-part.xlsx");
+    expect(capturedDownload).toMatch(/^p1-map-part-\d{8}\.xlsx$/);
   });
 });

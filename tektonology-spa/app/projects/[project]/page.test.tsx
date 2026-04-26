@@ -238,7 +238,7 @@ describe("ProjectDetailPage", () => {
     const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
 
     expect(container).toHaveTextContent("Communion Rail");
-    expect(container).toHaveTextContent("Pew");
+    expect(container).toHaveTextContent("Pew with Kneeler");
   });
 
   it("renders rows without kneelers", async () => {

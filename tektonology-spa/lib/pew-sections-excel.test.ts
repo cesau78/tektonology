@@ -271,4 +271,189 @@ describe("buildPewLayoutWorkbook", () => {
     expect(b3).toContain("Installed");
     expect(second).toContain("Needed");
   });
+
+  it("merges a kneeler that spans two adjacent pew-segment takes into one box (row 1 style 2.66+)", async () => {
+    const p = project([
+      sectionBase("s1", "West Main", [
+        {
+          id: "row-1",
+          label: "Row 1",
+          frontType: "pew",
+          kneelers: [
+            kneeler({ id: "r1-w1", capacity: 2.66, hardware: [part("installed")] }),
+            kneeler({ id: "r1-w2", capacity: 2.66, hardware: [part("installed")] }),
+            kneeler({ id: "r1-w3", capacity: 1, hardware: [part("installed")] }),
+            kneeler({ id: "r1-w4", capacity: 2.66, hardware: [part("installed")] }),
+          ],
+          pewRailSegmentWidths: [3, 3, 3],
+        },
+      ]),
+    ]);
+    const u8 = await buildPewLayoutWorkbook(p, { exportDocumentDate: new Date(2026, 0, 1) });
+    const wb2 = new ExcelJS.Workbook();
+    await wb2.xlsx.load(Buffer.from(u8));
+    const s = wb2.worksheets[0];
+    const r = 3;
+    const contigRuns = (id: string) => {
+      const hits: number[] = [];
+      for (let c = 2; c <= 80; c++) {
+        const t = String(s.getRow(r).getCell(c).value ?? "");
+        if (t.includes(id)) hits.push(c);
+      }
+      let runs = 0;
+      for (let i = 0; i < hits.length; i++) {
+        if (i === 0 || hits[i]! !== hits[i - 1]! + 1) runs += 1;
+      }
+      return runs;
+    };
+    expect(contigRuns("wm-0102")).toBe(1);
+    expect(contigRuns("wm-0103")).toBe(1);
+    const merges = (s as unknown as { model?: { merges?: string[] } }).model?.merges as
+      | string[]
+      | undefined;
+    for (const spec of ["B3:I3", "J3:Q3", "R3:T3", "U3:AB3"]) {
+      expect(merges).toContain(spec);
+    }
+  });
+
+  it("keeps 1p after a pillar as its own block (3,2,1,3,3) in column order, not 3+3+1", async () => {
+    const p = project([
+      sectionBase("s1", "West", [
+        {
+          id: "row-8",
+          label: "Row 8",
+          frontType: "pewOnly",
+          kneelers: [
+            kneeler({ id: "a", capacity: 3, hardware: [part("installed")] }),
+            kneeler({ id: "b", capacity: 1, hardware: [part("installed")] }),
+            kneeler({ id: "c", capacity: 3, hardware: [part("installed")] }),
+            kneeler({ id: "d", capacity: 3, hardware: [part("installed")] }),
+          ],
+          pewRailSegmentWidths: [3, 2, 1, 3, 3],
+          pewRailSegmentKinds: ["pew", "gap", "pew", "pew", "pew"],
+        },
+      ]),
+    ]);
+    const u8 = await buildPewLayoutWorkbook(p, { exportDocumentDate: new Date(2026, 0, 1) });
+    const wb2 = new ExcelJS.Workbook();
+    await wb2.xlsx.load(Buffer.from(u8));
+    const s = wb2.worksheets[0];
+    const merges = (s as unknown as { model?: { merges?: string[] } }).model?.merges ?? [];
+    const toCol = (letters: string) => {
+      let n = 0;
+      for (const ch of letters.toUpperCase()) n = n * 26 + (ch.codePointAt(0)! - 64);
+      return n;
+    };
+    const onRow3 = merges
+      .map((sp) => {
+        const m = sp.match(/^([A-Z]+)3:([A-Z]+)3$/i);
+        if (!m) return null;
+        const c0 = toCol(m[1]!);
+        const c1 = toCol(m[2]!);
+        if (c0 < 2) return null;
+        return { c0, w: c1 - c0 + 1 };
+      })
+      .filter((x): x is { c0: number; w: number } => x !== null)
+      .toSorted((a, b) => a.c0 - b.c0);
+    const widths = onRow3.map((x) => x.w);
+    // 3p=9, 2p gap=6, 1p=3, then 3+3. Data must match rail (3+1+3+3=10) so 1p after pillar
+    // stays 3 columns wide, not 3+3+1 in column order.
+    expect(widths[0]).toBe(9);
+    expect(widths[1]).toBe(6);
+    expect(widths[2]).toBe(3);
+  });
+
+  it("lists a straddled kneeler's bench id once when capacity still matches rail (3+3+3+1 on 3,2,1,3,3)", async () => {
+    const p = project([
+      sectionBase("s1", "West", [
+        {
+          id: "row-8",
+          label: "Row 8",
+          frontType: "pewOnly",
+          kneelers: [
+            kneeler({ id: "a", capacity: 3, hardware: [part("installed")] }),
+            kneeler({ id: "b", capacity: 3, hardware: [part("installed")] }),
+            kneeler({ id: "c", capacity: 3, hardware: [part("installed")] }),
+            kneeler({ id: "d", capacity: 1, hardware: [part("installed")] }),
+          ],
+          pewRailSegmentWidths: [3, 2, 1, 3, 3],
+          pewRailSegmentKinds: ["pew", "gap", "pew", "pew", "pew"],
+        },
+      ]),
+    ]);
+    const u8 = await buildPewLayoutWorkbook(p, { exportDocumentDate: new Date(2026, 0, 1) });
+    const wb2 = new ExcelJS.Workbook();
+    await wb2.xlsx.load(Buffer.from(u8));
+    const s = wb2.worksheets[0];
+    const r = 3;
+    const toCol = (letters: string) => {
+      let n = 0;
+      for (const ch of letters.toUpperCase()) n = n * 26 + (ch.codePointAt(0)! - 64);
+      return n;
+    };
+    const merges = (s as unknown as { model?: { merges?: string[] } }).model?.merges ?? [];
+    let w0802InMergeMasters = 0;
+    for (const sp of merges) {
+      const m = sp.match(/^([A-Z]+)3:([A-Z]+)3$/i);
+      if (!m) continue;
+      const c0 = toCol(m[1]!);
+      if (c0 < 2) continue; // not pew grid
+      const t = String(s.getRow(r).getCell(c0).value ?? "");
+      w0802InMergeMasters += (t.match(/w-0802/g) ?? []).length; // "West" → prefix w
+    }
+    expect(w0802InMergeMasters).toBe(1);
+  });
+
+  it("interleaves a pillar gap from explicit pew rail (2p) between kneeler blocks", async () => {
+    const p = project([
+      sectionBase("s1", "West", [
+        {
+          id: "r1",
+          label: "Row 1",
+          frontType: "pewOnly",
+          kneelers: [
+            kneeler({ id: "a", capacity: 3, hardware: [part("installed")] }),
+            kneeler({ id: "b", capacity: 1, hardware: [part("installed")] }),
+            kneeler({ id: "c", capacity: 3, hardware: [part("installed")] }),
+            kneeler({ id: "d", capacity: 3, hardware: [part("installed")] }),
+          ],
+          pewRailSegmentWidths: [3, 2, 1, 3, 3],
+          pewRailSegmentKinds: ["pew", "gap", "pew", "pew", "pew"],
+        },
+      ]),
+    ]);
+    const u8 = await buildPewLayoutWorkbook(p, { exportDocumentDate: new Date(2026, 0, 1) });
+    const wb2 = new ExcelJS.Workbook();
+    await wb2.xlsx.load(Buffer.from(u8));
+    const s = wb2.worksheets[0];
+    expect(String(s.getRow(3).getCell(1).value)).toContain("Pew Only");
+    let foundPillar = false;
+    for (let c = 2; c <= 40; c++) {
+      const t = String(s.getRow(3).getCell(c).value ?? "");
+      if (t === "pillar") {
+        foundPillar = true;
+        break;
+      }
+    }
+    expect(foundPillar).toBe(true);
+    for (let c = 2; c <= 40; c++) {
+      const t = String(s.getRow(3).getCell(c).value ?? "");
+      if (!t || t === "empty") continue;
+      const benchIds = t.match(/wm-\d{4}/g) ?? [];
+      expect(benchIds.length).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("adds a Date line under Part in the merged title", async () => {
+    const p = project([
+      sectionBase("s1", "Main", [row("r1", "R1", [kneeler({ id: "k1", capacity: 1 })])]),
+    ]);
+    const fixed = new Date(2026, 3, 5);
+    const u8 = await buildPewLayoutWorkbook(p, { exportDocumentDate: fixed });
+    const wb2 = new ExcelJS.Workbook();
+    await wb2.xlsx.load(Buffer.from(u8));
+    const title = String(wb2.worksheets[0].getRow(1).getCell(1).value);
+    expect(title).toContain("Part: —");
+    expect(title).toContain("Date: April 5, 2026");
+  });
 });

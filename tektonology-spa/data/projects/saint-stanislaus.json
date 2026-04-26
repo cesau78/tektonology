@@ -1251,7 +1251,7 @@
           {
             "id": "row-8",
             "label": "Row 8",
-            "frontType": "pew",
+            "frontType": "pewOnly",
             "pewRailSegmentWidths": [
               3,
               2,
@@ -1306,12 +1306,12 @@
               },
               {
                 "id": "r8-w2",
-                "capacity": 3,
+                "capacity": 1,
                 "hardware": [
                   {
                     "partId": "kneeler-boot-compound-fastened",
                     "name": "Kneeler Foot",
-                    "quantity": 3,
+                    "quantity": 2,
                     "status": "upcoming",
                     "date": "2026-04-12"
                   },
@@ -2743,12 +2743,12 @@
               },
               {
                 "id": "r8-e3",
-                "capacity": 3,
+                "capacity": 1,
                 "hardware": [
                   {
                     "partId": "kneeler-boot-compound-fastened",
                     "name": "Kneeler Foot",
-                    "quantity": 3,
+                    "quantity": 2,
                     "status": "upcoming",
                     "date": "2026-04-12"
                   },
