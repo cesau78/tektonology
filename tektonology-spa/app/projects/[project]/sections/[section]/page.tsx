@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getProject, listProjectSectionStaticParams } from "@/lib/project-data";
+import { ExportPewLayoutButton } from "@/components/export-pew-layout-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PewMap } from "../../pew-map";
 import { SectionRowsPanel } from "../../section-rows-panel";
@@ -69,10 +70,20 @@ export default async function ProjectSectionPage({
 
       <Card className="mt-6 mb-6">
         <CardHeader>
-          <CardTitle className="text-base">Rows, kneelers, and parts</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Open a row for pew and rail layout; open each kneeler for hardware quantities and status.
-          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle className="text-base">Rows, kneelers, and parts</CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Open a row for pew and rail layout; open each kneeler for hardware quantities and status.
+              </p>
+            </div>
+            <ExportPewLayoutButton
+              project={project}
+              sectionId={sectionId}
+              label="Download this section (Excel)"
+              className="shrink-0 w-fit"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <SectionRowsPanel section={section} />

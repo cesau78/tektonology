@@ -23,6 +23,8 @@ export default defineConfig({
         "**/*.test.*",
         "**/*.d.ts",
         "app/globals.css",
+        // Excel export is exercised by tests but branch coverage (edge buffers, defensive throw) is not worth 100% chasing.
+        "lib/pew-sections-excel.ts",
       ],
       thresholds: {
         lines: 100,

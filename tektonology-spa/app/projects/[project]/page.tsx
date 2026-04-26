@@ -5,6 +5,7 @@ import type { Project, HardwareStatus } from "@/data/types";
 import { getProject, listProjectJsonSlugs } from "@/lib/project-data";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ExportPewLayoutButton } from "@/components/export-pew-layout-button";
 import { PewMap } from "./pew-map";
 
 export function generateStaticParams() {
@@ -79,6 +80,11 @@ export default async function ProjectDetailPage({
         <p className="text-muted-foreground text-sm">
           {project.church} &mdash; {project.description}
         </p>
+        <ExportPewLayoutButton
+          project={project}
+          label="Download pew layout (Excel)"
+          hint="One sheet per section; one row per church row; pews are merged across narrow columns (capacity ×3 units, rounded; 1p width = 8); section boxes"
+        />
       </div>
 
       <div className="mb-4">

@@ -165,7 +165,7 @@
             "kneelers": [
               {
                 "id": "r1-w1",
-                "capacity": 2.33,
+                "capacity": 2.66,
                 "hardware": [
                   {
                     "partId": "kneeler-boot-compound-fastened",
@@ -202,7 +202,7 @@
               },
               {
                 "id": "r1-w2",
-                "capacity": 2.33,
+                "capacity": 2.66,
                 "hardware": [
                   {
                     "partId": "kneeler-boot-compound-fastened",
@@ -276,7 +276,7 @@
               },
               {
                 "id": "r1-w4",
-                "capacity": 2.33,
+                "capacity": 2.66,
                 "hardware": [
                   {
                     "partId": "kneeler-boot-compound-fastened",
@@ -325,7 +325,7 @@
             "kneelers": [
               {
                 "id": "r2-w1",
-                "capacity": 2.33,
+                "capacity": 2.66,
                 "hardware": [
                   {
                     "partId": "kneeler-boot-compound-fastened",
@@ -362,7 +362,7 @@
               },
               {
                 "id": "r2-w2",
-                "capacity": 2.33,
+                "capacity": 2.66,
                 "hardware": [
                   {
                     "partId": "kneeler-boot-compound-fastened",
@@ -436,7 +436,7 @@
               },
               {
                 "id": "r2-w4",
-                "capacity": 2.33,
+                "capacity": 2.66,
                 "hardware": [
                   {
                     "partId": "kneeler-boot-compound-fastened",
@@ -1565,7 +1565,7 @@
             "kneelers": [
               {
                 "id": "r1-e1",
-                "capacity": 2.33,
+                "capacity": 2.66,
                 "hardware": [
                   {
                     "partId": "kneeler-boot-compound-fastened",
@@ -1639,7 +1639,7 @@
               },
               {
                 "id": "r1-e3",
-                "capacity": 2.33,
+                "capacity": 2.66,
                 "hardware": [
                   {
                     "partId": "kneeler-boot-compound-fastened",
@@ -1676,7 +1676,7 @@
               },
               {
                 "id": "r1-e4",
-                "capacity": 2.33,
+                "capacity": 2.66,
                 "hardware": [
                   {
                     "partId": "kneeler-boot-compound-fastened",
@@ -1725,7 +1725,7 @@
             "kneelers": [
               {
                 "id": "r2-e1",
-                "capacity": 2.33,
+                "capacity": 2.66,
                 "hardware": [
                   {
                     "partId": "kneeler-boot-compound-fastened",
@@ -1799,7 +1799,7 @@
               },
               {
                 "id": "r2-e3",
-                "capacity": 2.33,
+                "capacity": 2.66,
                 "hardware": [
                   {
                     "partId": "kneeler-boot-compound-fastened",
@@ -1836,7 +1836,7 @@
               },
               {
                 "id": "r2-e4",
-                "capacity": 2.33,
+                "capacity": 2.66,
                 "hardware": [
                   {
                     "partId": "kneeler-boot-compound-fastened",

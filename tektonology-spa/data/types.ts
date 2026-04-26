@@ -103,7 +103,8 @@ export type SectionType = "pews" | "crossAisle";
 export interface PewSection {
   id: string;
   label: string;
-  type: SectionType;
+  /** Default pew section when omitted in project JSON. */
+  type?: SectionType;
   side: SectionSide;
   alignment: SectionAlignment;
   group: number;
