@@ -69,42 +69,66 @@ describe("ExportPewLayoutButton", () => {
   it("builds a workbook and triggers download on click", async () => {
     const user = userEvent.setup();
     const click = vi.fn();
-    const elClick = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(click);
-    const { getByRole } = render(<ExportPewLayoutButton project={miniProject} />);
-    await user.click(getByRole("button", { name: /Download pew layout/i }));
-    expect(pewExcelMocks.buildPewLayoutWorkbook).toHaveBeenCalledWith(miniProject, { sectionId: undefined });
+    let downloadName = "";
+    const elClick = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      downloadName = this.download;
+      click();
+    });
+    const { getByRole } = render(
+      <ExportPewLayoutButton project={miniProject} partName="P" />,
+    );
+    await user.click(getByRole("button", { name: /^export$/i }));
+    expect(pewExcelMocks.buildPewLayoutWorkbook).toHaveBeenCalledWith(miniProject, {
+      sectionId: undefined,
+      partName: "P",
+    });
+    expect(downloadName).toBe("p1-map-p.xlsx");
     expect(createObjectURL).toHaveBeenCalled();
     expect(click).toHaveBeenCalled();
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:mock");
     elClick.mockRestore();
   });
 
-  it("passes sectionId and custom label, shows hint", async () => {
+  it("passes sectionId and custom label", async () => {
     const user = userEvent.setup();
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
-    const { getByRole, getByText } = render(
+    const { getByRole } = render(
       <ExportPewLayoutButton
         project={miniProject}
         sectionId="s1"
-        label="Export section"
-        hint="Test hint"
+        partName="P"
+        label="export section"
       />,
     );
-    expect(getByText("Test hint")).toBeInTheDocument();
-    await user.click(getByRole("button", { name: /Export section/i }));
-    expect(pewExcelMocks.buildPewLayoutWorkbook).toHaveBeenCalledWith(miniProject, { sectionId: "s1" });
+    await user.click(getByRole("button", { name: /export section/i }));
+    expect(pewExcelMocks.buildPewLayoutWorkbook).toHaveBeenCalledWith(miniProject, {
+      sectionId: "s1",
+      partName: "P",
+    });
   });
 
-  it("uses safe filename when project id sanitizes to empty", async () => {
+  it("uses project-map-part filename; safe when project id sanitizes to empty", async () => {
     const user = userEvent.setup();
     let capturedDownload = "";
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
       capturedDownload = this.download;
     });
     const idProject: Project = { ...miniProject, id: "@@@###" };
-    render(<ExportPewLayoutButton project={idProject} sectionId="sec-1" />);
-    await user.click(screen.getByRole("button", { name: /Download pew layout/i }));
-    expect(capturedDownload).toContain("export");
-    expect(capturedDownload).toContain("sec-1");
+    render(
+      <ExportPewLayoutButton project={idProject} sectionId="sec-1" partName="Kneeler Foot" />,
+    );
+    await user.click(screen.getByRole("button", { name: /^export$/i }));
+    expect(capturedDownload).toBe("export-map-kneeler-foot.xlsx");
+  });
+
+  it("part token is lowercase and collapses whitespace to a single dash", async () => {
+    const user = userEvent.setup();
+    let capturedDownload = "";
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      capturedDownload = this.download;
+    });
+    render(<ExportPewLayoutButton project={miniProject} partName="Kneeler  Bushing" />);
+    await user.click(screen.getByRole("button", { name: /^export$/i }));
+    expect(capturedDownload).toBe("p1-map-kneeler-bushing.xlsx");
   });
 });

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import type { Kneeler, PewRow, PewSection } from "@/data/types";
 import {
   isPillarKneeler,
+  kneelerStatusForPart,
   pewBenchSegmentsFromKneelers,
   pewBenchSegmentsFromContinuation,
   pewRailSegmentsForRow,
@@ -11,6 +12,7 @@ import {
   effectiveRowCapacityForMap,
   maxRowCapacityInSection,
   alignRowStripWidthPercent,
+  emptyKneelerGridPadOnLeft,
 } from "./pew-layout";
 
 function k(id: string, capacity: number, label?: string): Kneeler {
@@ -31,6 +33,21 @@ describe("pew-layout", () => {
   it("isPillarKneeler is true only when label is Pillar", () => {
     expect(isPillarKneeler(k("a", 3))).toBe(false);
     expect(isPillarKneeler(k("b", 2, "Pillar"))).toBe(true);
+  });
+
+  it("kneelerStatusForPart matches hardware lines for the given part name", () => {
+    const kneeler: Kneeler = {
+      id: "k1",
+      capacity: 3,
+      hardware: [
+        { partId: "a", name: "Kneeler Foot", quantity: 2, status: "installed" },
+        { partId: "b", name: "Other", quantity: 1, status: "needed" },
+      ],
+    };
+    expect(kneelerStatusForPart(kneeler, "Kneeler Foot")).toBe("installed");
+    expect(kneelerStatusForPart(kneeler, "Other")).toBe("needed");
+    expect(kneelerStatusForPart(kneeler, "Missing")).toBe("none");
+    expect(kneelerStatusForPart({ ...kneeler, hardware: [] }, "Kneeler Foot")).toBe("none");
   });
 
   it("pewBenchSegmentsFromKneelers returns four 3p runs when a pillar kneeler exists", () => {
@@ -318,5 +335,35 @@ describe("pew-layout", () => {
     expect(segs).not.toBeNull();
     expect(segs!.find((s) => s.id === "row-10-pillar-bench")!.variant).toBe("gap");
     expect(segs!.filter((s) => s.variant === "pew")).toHaveLength(2);
+  });
+
+  describe("emptyKneelerGridPadOnLeft", () => {
+    const base = (): PewSection => ({
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+      rows: [],
+    });
+
+    it("is true for mapRowAlign end and false for start", () => {
+      expect(emptyKneelerGridPadOnLeft({ ...base(), mapRowAlign: "end" })).toBe(true);
+      expect(emptyKneelerGridPadOnLeft({ ...base(), mapRowAlign: "start" })).toBe(false);
+    });
+
+    it("is false for fill even on east", () => {
+      expect(emptyKneelerGridPadOnLeft({ ...base(), mapRowAlign: "fill" })).toBe(false);
+      expect(
+        emptyKneelerGridPadOnLeft({ ...base(), side: "east", mapRowAlign: "fill" }),
+      ).toBe(false);
+    });
+
+    it("when mapRowAlign is omitted, uses east and eastOuter as end", () => {
+      expect(emptyKneelerGridPadOnLeft({ ...base(), side: "east" })).toBe(true);
+      expect(emptyKneelerGridPadOnLeft({ ...base(), side: "west" })).toBe(false);
+      expect(emptyKneelerGridPadOnLeft({ ...base(), side: "eastOuter" })).toBe(true);
+    });
   });
 });

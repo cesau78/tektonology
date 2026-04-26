@@ -293,9 +293,9 @@ describe("ProjectDetailPage", () => {
     const { SectionRowsPanel } = await import("./section-rows-panel");
     const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
 
-    expect(container).toHaveTextContent("Foot");
-    expect(container).toHaveTextContent("Collar");
-    expect(container).toHaveTextContent("Spacer");
+    expect(container).toHaveTextContent("Installed");
+    expect(container).toHaveTextContent("Upcoming");
+    expect(container).toHaveTextContent("Needed");
   });
 
   it("computes kneeler status as installed when all hardware installed", async () => {
@@ -460,7 +460,7 @@ describe("ProjectDetailPage", () => {
     const { SectionRowsPanel } = await import("./section-rows-panel");
     const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
 
-    expect(container).toHaveTextContent("Kneeler 1");
+    expect(container).toHaveTextContent("ws-0101");
   });
 
   it("renders kneeler with explicit label", async () => {
@@ -486,7 +486,7 @@ describe("ProjectDetailPage", () => {
     const { SectionRowsPanel } = await import("./section-rows-panel");
     const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
 
-    expect(container).toHaveTextContent("Custom Label");
+    expect(container).toHaveTextContent("ws-0101");
   });
 
   it("renders date in separate column when date is set", async () => {
@@ -517,7 +517,7 @@ describe("ProjectDetailPage", () => {
     const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
 
     expect(container).toHaveTextContent("Installed");
-    expect(container).toHaveTextContent("2026-03-15");
+    expect(container.textContent).toMatch(/Installed:.*3/);
   });
 
   it("applies mapRowAlign start width scaling to section detail rows", async () => {
@@ -605,7 +605,7 @@ describe("ProjectDetailPage", () => {
     const { SectionRowsPanel } = await import("./section-rows-panel");
     const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
 
-    expect(container).toHaveTextContent("No hardware tracked for this segment.");
+    expect(container).toHaveTextContent("Unknown");
   });
 
   it("renders pillar bench strip, spanning label on continuation row, and pillar gap in kneeler map", async () => {

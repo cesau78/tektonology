@@ -10,10 +10,12 @@ import type {
   HardwareStatus,
   ChurchOrientation,
 } from "@/data/types";
+import { formatBenchPewId } from "@/lib/pew-bench-display";
 import {
   pewRailBarClass,
   pewRailColorClass,
   isPillarKneeler,
+  kneelerStatusForPart,
   pewRailSegmentsForRow,
   effectiveRowCapacityForMap,
   maxRowCapacityInSection,
@@ -21,6 +23,8 @@ import {
 } from "@/lib/pew-layout";
 import { PillarGapLabel } from "@/components/pillar-gap-label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { ExportPewLayoutButton } from "@/components/export-pew-layout-button";
+import type { Project } from "@/data/types";
 
 const kneelerColors: Record<HardwareStatus | "none", string> = {
   unknown:
@@ -33,17 +37,6 @@ const kneelerColors: Record<HardwareStatus | "none", string> = {
     "bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700",
   none: "bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700",
 };
-
-function kneelerStatus(kneeler: Kneeler, partFilter: string): HardwareStatus | "none" {
-  if (kneeler.hardware.length === 0) return "none";
-  const items = kneeler.hardware.filter((h) => h.name === partFilter);
-  if (items.length === 0) return "none";
-  const statuses = items.map((h) => h.status);
-  if (statuses.every((s) => s === "installed")) return "installed";
-  if (statuses.some((s) => s === "installed" || s === "upcoming")) return "upcoming";
-  if (statuses.some((s) => s === "needed")) return "needed";
-  return "unknown";
-}
 
 function sectionStats(section: PewSection, partFilter: string) {
   const allKneelers = section.rows.flatMap((r) => r.kneelers);
@@ -70,7 +63,17 @@ function groupSections(sections: PewSection[]) {
     .map(([, secs]) => secs);
 }
 
-function KneelerSegments({ kneelers, partFilter }: { kneelers: Kneeler[]; partFilter: string }) {
+function KneelerSegments({
+  section,
+  row,
+  kneelers,
+  partFilter,
+}: {
+  section: PewSection;
+  row: PewRow;
+  kneelers: Kneeler[];
+  partFilter: string;
+}) {
   return (
     <div className="flex w-full min-w-0 gap-px">
       {kneelers.map((k) => {
@@ -80,15 +83,17 @@ function KneelerSegments({ kneelers, partFilter }: { kneelers: Kneeler[]; partFi
               key={k.id}
               className="flex items-center justify-center min-w-0"
               style={{ flex: k.capacity }}
+              title="Pillar (gap)"
             />
           );
         }
-        const status = kneelerStatus(k, partFilter);
+        const status = kneelerStatusForPart(k, partFilter);
         return (
           <div
             key={k.id}
             className={`rounded-sm h-2 border ${kneelerColors[status]}`}
             style={{ flex: k.capacity }}
+            title={formatBenchPewId(section, row, k)}
           />
         );
       })}
@@ -157,7 +162,12 @@ function RowStrip({
         <div className="h-2 w-full shrink-0 rounded-sm bg-transparent" aria-hidden />
       ) : null}
       {row.kneelers.length > 0 && (
-        <KneelerSegments kneelers={row.kneelers} partFilter={partFilter} />
+        <KneelerSegments
+          section={section}
+          row={row}
+          kneelers={row.kneelers}
+          partFilter={partFilter}
+        />
       )}
     </div>
   );
@@ -237,6 +247,8 @@ export function PewMap({
   showRails = true,
   projectSlug,
   hideChurchFrame = false,
+  project,
+  exportSectionId,
 }: {
   churchName: string;
   orientation: ChurchOrientation;
@@ -248,6 +260,10 @@ export function PewMap({
   projectSlug?: string;
   /** Omit compass and altar/entrance labels (e.g. single-section view). */
   hideChurchFrame?: boolean;
+  /** When set, show Excel export under the part selector (uses selected part in cells). */
+  project?: Project;
+  /** If set, export only this section; otherwise all pew sections. */
+  exportSectionId?: string;
 }) {
   const searchParams = useSearchParams();
   const initialPart = searchParams.get("part");
@@ -303,19 +319,30 @@ export function PewMap({
   return (
     <Card className="mb-6">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">{churchName}</CardTitle>
-          <select
-            className="text-xs border rounded px-2 py-1 bg-background text-foreground"
-            value={partFilter}
-            onChange={(e) => setPartFilter(e.target.value)}
-          >
-            {partNames.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
+        <div className="flex w-full flex-col gap-1">
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-base">{churchName}</CardTitle>
+            <select
+              className="text-xs border rounded px-2 py-1 bg-background text-foreground"
+              value={partFilter}
+              onChange={(e) => setPartFilter(e.target.value)}
+            >
+              {partNames.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+          {project && partNames.length > 0 && partFilter && (
+            <div className="flex w-full justify-end">
+              <ExportPewLayoutButton
+                project={project}
+                sectionId={exportSectionId}
+                partName={partFilter}
+              />
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent>

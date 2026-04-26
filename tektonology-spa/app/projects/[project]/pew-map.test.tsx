@@ -1,7 +1,13 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, cleanup, fireEvent } from "@testing-library/react";
+import { render, cleanup, fireEvent, screen } from "@testing-library/react";
 import { PewMap } from "./pew-map";
-import type { PewSection, ChurchOrientation, Kneeler, HardwareItem } from "@/data/types";
+import type {
+  PewSection,
+  ChurchOrientation,
+  Kneeler,
+  HardwareItem,
+  Project,
+} from "@/data/types";
 import * as navigation from "next/navigation";
 
 afterEach(cleanup);
@@ -44,6 +50,18 @@ const orientation: ChurchOrientation = {
   entrance: "S",
   left: "W",
   right: "E",
+};
+
+const miniProject: Project = {
+  id: "proj-export",
+  name: "Test Project",
+  church: "Test Church",
+  description: "d",
+  layout: {
+    orientation,
+    aisles: [],
+    sections: [makeSection()],
+  },
 };
 
 describe("PewMap", () => {
@@ -300,6 +318,37 @@ describe("PewMap", () => {
     const options = Array.from(select.querySelectorAll("option")).map((o) => o.textContent);
     expect(options).toEqual(["Kneeler Foot", "Kneeler Bushing"]);
     expect(options).not.toContain("All Parts");
+  });
+
+  it("renders layout export under the part selector when project is set", () => {
+    render(
+      <PewMap
+        churchName="Test Church"
+        orientation={orientation}
+        sections={[makeSection()]}
+        partNames={["Kneeler Foot"]}
+        project={miniProject}
+        exportSectionId="sec-west"
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: /^export$/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not render layout export when the default part name is empty", () => {
+    render(
+      <PewMap
+        churchName="Test Church"
+        orientation={orientation}
+        sections={[makeSection()]}
+        partNames={[""]}
+        project={miniProject}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: /^export$/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("filters kneeler colors by selected part", () => {

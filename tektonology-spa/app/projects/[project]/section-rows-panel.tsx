@@ -1,4 +1,5 @@
 import type { Kneeler, HardwareStatus, PewSection, PewRow } from "@/data/types";
+import { formatBenchPewId, formatHardwareItemStatusForDetails } from "@/lib/pew-bench-display";
 import {
   pewRailColorClass,
   isPillarKneeler,
@@ -8,7 +9,6 @@ import {
   alignRowStripWidthPercent,
 } from "@/lib/pew-layout";
 import { PillarGapLabel } from "@/components/pillar-gap-label";
-import { Badge } from "@/components/ui/badge";
 
 function kneelerStatus(kneeler: Kneeler): HardwareStatus {
   if (kneeler.hardware.length === 0) return "unknown";
@@ -30,13 +30,6 @@ const kneelerColors: Record<HardwareStatus, string> = {
     "bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700",
 };
 
-const statusLabels: Record<HardwareStatus, string> = {
-  unknown: "Unknown",
-  needed: "Parts Needed",
-  upcoming: "Upcoming",
-  installed: "Installed",
-};
-
 const frontTypeLabels: Record<string, string> = {
   communionRail: "Communion Rail",
   pew: "Pew",
@@ -46,50 +39,19 @@ function pewBenchStripForRow(section: PewSection, row: PewRow) {
   return pewRailSegmentsForRow(section, row);
 }
 
-export function KneelerHardwareTable({ kneeler }: { kneeler: Kneeler }) {
+function KneelerStatusList({ kneeler }: { kneeler: Kneeler }) {
   if (kneeler.hardware.length === 0) {
     return (
-      <p className="px-2 pb-2 text-xs text-muted-foreground">No hardware tracked for this segment.</p>
+      <p className="px-2 pb-2 text-xs text-muted-foreground">Unknown</p>
     );
   }
   return (
-    <div className="px-2 pb-2">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="border-b">
-            <th className="text-left pb-1 font-medium">Part</th>
-            <th className="text-right pb-1 font-medium">Qty</th>
-            <th className="text-right pb-1 font-medium">Status</th>
-            <th className="text-right pb-1 font-medium">Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {kneeler.hardware.map((h, hi) => (
-            <tr key={hi} className="border-b border-border/30">
-              <td className="py-1">{h.name}</td>
-              <td className="py-1 text-right">{h.quantity}</td>
-              <td className="py-1 text-right">
-                <Badge
-                  className={`text-[10px] w-20 justify-center ${
-                    h.status === "installed"
-                      ? "bg-green-100 text-green-900 border-green-300 hover:bg-green-100"
-                      : h.status === "upcoming"
-                        ? "bg-blue-100 text-blue-900 border-blue-300 hover:bg-blue-100"
-                        : h.status === "needed"
-                          ? "bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-100"
-                          : "bg-neutral-100 text-neutral-700 border-neutral-300 hover:bg-neutral-100"
-                  }`}
-                >
-                  {statusLabels[h.status]}
-                </Badge>
-              </td>
-              <td className="py-1 text-right text-muted-foreground">
-                {h.date ?? ""}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="px-2 pb-2 space-y-1.5 text-xs text-foreground">
+      {kneeler.hardware.map((h, hi) => (
+        <p key={hi} className="leading-snug">
+          {formatHardwareItemStatusForDetails(h)}
+        </p>
+      ))}
     </div>
   );
 }
@@ -107,9 +69,6 @@ export function SectionRowsPanel({ section }: { section: PewSection }) {
       }`}
     >
       {section.rows.map((row) => {
-        const totalParts = row.kneelers
-          .flatMap((k) => k.hardware)
-          .reduce((s, h) => s + h.quantity, 0);
         const benchStrip = pewBenchStripForRow(section, row);
         const mapAlign = section.mapRowAlign ?? "fill";
         const maxCap = maxRowCapacityInSection(section);
@@ -134,7 +93,7 @@ export function SectionRowsPanel({ section }: { section: PewSection }) {
                     </span>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {row.kneelers.length} kneelers &middot; {totalParts} parts
+                    {row.kneelers.length} kneelers
                   </span>
                 </summary>
                 <div className="px-3 pb-3 space-y-3">
@@ -171,9 +130,7 @@ export function SectionRowsPanel({ section }: { section: PewSection }) {
                   {row.kneelers.length > 0 ? (
                     <div className="flex w-full min-w-0 items-center gap-px border rounded p-2">
                       {row.kneelers.map((kneeler) => {
-                        const mapLabel = kneeler.label
-                          ? `${kneeler.label} (${kneeler.capacity}p)`
-                          : `${kneeler.capacity}p`;
+                        const idLabel = formatBenchPewId(section, row, kneeler);
                         if (isPillarKneeler(kneeler)) {
                           return (
                             <div
@@ -185,19 +142,15 @@ export function SectionRowsPanel({ section }: { section: PewSection }) {
                           );
                         }
                         const status = kneelerStatus(kneeler);
-                        const total = kneeler.hardware.reduce((s, h) => s + h.quantity, 0);
-                        const inst = kneeler.hardware
-                          .filter((h) => h.status === "installed")
-                          .reduce((s, h) => s + h.quantity, 0);
                         return (
                           <div
                             key={kneeler.id}
                             className={`rounded border ${kneelerColors[status]} flex items-center justify-center py-1`}
                             style={{ flex: kneeler.capacity }}
-                            title={`${mapLabel} — ${inst} of ${total} parts`}
+                            title={idLabel}
                           >
                             <span className="text-[8px] text-muted-foreground text-center leading-tight px-0.5">
-                              {mapLabel}
+                              {idLabel}
                             </span>
                           </div>
                         );
@@ -210,20 +163,15 @@ export function SectionRowsPanel({ section }: { section: PewSection }) {
                   ) : null}
 
                   <div className="space-y-1">
-                    {row.kneelers.map((kneeler, ki) => {
-                      const partCount = kneeler.hardware.reduce((s, h) => s + h.quantity, 0);
+                    {row.kneelers.map((kneeler) => {
                       return (
                         <details key={kneeler.id} className="border rounded">
-                          <summary className="px-2 py-1 text-xs cursor-pointer hover:bg-muted/50 flex items-center justify-between">
-                            <span>
-                              {kneeler.label ?? `Kneeler ${ki + 1}`}
-                              <span className="text-muted-foreground ml-1">
-                                ({kneeler.capacity}p)
-                              </span>
-                            </span>
-                            <span className="text-muted-foreground">{partCount} parts</span>
+                          <summary className="px-2 py-1 text-xs cursor-pointer hover:bg-muted/50">
+                            {isPillarKneeler(kneeler)
+                              ? "Pillar (gap)"
+                              : formatBenchPewId(section, row, kneeler)}
                           </summary>
-                          <KneelerHardwareTable kneeler={kneeler} />
+                          <KneelerStatusList kneeler={kneeler} />
                         </details>
                       );
                     })}

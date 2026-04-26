@@ -1,3 +1,4 @@
+import ExcelJS from "exceljs";
 import { describe, expect, it } from "vitest";
 import { buildPewLayoutWorkbook } from "./pew-sections-excel";
 import type {
@@ -37,7 +38,7 @@ function sectionBase(
   id: string,
   label: string,
   rows: PewRow[],
-  opts: Partial<Pick<PewSection, "side" | "alignment" | "type" | "group">> = {},
+  opts: Partial<Pick<PewSection, "side" | "alignment" | "type" | "group" | "mapRowAlign">> = {},
 ): PewSection {
   return {
     id,
@@ -47,6 +48,7 @@ function sectionBase(
     group: opts.group ?? 0,
     rows,
     type: opts.type,
+    mapRowAlign: opts.mapRowAlign,
   };
 }
 
@@ -69,6 +71,46 @@ describe("buildPewLayoutWorkbook", () => {
     expect(u8.length).toBeGreaterThan(3000);
     expect(u8[0]).toBe(0x50);
     expect(u8[1]).toBe(0x4b);
+  });
+
+  it("places empty padding on the left for mapRowAlign end (east), matching the map", async () => {
+    const p = project([
+      sectionBase(
+        "s1",
+        "East",
+        [
+          row("r1", "Wide", [
+            kneeler({ id: "a", capacity: 1 }),
+            kneeler({ id: "b", capacity: 1 }),
+            kneeler({ id: "c", capacity: 1 }),
+          ]),
+          row("r2", "Narrow", [kneeler({ id: "d", capacity: 1 })]),
+        ],
+        { side: "east", mapRowAlign: "end" },
+      ),
+    ]);
+    const u8 = await buildPewLayoutWorkbook(p);
+    const wb2 = new ExcelJS.Workbook();
+    await wb2.xlsx.load(Buffer.from(u8));
+    const s = wb2.worksheets[0];
+    const narrowRow = 4;
+    expect(String(s.getRow(narrowRow).getCell(2).value)).toBe("empty");
+    expect(String(s.getRow(narrowRow).getCell(8).value)).toContain("e-0201");
+  });
+
+  it("sets US Letter, landscape, and fit to one page width for print", async () => {
+    const p = project([
+      sectionBase("s1", "Main", [row("r1", "R1", [kneeler({ id: "k1", capacity: 1 })])]),
+    ]);
+    const u8 = await buildPewLayoutWorkbook(p);
+    const wb2 = new ExcelJS.Workbook();
+    await wb2.xlsx.load(Buffer.from(u8));
+    const s = wb2.worksheets[0];
+    expect(s.pageSetup.paperSize).toBe(1);
+    expect(s.pageSetup.fitToPage).toBe(true);
+    expect(s.pageSetup.fitToWidth).toBe(1);
+    expect(s.pageSetup.fitToHeight).toBe(0);
+    expect(s.pageSetup.orientation).toBe("landscape");
   });
 
   it("writes a placeholder sheet when no section matches the filter", async () => {
@@ -187,5 +229,46 @@ describe("buildPewLayoutWorkbook", () => {
     ]);
     const u8 = await buildPewLayoutWorkbook(p);
     expect(u8.length).toBeGreaterThan(2500);
+  });
+
+  it("puts shared status on the row when all pews in the row match", async () => {
+    const p = project([
+      sectionBase("s1", "West Main", [
+        row("r0", "Row 0", [
+          kneeler({ id: "a", capacity: 1, hardware: [part("installed")] }),
+          kneeler({ id: "b", capacity: 1, hardware: [part("installed")] }),
+        ]),
+      ]),
+    ]);
+    const u8 = await buildPewLayoutWorkbook(p);
+    const wb2 = new ExcelJS.Workbook();
+    await wb2.xlsx.load(Buffer.from(u8));
+    const s = wb2.worksheets[0];
+    const a3 = String(s.getRow(3).getCell(1).value);
+    expect(a3).toContain("Installed");
+    expect(s.getRow(3).getCell(2).value).toBe(`wm-0001`);
+    // capacity 1.0 → 3 grid columns; second pew starts at column 5
+    expect(s.getRow(3).getCell(5).value).toBe(`wm-0002`);
+  });
+
+  it("keeps per-pew status when pews in the row differ", async () => {
+    const p = project([
+      sectionBase("s1", "West Main", [
+        row("r0", "Row 0", [
+          kneeler({ id: "a", capacity: 1, hardware: [part("installed")] }),
+          kneeler({ id: "b", capacity: 1, hardware: [part("needed")] }),
+        ]),
+      ]),
+    ]);
+    const u8 = await buildPewLayoutWorkbook(p);
+    const wb2 = new ExcelJS.Workbook();
+    await wb2.xlsx.load(Buffer.from(u8));
+    const s = wb2.worksheets[0];
+    const a3 = String(s.getRow(3).getCell(1).value);
+    expect(a3).not.toContain("Installed");
+    const b3 = String(s.getRow(3).getCell(2).value);
+    const second = String(s.getRow(3).getCell(5).value);
+    expect(b3).toContain("Installed");
+    expect(second).toContain("Needed");
   });
 });

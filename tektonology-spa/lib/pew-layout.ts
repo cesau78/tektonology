@@ -1,4 +1,4 @@
-import type { Kneeler, PewRow, PewSection } from "@/data/types";
+import type { HardwareStatus, Kneeler, PewRow, PewSection } from "@/data/types";
 
 /**
  * Warm wood browns (hex), not neutral gray — distinct from amber “Parts needed”.
@@ -11,6 +11,24 @@ export const pewRailBarClass = `h-[5px] rounded-sm ${pewRailColorClass}`;
 
 export function isPillarKneeler(k: Kneeler): boolean {
   return k.label === "Pillar";
+}
+
+/**
+ * Per-kneeler status for a single part name, matching the pew map color logic.
+ * Use when the map (or export) is filtered to one part.
+ */
+export function kneelerStatusForPart(
+  kneeler: Kneeler,
+  partName: string,
+): HardwareStatus | "none" {
+  if (kneeler.hardware.length === 0) return "none";
+  const items = kneeler.hardware.filter((h) => h.name === partName);
+  if (items.length === 0) return "none";
+  const statuses = items.map((h) => h.status);
+  if (statuses.every((s) => s === "installed")) return "installed";
+  if (statuses.some((s) => s === "installed" || s === "upcoming")) return "upcoming";
+  if (statuses.some((s) => s === "needed")) return "needed";
+  return "unknown";
 }
 
 /** Sum of kneeler capacities in a row (used to scale row width in the pew map). */
@@ -58,6 +76,20 @@ export function alignRowStripWidthPercent(section: PewSection, rowSum: number): 
   const refCap = section.mapRowAlignRefCapacity ?? maxCap;
   if (refCap <= 0) return 100;
   return Math.min(100, (rowSum / refCap) * 100);
+}
+
+/**
+ * When a pew section row is narrower than the section grid, extra “empty” unit columns in the
+ * Excel layout go on the left (toward the aisle / nave center) or right, matching the map:
+ * `mapRowAlign` "start" / west → padding on the right; "end" / east → on the left.
+ * If `mapRowAlign` is missing, east and eastOuter default to the same as "end", west to "start";
+ * "fill" keeps padding on the right (map rows are full width).
+ */
+export function emptyKneelerGridPadOnLeft(section: PewSection): boolean {
+  if (section.mapRowAlign === "end") return true;
+  if (section.mapRowAlign === "start") return false;
+  if (section.mapRowAlign === "fill") return false;
+  return section.side === "east" || section.side === "eastOuter";
 }
 
 export type PewBenchSegment = { id: string; capacity: number; variant: "pew" | "gap" };
