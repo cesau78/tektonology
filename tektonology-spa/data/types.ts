@@ -80,6 +80,8 @@ export interface PillarBenchContinuation {
 export interface PewRow {
   id: string;
   label: string;
+  /** Pew map row grid: explicit sort key when label is not `Row N` (optional). */
+  mapRowNumber?: number;
   frontType: RowFrontType;
   kneelers: Kneeler[];
   pillarBenchContinuation?: PillarBenchContinuation;
@@ -126,6 +128,11 @@ export interface ChurchLayout {
   orientation: ChurchOrientation;
   aisles: Aisle[];
   sections: PewSection[];
+  /**
+   * When true, pew map renders one horizontal band per logical row number so nave, transept,
+   * rear, and outer sections stay vertically aligned (table layout).
+   */
+  pewMapUseRowGrid?: boolean;
 }
 
 export interface Project {

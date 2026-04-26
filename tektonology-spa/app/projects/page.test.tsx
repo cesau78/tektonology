@@ -51,8 +51,8 @@ const makeProject = (overrides: Partial<Project> = {}): Project => ({
                 id: "k1",
                 capacity: 3,
                 hardware: [
-                  { partId: "foot", name: "Kneeler Foot", quantity: 3, status: "installed", date: "2026-03-15" },
-                  { partId: "foot", name: "Kneeler Foot", quantity: 2, status: "needed" },
+                  { partId: "foot", name: "Prayer Sole", quantity: 3, status: "installed", date: "2026-03-15" },
+                  { partId: "foot", name: "Prayer Sole", quantity: 2, status: "needed" },
                   { partId: "kneeler-bushing", name: "Kneeler Bushing", quantity: 2, status: "upcoming", date: "2026-03-31" },
                   { partId: "kneeler-bushing", name: "Kneeler Bushing", quantity: 1, status: "needed" },
                 ],
@@ -108,7 +108,7 @@ describe("ProjectsPage", () => {
     const { container } = render(ProjectsPage());
 
     // Foot: 3 installed / 5 total = 60%
-    expect(container).toHaveTextContent("Kneeler Foot");
+    expect(container).toHaveTextContent("Prayer Sole");
     expect(container).toHaveTextContent("3 / 5 units installed");
     expect(container).toHaveTextContent("60%");
 
@@ -187,7 +187,7 @@ describe("ProjectsPage", () => {
               kneelers: [{
                 id: "k1", capacity: 3,
                 hardware: [
-                  { partId: "foot", name: "Kneeler Foot", quantity: 3, status: "installed", date: "2026-03-15" },
+                  { partId: "foot", name: "Prayer Sole", quantity: 3, status: "installed", date: "2026-03-15" },
                 ],
               }],
             }],
@@ -201,7 +201,7 @@ describe("ProjectsPage", () => {
     const { default: ProjectsPage } = await import("./page");
     const { container } = render(ProjectsPage());
 
-    expect(container).not.toHaveTextContent("Kneeler Foot");
+    expect(container).not.toHaveTextContent("Prayer Sole");
     expect(container).not.toHaveTextContent("installed");
   });
 
@@ -296,10 +296,10 @@ describe("ProjectsPage", () => {
     const { default: ProjectsPage } = await import("./page");
     const { container } = render(ProjectsPage());
 
-    const mapLinks = container.querySelectorAll('a[href="/projects/test-project?part=kneeler-foot"]');
+    const mapLinks = container.querySelectorAll('a[href="/projects/test-project?part=prayer-sole"]');
     // Part name link + Installation Map link
     expect(mapLinks.length).toBe(2);
-    expect(mapLinks[0]).toHaveTextContent("Kneeler Foot");
+    expect(mapLinks[0]).toHaveTextContent("Prayer Sole");
     expect(mapLinks[1]).toHaveTextContent("Installation Map");
   });
 
@@ -312,7 +312,7 @@ describe("ProjectsPage", () => {
     const { container } = render(ProjectsPage());
 
     // Both parts should have their own progress info
-    expect(container).toHaveTextContent("Kneeler Foot");
+    expect(container).toHaveTextContent("Prayer Sole");
     expect(container).toHaveTextContent("3 / 5 units installed");
     expect(container).toHaveTextContent("Kneeler Bushing");
     expect(container).toHaveTextContent("0 / 3 units installed");

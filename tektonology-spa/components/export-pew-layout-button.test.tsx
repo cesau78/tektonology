@@ -115,10 +115,10 @@ describe("ExportPewLayoutButton", () => {
     });
     const idProject: Project = { ...miniProject, id: "@@@###" };
     render(
-      <ExportPewLayoutButton project={idProject} sectionId="sec-1" partName="Kneeler Foot" />,
+      <ExportPewLayoutButton project={idProject} sectionId="sec-1" partName="Prayer Sole" />,
     );
     await user.click(screen.getByRole("button", { name: /^export$/i }));
-    expect(capturedDownload).toMatch(/^export-map-kneeler-foot-\d{8}\.xlsx$/);
+    expect(capturedDownload).toMatch(/^export-map-prayer-sole-\d{8}\.xlsx$/);
   });
 
   it("part token is lowercase and collapses whitespace to a single dash", async () => {

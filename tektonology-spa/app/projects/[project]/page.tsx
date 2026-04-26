@@ -119,6 +119,7 @@ export default async function ProjectDetailPage({
           showRails={false}
           projectSlug={projectId}
           project={project}
+          pewMapUseRowGrid={project.layout.pewMapUseRowGrid ?? false}
         />
       </Suspense>
 

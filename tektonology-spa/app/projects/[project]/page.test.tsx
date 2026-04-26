@@ -48,7 +48,7 @@ vi.mock("./pew-map", () => ({
 }));
 
 function makeHardware(overrides: Partial<HardwareItem> = {}): HardwareItem {
-  return { partId: "foot", name: "Kneeler Foot", quantity: 3, status: "needed", ...overrides };
+  return { partId: "foot", name: "Prayer Sole", quantity: 3, status: "needed", ...overrides };
 }
 
 function makeKneeler(overrides: Partial<Kneeler> = {}): Kneeler {
@@ -160,7 +160,7 @@ describe("ProjectDetailPage", () => {
                   makeKneeler({
                     hardware: [
                       makeHardware({ name: "Collar" }),
-                      makeHardware({ name: "Kneeler Foot" }),
+                      makeHardware({ name: "Prayer Sole" }),
                     ],
                   }),
                 ],
@@ -178,7 +178,7 @@ describe("ProjectDetailPage", () => {
 
     const pewMap = container.querySelector("[data-testid='pew-map']")!;
     expect(pewMap.getAttribute("data-church")).toBe("Test Church");
-    expect(pewMap.getAttribute("data-parts")).toBe("Collar,Kneeler Foot");
+    expect(pewMap.getAttribute("data-parts")).toBe("Collar,Prayer Sole");
     expect(pewMap.getAttribute("data-show-rails")).toBe("false");
     expect(pewMap.getAttribute("data-project-slug")).toBe("test-project");
   });
@@ -413,7 +413,7 @@ describe("ProjectDetailPage", () => {
                 kneelers: [
                   makeKneeler({
                     hardware: [
-                      makeHardware({ name: "Kneeler Foot", quantity: 3, status: "needed" }),
+                      makeHardware({ name: "Prayer Sole", quantity: 3, status: "needed" }),
                       makeHardware({ name: "Collar", quantity: 2, status: "upcoming" }),
                       makeHardware({ name: "Spacer", quantity: 1, status: "installed" }),
                     ],
@@ -432,7 +432,7 @@ describe("ProjectDetailPage", () => {
     const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
 
     expect(container).toHaveTextContent("Parts Inventory");
-    expect(container).toHaveTextContent("Kneeler Foot");
+    expect(container).toHaveTextContent("Prayer Sole");
     expect(container).toHaveTextContent("Collar");
     expect(container).toHaveTextContent("Spacer");
   });

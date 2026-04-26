@@ -21,6 +21,7 @@ import {
   maxRowCapacityInSection,
   alignRowStripWidthPercent,
 } from "@/lib/pew-layout";
+import { collectGridRowNumbers, parseMapRowNumber } from "@/lib/pew-map-grid";
 import { PillarGapLabel } from "@/components/pillar-gap-label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ExportPewLayoutButton } from "@/components/export-pew-layout-button";
@@ -239,6 +240,230 @@ function SectionMapBlock({
   return <div className="block flex-1 min-w-0">{inner}</div>;
 }
 
+function MapGridCell({
+  section,
+  row,
+  partFilter,
+  showRails,
+  projectSlug,
+}: {
+  section: PewSection;
+  row: PewRow;
+  partFilter: string;
+  showRails: boolean;
+  projectSlug?: string;
+}) {
+  const mapAlign = section.mapRowAlign ?? "fill";
+  const maxCap = maxRowCapacityInSection(section);
+  const scaleRows = mapAlign !== "fill" && maxCap > 0;
+  const sum = effectiveRowCapacityForMap(row, section);
+  const widthPct = scaleRows ? alignRowStripWidthPercent(section, sum) : 100;
+  const colAlign =
+    mapAlign === "start" ? "items-start" : mapAlign === "end" ? "items-end" : "";
+
+  const inner = (
+    <div className={`flex w-full min-w-0 flex-col gap-0 ${colAlign}`}>
+      <div
+        className={scaleRows ? "min-w-0" : "w-full"}
+        style={scaleRows ? { width: `${widthPct}%` } : undefined}
+      >
+        <RowStrip
+          row={row}
+          partFilter={partFilter}
+          section={section}
+          showRails={showRails}
+        />
+      </div>
+    </div>
+  );
+
+  if (projectSlug) {
+    return (
+      <Link
+        href={`/projects/${projectSlug}/sections/${section.id}/`}
+        className="block min-w-0 group"
+      >
+        <div className="rounded border border-transparent p-0.5 transition-colors group-hover:border-amber-300">
+          {inner}
+        </div>
+      </Link>
+    );
+  }
+
+  return <div className="p-0.5">{inner}</div>;
+}
+
+function ChurchAlignedPewTable({
+  sections,
+  partFilter,
+  showRails,
+  projectSlug,
+}: {
+  sections: PewSection[];
+  partFilter: string;
+  showRails: boolean;
+  projectSlug?: string;
+}) {
+  const transeptSection = sections.find((s) => s.type === "crossAisle");
+  const transeptLabel = transeptSection?.label ?? "Transept";
+  const rowNums = collectGridRowNumbers(sections);
+
+  const westAll = sections
+    .filter((s) => s.side === "west" && (s.type ?? "pews") === "pews")
+    .sort((a, b) => a.group - b.group);
+  const eastAll = sections
+    .filter((s) => s.side === "east" && (s.type ?? "pews") === "pews")
+    .sort((a, b) => a.group - b.group);
+
+  const westOuter = sections.find((s) => s.side === "westOuter");
+  const eastOuter = sections.find((s) => s.side === "eastOuter");
+  const alignment = westAll[0]?.alignment ?? eastAll[0]?.alignment ?? "nave";
+
+  function pickWest(n: number): { section: PewSection; row: PewRow } | undefined {
+    for (const sec of westAll) {
+      const row = sec.rows.find((r) => parseMapRowNumber(r) === n);
+      if (row) return { section: sec, row };
+    }
+    return undefined;
+  }
+
+  function pickEast(n: number): { section: PewSection; row: PewRow } | undefined {
+    for (const sec of eastAll) {
+      const row = sec.rows.find((r) => parseMapRowNumber(r) === n);
+      if (row) return { section: sec, row };
+    }
+    return undefined;
+  }
+
+  function pickOuter(section: PewSection | undefined, n: number) {
+    if (!section) return undefined;
+    const row = section.rows.find((r) => parseMapRowNumber(r) === n);
+    if (!row) return undefined;
+    return { section, row };
+  }
+
+  const firstRowN = rowNums[0] ?? 0;
+
+  return (
+    <table className="w-full border-collapse table-fixed text-left">
+      <colgroup>
+        <col className="w-7" />
+        <col className="w-[11%]" />
+        <col className="w-[1.5rem]" />
+        <col />
+        <col className="w-[1.5rem]" />
+        <col />
+        <col className="w-[1.5rem]" />
+        <col className="w-[11%]" />
+      </colgroup>
+      <tbody>
+        {rowNums.map((n) => {
+          const wo = pickOuter(westOuter, n);
+          const eo = pickOuter(eastOuter, n);
+          const w = pickWest(n);
+          const e = pickEast(n);
+          const isTranseptBand = n === 9 && transeptSection;
+
+          return (
+            <tr key={n} className="align-top">
+              <td className="border-b border-neutral-200 px-0.5 py-1 align-middle text-right text-[8px] tabular-nums text-muted-foreground dark:border-neutral-700">
+                {n}
+              </td>
+              <td className="border-b border-neutral-200 p-0 align-top dark:border-neutral-700">
+                {wo ? (
+                  <MapGridCell
+                    section={wo.section}
+                    row={wo.row}
+                    partFilter={partFilter}
+                    showRails={showRails}
+                    projectSlug={projectSlug}
+                  />
+                ) : (
+                  <div className="min-h-[8px]" aria-hidden />
+                )}
+              </td>
+              <td className="border-x border-dashed border-neutral-300 p-0 align-top dark:border-neutral-600">
+                <div className="flex min-h-[8px] flex-col items-center">
+                  {n === firstRowN && (
+                    <span className="text-[8px] text-muted-foreground">W</span>
+                  )}
+                </div>
+              </td>
+              {isTranseptBand ? (
+                <td
+                  className="border-b border-neutral-200 p-0 align-top dark:border-neutral-700"
+                  colSpan={3}
+                  title={`Row ${n}`}
+                >
+                  <div className="flex min-h-[1.5rem] items-center justify-center border-y border-dashed border-neutral-300 dark:border-neutral-600">
+                    <span className="text-[9px] text-muted-foreground">{transeptLabel}</span>
+                  </div>
+                </td>
+              ) : (
+                <>
+                  <td className="border-b border-neutral-200 p-0 align-top dark:border-neutral-700">
+                    {w ? (
+                      <MapGridCell
+                        section={w.section}
+                        row={w.row}
+                        partFilter={partFilter}
+                        showRails={showRails}
+                        projectSlug={projectSlug}
+                      />
+                    ) : (
+                      <div className="min-h-[8px]" aria-hidden />
+                    )}
+                  </td>
+                  <td
+                    className={`border-x border-dashed border-neutral-300 p-0 align-top dark:border-neutral-600 ${
+                      alignment === "outer" ? "min-w-[4rem] w-[4rem]" : "w-[1.5rem]"
+                    }`}
+                  >
+                    <div className="min-h-[8px]" aria-hidden />
+                  </td>
+                  <td className="border-b border-neutral-200 p-0 align-top dark:border-neutral-700">
+                    {e ? (
+                      <MapGridCell
+                        section={e.section}
+                        row={e.row}
+                        partFilter={partFilter}
+                        showRails={showRails}
+                        projectSlug={projectSlug}
+                      />
+                    ) : (
+                      <div className="min-h-[8px]" aria-hidden />
+                    )}
+                  </td>
+                </>
+              )}
+              <td className="border-x border-dashed border-neutral-300 p-0 align-top dark:border-neutral-600">
+                <div className="flex min-h-[8px] flex-col items-center">
+                  {n === firstRowN && (
+                    <span className="text-[8px] text-muted-foreground">E</span>
+                  )}
+                </div>
+              </td>
+              <td className="border-b border-neutral-200 p-0 align-top dark:border-neutral-700">
+                {eo ? (
+                  <MapGridCell
+                    section={eo.section}
+                    row={eo.row}
+                    partFilter={partFilter}
+                    showRails={showRails}
+                    projectSlug={projectSlug}
+                  />
+                ) : (
+                  <div className="min-h-[8px]" aria-hidden />
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
 export function PewMap({
   churchName,
   orientation,
@@ -249,6 +474,7 @@ export function PewMap({
   hideChurchFrame = false,
   project,
   exportSectionId,
+  pewMapUseRowGrid = false,
 }: {
   churchName: string;
   orientation: ChurchOrientation;
@@ -264,6 +490,8 @@ export function PewMap({
   project?: Project;
   /** If set, export only this section; otherwise all pew sections. */
   exportSectionId?: string;
+  /** When true, render nave / transept / rear / outer as one row-aligned table. */
+  pewMapUseRowGrid?: boolean;
 }) {
   const searchParams = useSearchParams();
   const initialPart = searchParams.get("part");
@@ -425,21 +653,40 @@ export function PewMap({
             </>
           )}
 
-          {/* Church body — rendered group by group */}
+          {/* Church body — row-aligned table or group-by-group blocks */}
+          {pewMapUseRowGrid && !hideChurchFrame ? (
+            <ChurchAlignedPewTable
+              sections={sections}
+              partFilter={partFilter}
+              showRails={showRails}
+              projectSlug={projectSlug}
+            />
+          ) : (
           <div className="flex flex-col gap-3">
             {sectionGroups.map((group, gi) => {
               const fullSection = group.find((s) => s.side === "full");
 
-              // Cross aisle (transept) — spans full width including outer columns
+              // Cross aisle (transept) — only across aisles + west/east (not westOuter/eastOuter)
               if (fullSection?.type === "crossAisle") {
                 return (
-                  <div
-                    key={`group-${gi}`}
-                    className="h-6 border-y border-dashed border-neutral-300 dark:border-neutral-600 flex items-center justify-center"
-                  >
-                    <span className="text-[9px] text-muted-foreground">
-                      {fullSection.label}
-                    </span>
+                  <div key={`group-${gi}`} className="flex items-stretch gap-0">
+                    <div className="min-w-0" style={{ flex: 0.4 }} aria-hidden />
+                    <div className="w-6 shrink-0 border-x border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center">
+                      {gi === 0 && (
+                        <span className="text-[8px] text-muted-foreground mt-1">W</span>
+                      )}
+                    </div>
+                    <div className="flex-[3] flex min-w-0 items-stretch">
+                      <div className="flex min-h-[1.5rem] min-w-0 flex-1 items-center justify-center border-y border-dashed border-neutral-300 dark:border-neutral-600">
+                        <span className="text-[9px] text-muted-foreground">{fullSection.label}</span>
+                      </div>
+                    </div>
+                    <div className="w-6 shrink-0 border-x border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center">
+                      {gi === 0 && (
+                        <span className="text-[8px] text-muted-foreground mt-1">E</span>
+                      )}
+                    </div>
+                    <div className="min-w-0" style={{ flex: 0.4 }} aria-hidden />
                   </div>
                 );
               }
@@ -555,6 +802,7 @@ export function PewMap({
               );
             })}
           </div>
+          )}
 
           {!hideChurchFrame && (
             <div className="flex justify-center mt-4">

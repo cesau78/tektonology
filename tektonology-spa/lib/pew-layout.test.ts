@@ -20,7 +20,7 @@ function k(id: string, capacity: number, label?: string): Kneeler {
     id,
     capacity,
     label,
-    hardware: label === "Pillar" ? [] : [{ partId: "foot", name: "Kneeler Foot", quantity: 3, status: "unknown" }],
+    hardware: label === "Pillar" ? [] : [{ partId: "foot", name: "Prayer Sole", quantity: 3, status: "unknown" }],
   };
 }
 
@@ -40,14 +40,14 @@ describe("pew-layout", () => {
       id: "k1",
       capacity: 3,
       hardware: [
-        { partId: "a", name: "Kneeler Foot", quantity: 2, status: "installed" },
+        { partId: "a", name: "Prayer Sole", quantity: 2, status: "installed" },
         { partId: "b", name: "Other", quantity: 1, status: "needed" },
       ],
     };
-    expect(kneelerStatusForPart(kneeler, "Kneeler Foot")).toBe("installed");
+    expect(kneelerStatusForPart(kneeler, "Prayer Sole")).toBe("installed");
     expect(kneelerStatusForPart(kneeler, "Other")).toBe("needed");
     expect(kneelerStatusForPart(kneeler, "Missing")).toBe("none");
-    expect(kneelerStatusForPart({ ...kneeler, hardware: [] }, "Kneeler Foot")).toBe("none");
+    expect(kneelerStatusForPart({ ...kneeler, hardware: [] }, "Prayer Sole")).toBe("none");
   });
 
   it("pewBenchSegmentsFromKneelers returns four 3p runs when a pillar kneeler exists", () => {

@@ -13,7 +13,7 @@ import * as navigation from "next/navigation";
 afterEach(cleanup);
 
 function makeHardware(overrides: Partial<HardwareItem> = {}): HardwareItem {
-  return { partId: "foot", name: "Kneeler Foot", quantity: 3, status: "needed", ...overrides };
+  return { partId: "foot", name: "Prayer Sole", quantity: 3, status: "needed", ...overrides };
 }
 
 function makeKneeler(overrides: Partial<Kneeler> = {}): Kneeler {
@@ -106,7 +106,7 @@ describe("PewMap", () => {
       }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     expect(container.querySelectorAll(".items-start .min-w-0[style]").length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".items-end .min-w-0[style]").length).toBeGreaterThan(0);
@@ -118,7 +118,7 @@ describe("PewMap", () => {
         churchName="The Shrine Church of Saint Stanislaus"
         orientation={orientation}
         sections={[makeSection()]}
-        partNames={["Kneeler Foot"]}
+        partNames={["Prayer Sole"]}
       />,
     );
     expect(container).toHaveTextContent("The Shrine Church of Saint Stanislaus");
@@ -136,7 +136,7 @@ describe("PewMap", () => {
             kneelers: [
               makeKneeler({
                 hardware: [
-                  makeHardware({ name: "Kneeler Foot", quantity: 2, status: "needed" }),
+                  makeHardware({ name: "Prayer Sole", quantity: 2, status: "needed" }),
                   makeHardware({ name: "Kneeler Bushing", quantity: 5, status: "needed" }),
                   makeHardware({ name: "Kneeler Bushing", quantity: 3, status: "upcoming" }),
                 ],
@@ -147,7 +147,7 @@ describe("PewMap", () => {
       }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot", "Kneeler Bushing"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole", "Kneeler Bushing"]} />,
     );
 
     const select = container.querySelector("select")!;
@@ -166,8 +166,8 @@ describe("PewMap", () => {
             kneelers: [
               makeKneeler({
                 hardware: [
-                  makeHardware({ name: "Kneeler Foot", quantity: 3, status: "installed" }),
-                  makeHardware({ name: "Kneeler Foot", quantity: 2, status: "needed" }),
+                  makeHardware({ name: "Prayer Sole", quantity: 3, status: "installed" }),
+                  makeHardware({ name: "Prayer Sole", quantity: 2, status: "needed" }),
                   makeHardware({ name: "Kneeler Bushing", quantity: 4, status: "needed" }),
                 ],
               }),
@@ -177,15 +177,15 @@ describe("PewMap", () => {
       }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Bushing", "Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Bushing", "Prayer Sole"]} />,
     );
 
     // Default is Kneeler Bushing (most needed+upcoming = 4)
     expect(container).toHaveTextContent("0 / 4 Installed (0%)");
 
-    // Switch to Kneeler Foot
+    // Switch to Prayer Sole
     const select = container.querySelector("select")!;
-    fireEvent.change(select, { target: { value: "Kneeler Foot" } });
+    fireEvent.change(select, { target: { value: "Prayer Sole" } });
     expect(container).toHaveTextContent("3 / 5 Installed (60%)");
   });
 
@@ -201,7 +201,7 @@ describe("PewMap", () => {
             kneelers: [
               makeKneeler({
                 hardware: [
-                  makeHardware({ name: "Kneeler Foot", quantity: 3, status: "installed" }),
+                  makeHardware({ name: "Prayer Sole", quantity: 3, status: "installed" }),
                   makeHardware({ name: "Kneeler Bushing", quantity: 2, status: "needed" }),
                 ],
               }),
@@ -211,11 +211,11 @@ describe("PewMap", () => {
       }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Bushing", "Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Bushing", "Prayer Sole"]} />,
     );
 
     const select = container.querySelector("select")!;
-    fireEvent.change(select, { target: { value: "Kneeler Foot" } });
+    fireEvent.change(select, { target: { value: "Prayer Sole" } });
     expect(container).toHaveTextContent("3 / 3 Installed (100%)");
 
     fireEvent.change(select, { target: { value: "Kneeler Bushing" } });
@@ -261,7 +261,7 @@ describe("PewMap", () => {
             frontType: "pew",
             kneelers: [
               makeKneeler({
-                hardware: [makeHardware({ name: "Kneeler Foot", status: "unknown" })],
+                hardware: [makeHardware({ name: "Prayer Sole", status: "unknown" })],
               }),
             ],
           },
@@ -269,7 +269,7 @@ describe("PewMap", () => {
       }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     expect(container).toHaveTextContent("0 / 0 Installed (0%)");
   });
@@ -280,7 +280,7 @@ describe("PewMap", () => {
         churchName="Test Church"
         orientation={orientation}
         sections={[makeSection()]}
-        partNames={["Kneeler Foot"]}
+        partNames={["Prayer Sole"]}
       />,
     );
     expect(container).toHaveTextContent("Altar");
@@ -295,7 +295,7 @@ describe("PewMap", () => {
         churchName="Test Church"
         orientation={orientation}
         sections={[makeSection()]}
-        partNames={["Kneeler Foot"]}
+        partNames={["Prayer Sole"]}
       />,
     );
     expect(container).toHaveTextContent("N");
@@ -310,13 +310,13 @@ describe("PewMap", () => {
         churchName="Test Church"
         orientation={orientation}
         sections={[makeSection()]}
-        partNames={["Kneeler Foot", "Kneeler Bushing"]}
+        partNames={["Prayer Sole", "Kneeler Bushing"]}
       />,
     );
     const select = container.querySelector("select")!;
     expect(select).toBeTruthy();
     const options = Array.from(select.querySelectorAll("option")).map((o) => o.textContent);
-    expect(options).toEqual(["Kneeler Foot", "Kneeler Bushing"]);
+    expect(options).toEqual(["Prayer Sole", "Kneeler Bushing"]);
     expect(options).not.toContain("All Parts");
   });
 
@@ -326,7 +326,7 @@ describe("PewMap", () => {
         churchName="Test Church"
         orientation={orientation}
         sections={[makeSection()]}
-        partNames={["Kneeler Foot"]}
+        partNames={["Prayer Sole"]}
         project={miniProject}
         exportSectionId="sec-west"
       />,
@@ -364,7 +364,7 @@ describe("PewMap", () => {
               makeKneeler({
                 id: "k1",
                 hardware: [
-                  makeHardware({ name: "Kneeler Foot", status: "installed" }),
+                  makeHardware({ name: "Prayer Sole", status: "installed" }),
                   makeHardware({ name: "Kneeler Bushing", status: "needed" }),
                 ],
               }),
@@ -379,16 +379,16 @@ describe("PewMap", () => {
         churchName="Test Church"
         orientation={orientation}
         sections={sections}
-        partNames={["Kneeler Bushing", "Kneeler Foot"]}
+        partNames={["Kneeler Bushing", "Prayer Sole"]}
       />,
     );
 
     // Default is Kneeler Bushing (most needed+upcoming) — should show amber (needed)
     expect(container.querySelectorAll(".bg-amber-100").length).toBeGreaterThan(0);
 
-    // Select "Kneeler Foot" — should show green (installed)
+    // Select "Prayer Sole" — should show green (installed)
     const select = container.querySelector("select")!;
-    fireEvent.change(select, { target: { value: "Kneeler Foot" } });
+    fireEvent.change(select, { target: { value: "Prayer Sole" } });
     expect(container.querySelectorAll(".bg-green-100").length).toBeGreaterThan(0);
   });
 
@@ -404,7 +404,7 @@ describe("PewMap", () => {
             kneelers: [
               makeKneeler({
                 id: "k1",
-                hardware: [makeHardware({ name: "Kneeler Foot", status: "needed" })],
+                hardware: [makeHardware({ name: "Prayer Sole", status: "needed" })],
               }),
             ],
           },
@@ -417,24 +417,318 @@ describe("PewMap", () => {
         churchName="Test Church"
         orientation={orientation}
         sections={sections}
-        partNames={["Kneeler Bushing", "Kneeler Foot"]}
+        partNames={["Kneeler Bushing", "Prayer Sole"]}
       />,
     );
 
-    // Default is Kneeler Foot (only part with needed+upcoming)
+    // Default is Prayer Sole (only part with needed+upcoming)
     // Switch to Kneeler Bushing — kneeler doesn't have this part
     const select = container.querySelector("select")!;
     fireEvent.change(select, { target: { value: "Kneeler Bushing" } });
     expect(container.querySelectorAll(".bg-neutral-100").length).toBeGreaterThan(0);
   });
 
-  it("renders cross aisle (transept) as full-width divider", () => {
+  it("renders row-aligned table when pewMapUseRowGrid is set", () => {
+    const sections: PewSection[] = [
+      {
+        id: "w",
+        label: "West",
+        side: "west",
+        alignment: "nave",
+        group: 0,
+        rows: [{ id: "r8", label: "Row 8", frontType: "pew", kneelers: [makeKneeler({ id: "k1" })] }],
+      },
+      {
+        id: "wr",
+        label: "West rear",
+        side: "west",
+        alignment: "nave",
+        group: 2,
+        rows: [{ id: "r10", label: "Row 10", frontType: "pew", kneelers: [makeKneeler({ id: "kw" })] }],
+      },
+      {
+        id: "e",
+        label: "East",
+        side: "east",
+        alignment: "nave",
+        group: 0,
+        mapRowAlign: "end",
+        rows: [{ id: "r8e", label: "Row 8", frontType: "pew", kneelers: [makeKneeler({ id: "k1" })] }],
+      },
+      {
+        id: "er",
+        label: "East rear",
+        side: "east",
+        alignment: "nave",
+        group: 2,
+        mapRowAlign: "end",
+        rows: [{ id: "r10e", label: "Row 10", frontType: "pew", kneelers: [makeKneeler({ id: "ke" })] }],
+      },
+      {
+        id: "wo",
+        label: "WO",
+        side: "westOuter",
+        alignment: "nave",
+        group: 0,
+        mapRowAlign: "start",
+        rows: [{ id: "r8wo", label: "Row 8", frontType: "pew", kneelers: [makeKneeler({ id: "k1" })] }],
+      },
+      {
+        id: "eo",
+        label: "EO",
+        side: "eastOuter",
+        alignment: "nave",
+        group: 0,
+        mapRowAlign: "end",
+        rows: [{ id: "r8eo", label: "Row 8", frontType: "pew", kneelers: [makeKneeler({ id: "k1" })] }],
+      },
+      {
+        id: "tr",
+        label: "Transept",
+        type: "crossAisle",
+        side: "full",
+        alignment: "full",
+        group: 1,
+        rows: [],
+      },
+    ];
+    const { container } = render(
+      <PewMap
+        churchName="Grid Test"
+        orientation={orientation}
+        sections={sections}
+        partNames={["Prayer Sole"]}
+        projectSlug="grid-proj"
+        pewMapUseRowGrid
+      />,
+    );
+    expect(container.querySelector("table")).toBeTruthy();
+    expect(container).toHaveTextContent("Transept");
+    expect(container.querySelector('a[href="/projects/grid-proj/sections/wo/"]')).toBeTruthy();
+  });
+
+  it("row grid handles missing outer sections and one-sided rear rows", () => {
+    const sections: PewSection[] = [
+      {
+        id: "w",
+        label: "West",
+        side: "west",
+        alignment: "nave",
+        group: 0,
+        rows: [{ id: "r8", label: "Row 8", frontType: "pew", kneelers: [makeKneeler({ id: "a" })] }],
+      },
+      {
+        id: "e",
+        label: "East",
+        side: "east",
+        alignment: "nave",
+        group: 0,
+        mapRowAlign: "end",
+        rows: [{ id: "r8e", label: "Row 8", frontType: "pew", kneelers: [makeKneeler({ id: "c" })] }],
+      },
+      {
+        id: "er",
+        label: "East rear",
+        side: "east",
+        alignment: "nave",
+        group: 2,
+        mapRowAlign: "end",
+        rows: [{ id: "r10e", label: "Row 10", frontType: "pew", kneelers: [makeKneeler({ id: "d" })] }],
+      },
+      {
+        id: "wo",
+        label: "WO",
+        side: "westOuter",
+        alignment: "nave",
+        group: 0,
+        mapRowAlign: "start",
+        rows: [{ id: "r8wo", label: "Row 8", frontType: "pew", kneelers: [makeKneeler({ id: "wo" })] }],
+      },
+      {
+        id: "tr",
+        label: "Transept",
+        type: "crossAisle",
+        side: "full",
+        alignment: "full",
+        group: 1,
+        rows: [],
+      },
+    ];
+    const { container } = render(
+      <PewMap
+        churchName="Grid Partial"
+        orientation={orientation}
+        sections={sections}
+        partNames={["Prayer Sole"]}
+        pewMapUseRowGrid
+      />,
+    );
+    expect(container.querySelector("table")).toBeTruthy();
+    expect(container).toHaveTextContent("Transept");
+  });
+
+  it("row grid falls back when there is no cross aisle and uses east-only alignment", () => {
+    const sections: PewSection[] = [
+      {
+        id: "e",
+        label: "East",
+        side: "east",
+        alignment: "outer",
+        group: 0,
+        mapRowAlign: "end",
+        rows: [{ id: "r1", label: "Row 1", frontType: "pew", kneelers: [makeKneeler({ id: "k" })] }],
+      },
+      {
+        id: "er",
+        label: "East rear",
+        side: "east",
+        alignment: "outer",
+        group: 2,
+        mapRowAlign: "end",
+        rows: [{ id: "r2", label: "Row 2", frontType: "pew", kneelers: [makeKneeler({ id: "k2" })] }],
+      },
+    ];
+    const { container } = render(
+      <PewMap
+        churchName="East only"
+        orientation={orientation}
+        sections={sections}
+        partNames={["Prayer Sole"]}
+        pewMapUseRowGrid
+      />,
+    );
+    expect(container.querySelector("table")).toBeTruthy();
+    expect(container.innerHTML).toContain("min-w-[4rem]");
+  });
+
+  it("row grid leaves east center cell empty when no east section has that row", () => {
+    const sections: PewSection[] = [
+      {
+        id: "w",
+        label: "West",
+        side: "west",
+        alignment: "nave",
+        group: 0,
+        rows: [{ id: "r8", label: "Row 8", frontType: "pew", kneelers: [makeKneeler({ id: "a" })] }],
+      },
+      {
+        id: "wr",
+        label: "West rear",
+        side: "west",
+        alignment: "nave",
+        group: 2,
+        rows: [{ id: "r10", label: "Row 10", frontType: "pew", kneelers: [makeKneeler({ id: "b" })] }],
+      },
+      {
+        id: "e",
+        label: "East",
+        side: "east",
+        alignment: "nave",
+        group: 0,
+        mapRowAlign: "end",
+        rows: [{ id: "r8e", label: "Row 8", frontType: "pew", kneelers: [makeKneeler({ id: "c" })] }],
+      },
+      {
+        id: "tr",
+        label: "Transept",
+        type: "crossAisle",
+        side: "full",
+        alignment: "full",
+        group: 1,
+        rows: [],
+      },
+    ];
+    const { container } = render(
+      <PewMap
+        churchName="Grid West10"
+        orientation={orientation}
+        sections={sections}
+        partNames={["Prayer Sole"]}
+        pewMapUseRowGrid
+      />,
+    );
+    expect(container.querySelector("table")).toBeTruthy();
+  });
+
+  it("row grid handles empty section list", () => {
+    const { container } = render(
+      <PewMap
+        churchName="Empty"
+        orientation={orientation}
+        sections={[]}
+        partNames={[]}
+        pewMapUseRowGrid
+      />,
+    );
+    expect(container.querySelector("table")).toBeTruthy();
+  });
+
+  it("row grid uses wider nave column when west and east are outer-aligned", () => {
+    const sections: PewSection[] = [
+      {
+        id: "w",
+        label: "West",
+        side: "west",
+        alignment: "outer",
+        group: 0,
+        rows: [{ id: "r8", label: "Row 8", frontType: "pew", kneelers: [makeKneeler({ id: "k1" })] }],
+      },
+      {
+        id: "e",
+        label: "East",
+        side: "east",
+        alignment: "outer",
+        group: 0,
+        mapRowAlign: "end",
+        rows: [{ id: "r8e", label: "Row 8", frontType: "pew", kneelers: [makeKneeler({ id: "k2" })] }],
+      },
+      {
+        id: "wo",
+        label: "WO",
+        side: "westOuter",
+        alignment: "nave",
+        group: 0,
+        mapRowAlign: "start",
+        rows: [{ id: "r8wo", label: "Row 8", frontType: "pew", kneelers: [makeKneeler({ id: "k3" })] }],
+      },
+      {
+        id: "eo",
+        label: "EO",
+        side: "eastOuter",
+        alignment: "nave",
+        group: 0,
+        mapRowAlign: "end",
+        rows: [{ id: "r8eo", label: "Row 8", frontType: "pew", kneelers: [makeKneeler({ id: "k4" })] }],
+      },
+      {
+        id: "tr",
+        label: "Transept",
+        type: "crossAisle",
+        side: "full",
+        alignment: "full",
+        group: 1,
+        rows: [],
+      },
+    ];
+    const { container } = render(
+      <PewMap
+        churchName="Grid Outer"
+        orientation={orientation}
+        sections={sections}
+        partNames={["Prayer Sole"]}
+        pewMapUseRowGrid
+      />,
+    );
+    expect(container.innerHTML).toContain("min-w-[4rem]");
+  });
+
+  it("renders cross aisle (transept) across center and aisles only (outer spacers)", () => {
     const sections: PewSection[] = [
       { id: "transept", label: "Transept", type: "crossAisle", side: "full", alignment: "full", group: 0, rows: [] },
     ];
 
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     expect(container).toHaveTextContent("Transept");
   });
@@ -442,7 +736,7 @@ describe("PewMap", () => {
   it("renders full-width pew section", () => {
     const sections = [makeSection({ id: "full-sec", label: "Full Section", side: "full", alignment: "full", group: 0 })];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     expect(container).toHaveTextContent("Full Section");
   });
@@ -453,7 +747,7 @@ describe("PewMap", () => {
       makeSection({ id: "ce", label: "Comm East", side: "east", alignment: "outer", group: 0 }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     expect(container).toHaveTextContent("Comm West");
     expect(container).toHaveTextContent("Comm East");
@@ -467,7 +761,7 @@ describe("PewMap", () => {
       makeSection({ id: "eo", label: "East Outer", side: "eastOuter", group: 0 }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     expect(container).toHaveTextContent("West Outer");
     expect(container).toHaveTextContent("East Outer");
@@ -478,7 +772,7 @@ describe("PewMap", () => {
       makeSection({ id: "wo", label: "West Outer Only", side: "westOuter", group: 0 }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     expect(container).toHaveTextContent("West Outer Only");
   });
@@ -491,7 +785,7 @@ describe("PewMap", () => {
       }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     expect(container).toHaveTextContent("0k");
   });
@@ -515,7 +809,7 @@ describe("PewMap", () => {
       }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     expect(container.querySelectorAll(".flex.gap-px > div.rounded-sm.h-2").length).toBe(2);
   });
@@ -546,7 +840,7 @@ describe("PewMap", () => {
       }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     expect(container.querySelector(".w-\\[26px\\].h-\\[26px\\]")).toBeTruthy();
     expect(container).toHaveTextContent("Pillar");
@@ -569,7 +863,7 @@ describe("PewMap", () => {
       }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     expect(container.querySelector(".rounded-sm.overflow-hidden")).toBeTruthy();
   });
@@ -589,7 +883,7 @@ describe("PewMap", () => {
       }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     expect(container.querySelectorAll(".rounded-t-sm").length).toBeGreaterThan(0);
   });
@@ -600,7 +894,7 @@ describe("PewMap", () => {
         churchName="Test"
         orientation={orientation}
         sections={[makeSection({ id: "west-main", label: "West" })]}
-        partNames={["Kneeler Foot"]}
+        partNames={["Prayer Sole"]}
         projectSlug="saint-stanislaus"
       />,
     );
@@ -624,14 +918,14 @@ describe("PewMap", () => {
       }),
     ];
     const { container: full } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     const { container: kneel } = render(
       <PewMap
         churchName="Test"
         orientation={orientation}
         sections={sections}
-        partNames={["Kneeler Foot"]}
+        partNames={["Prayer Sole"]}
         showRails={false}
       />,
     );
@@ -661,7 +955,7 @@ describe("PewMap", () => {
         churchName="Test"
         orientation={orientation}
         sections={sections}
-        partNames={["Kneeler Foot"]}
+        partNames={["Prayer Sole"]}
         showRails={false}
       />,
     );
@@ -674,7 +968,7 @@ describe("PewMap", () => {
         churchName="Test"
         orientation={orientation}
         sections={[makeSection()]}
-        partNames={["Kneeler Foot"]}
+        partNames={["Prayer Sole"]}
       />,
     );
     expect(container).toHaveTextContent("1r");
@@ -690,7 +984,7 @@ describe("PewMap", () => {
       makeSection({ id: "e1", label: "E1", side: "east", group: 1 }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     expect(container).toHaveTextContent("W");
     expect(container).toHaveTextContent("E");
@@ -715,7 +1009,7 @@ describe("PewMap", () => {
       }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     expect(container).toHaveTextContent("100%");
   });
@@ -739,7 +1033,7 @@ describe("PewMap", () => {
       }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     expect(container.querySelectorAll(".bg-amber-100").length).toBeGreaterThan(0);
   });
@@ -759,7 +1053,7 @@ describe("PewMap", () => {
       }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
     expect(container.querySelectorAll(".bg-neutral-100").length).toBeGreaterThan(0);
   });
@@ -780,7 +1074,7 @@ describe("PewMap", () => {
             kneelers: [
               makeKneeler({
                 hardware: [
-                  makeHardware({ name: "Kneeler Foot", quantity: 3, status: "needed" }),
+                  makeHardware({ name: "Prayer Sole", quantity: 3, status: "needed" }),
                 ],
               }),
             ],
@@ -789,11 +1083,11 @@ describe("PewMap", () => {
       }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
 
     const select = container.querySelector("select")!;
-    expect(select.value).toBe("Kneeler Foot");
+    expect(select.value).toBe("Prayer Sole");
 
     vi.restoreAllMocks();
   });
@@ -823,7 +1117,7 @@ describe("PewMap", () => {
 
   it("initializes filter from URL search params", () => {
     vi.spyOn(navigation, "useSearchParams").mockReturnValue(
-      new URLSearchParams("part=kneeler-foot") as ReturnType<typeof navigation.useSearchParams>,
+      new URLSearchParams("part=prayer-sole") as ReturnType<typeof navigation.useSearchParams>,
     );
 
     const sections = [
@@ -837,7 +1131,7 @@ describe("PewMap", () => {
             kneelers: [
               makeKneeler({
                 hardware: [
-                  makeHardware({ name: "Kneeler Foot", quantity: 3, status: "installed" }),
+                  makeHardware({ name: "Prayer Sole", quantity: 3, status: "installed" }),
                   makeHardware({ name: "Kneeler Bushing", quantity: 2, status: "needed" }),
                 ],
               }),
@@ -847,13 +1141,13 @@ describe("PewMap", () => {
       }),
     ];
     const { container } = render(
-      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Bushing", "Kneeler Foot"]} />,
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Kneeler Bushing", "Prayer Sole"]} />,
     );
 
     // URL param overrides default (Kneeler Bushing would be default by count)
     expect(container).toHaveTextContent("3 / 3 Installed (100%)");
     const select = container.querySelector("select")!;
-    expect(select.value).toBe("Kneeler Foot");
+    expect(select.value).toBe("Prayer Sole");
 
     vi.restoreAllMocks();
   });
