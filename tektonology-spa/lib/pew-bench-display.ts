@@ -88,13 +88,18 @@ export function formatHardwareItemStatusForDetails(h: HardwareItem): string {
   return `${label}: ${formatShortUsDate(h.date)}`;
 }
 
+/** Pew layout xlsx: omit the word "Unknown" so cells stay visually blank like empty map strips. */
+function excelExportStatusLine(line: string): string {
+  return line === "Unknown" ? "" : line;
+}
+
 export function formatKneelerPartStatusForExcel(k: Kneeler, partName: string): string {
   const part = partName.trim();
   const items = k.hardware.filter((h) => h.name === part);
-  if (items.length === 0) return "Unknown";
+  if (items.length === 0) return "";
   const st = kneelerStatusForPart(k, part);
   const h = items.find((x) => x.status === st) ?? items[0]!;
-  return formatHardwareItemStatusForDetails(h);
+  return excelExportStatusLine(formatHardwareItemStatusForDetails(h));
 }
 
 /** Requires `k.hardware.length > 0` (see `formatKneelerAggregateStatusForExcel`). */
@@ -113,6 +118,6 @@ function pickPriorityHardwareItem(k: Kneeler): HardwareItem {
 }
 
 export function formatKneelerAggregateStatusForExcel(k: Kneeler): string {
-  if (k.hardware.length === 0) return "Unknown";
-  return formatHardwareItemStatusForDetails(pickPriorityHardwareItem(k));
+  if (k.hardware.length === 0) return "";
+  return excelExportStatusLine(formatHardwareItemStatusForDetails(pickPriorityHardwareItem(k)));
 }

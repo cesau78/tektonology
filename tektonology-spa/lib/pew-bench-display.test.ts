@@ -142,7 +142,7 @@ describe("pew-bench-display", () => {
 
   it("formatKneelerPartStatusForExcel uses part and kneeler state", () => {
     const k1: Kneeler = { id: "a", capacity: 1, hardware: [] };
-    expect(formatKneelerPartStatusForExcel(k1, "Cushion")).toBe("Unknown");
+    expect(formatKneelerPartStatusForExcel(k1, "Cushion")).toBe("");
     const k2: Kneeler = {
       id: "b",
       capacity: 1,
@@ -164,7 +164,7 @@ describe("pew-bench-display", () => {
   });
 
   it("formatKneelerAggregateStatusForExcel picks priority and fallbacks", () => {
-    expect(formatKneelerAggregateStatusForExcel({ id: "a", capacity: 1, hardware: [] })).toBe("Unknown");
+    expect(formatKneelerAggregateStatusForExcel({ id: "a", capacity: 1, hardware: [] })).toBe("");
     const k1: Kneeler = {
       id: "b",
       capacity: 1,
@@ -173,7 +173,7 @@ describe("pew-bench-display", () => {
         { partId: "2", name: "B", quantity: 1, status: "unknown" as const },
       ],
     };
-    expect(formatKneelerAggregateStatusForExcel(k1)).toBe("Unknown");
+    expect(formatKneelerAggregateStatusForExcel(k1)).toBe("");
     const k2: Kneeler = {
       id: "c",
       capacity: 1,
@@ -188,7 +188,7 @@ describe("pew-bench-display", () => {
       capacity: 1,
       hardware: [{ partId: "1", name: "A", quantity: 1, status: "weird" as never }] as Kneeler["hardware"],
     };
-    expect(formatKneelerAggregateStatusForExcel(k3)).toBe("Unknown");
+    expect(formatKneelerAggregateStatusForExcel(k3)).toBe("");
   });
 
   it("benchPewIndex1BasedInRow skips pillars and default when missing", () => {

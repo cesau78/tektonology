@@ -63,6 +63,59 @@ function project(sections: PewSection[]): Project {
 }
 
 describe("buildPewLayoutWorkbook", () => {
+  it("adds a Church worksheet first with row grid and status background tints", async () => {
+    const p = project([
+      sectionBase(
+        "a",
+        "North",
+        [
+          {
+            id: "r1",
+            label: "Row 1",
+            mapRowNumber: 1,
+            frontType: "pew",
+            kneelers: [kneeler({ id: "k1", capacity: 1, hardware: [part("needed")] })],
+          },
+        ],
+        { side: "west", group: 0 },
+      ),
+      sectionBase(
+        "b",
+        "South",
+        [
+          {
+            id: "r2",
+            label: "Row 1",
+            mapRowNumber: 1,
+            frontType: "pew",
+            kneelers: [kneeler({ id: "k2", capacity: 1, hardware: [part("installed")] })],
+          },
+        ],
+        { side: "east", group: 0 },
+      ),
+    ]);
+    const u8 = await buildPewLayoutWorkbook(p, { partName: "Part" });
+    const wb2 = new ExcelJS.Workbook();
+    await wb2.xlsx.load(Buffer.from(u8));
+    expect(wb2.worksheets[0]?.name).toBe("Church");
+    expect(wb2.worksheets[1]?.name).toBe("Church - West");
+    expect(wb2.worksheets[2]?.name).toBe("Church - East");
+    expect(wb2.worksheets.length).toBe(5);
+    const church = wb2.worksheets[0]!;
+    expect(String(church.getRow(1).getCell(1).value)).toContain("Church map (row grid)");
+    expect(church.getRow(3).getCell(1).value).toBe(1);
+    let foundNeededFill = false;
+    let foundInstalledFill = false;
+    for (let col = 2; col <= 40; col++) {
+      const fill = church.getRow(3).getCell(col).fill as { fgColor?: { argb?: string } } | undefined;
+      const argb = fill?.fgColor?.argb;
+      if (argb === "FFFEF3C7") foundNeededFill = true;
+      if (argb === "FFDCFCE7") foundInstalledFill = true;
+    }
+    expect(foundNeededFill).toBe(true);
+    expect(foundInstalledFill).toBe(true);
+  });
+
   it("returns a non-trivial xlsx for one pew section with a row", async () => {
     const p = project([
       sectionBase("s1", "Main", [row("r1", "R1", [kneeler({ id: "k1", capacity: 1 })])]),
@@ -92,7 +145,7 @@ describe("buildPewLayoutWorkbook", () => {
     const u8 = await buildPewLayoutWorkbook(p);
     const wb2 = new ExcelJS.Workbook();
     await wb2.xlsx.load(Buffer.from(u8));
-    const s = wb2.worksheets[0];
+    const s = wb2.worksheets[3];
     const narrowRow = 4;
     expect(String(s.getRow(narrowRow).getCell(2).value)).toBe("empty");
     expect(String(s.getRow(narrowRow).getCell(8).value)).toContain("e-0201");
@@ -105,7 +158,7 @@ describe("buildPewLayoutWorkbook", () => {
     const u8 = await buildPewLayoutWorkbook(p);
     const wb2 = new ExcelJS.Workbook();
     await wb2.xlsx.load(Buffer.from(u8));
-    const s = wb2.worksheets[0];
+    const s = wb2.worksheets[3];
     expect(s.pageSetup.paperSize).toBe(1);
     expect(s.pageSetup.fitToPage).toBe(true);
     expect(s.pageSetup.fitToWidth).toBe(1);
@@ -243,7 +296,7 @@ describe("buildPewLayoutWorkbook", () => {
     const u8 = await buildPewLayoutWorkbook(p);
     const wb2 = new ExcelJS.Workbook();
     await wb2.xlsx.load(Buffer.from(u8));
-    const s = wb2.worksheets[0];
+    const s = wb2.worksheets[3];
     const a3 = String(s.getRow(3).getCell(1).value);
     expect(a3).toContain("Installed");
     expect(s.getRow(3).getCell(2).value).toBe(`wm-0001`);
@@ -263,7 +316,7 @@ describe("buildPewLayoutWorkbook", () => {
     const u8 = await buildPewLayoutWorkbook(p);
     const wb2 = new ExcelJS.Workbook();
     await wb2.xlsx.load(Buffer.from(u8));
-    const s = wb2.worksheets[0];
+    const s = wb2.worksheets[3];
     const a3 = String(s.getRow(3).getCell(1).value);
     expect(a3).not.toContain("Installed");
     const b3 = String(s.getRow(3).getCell(2).value);
@@ -292,7 +345,7 @@ describe("buildPewLayoutWorkbook", () => {
     const u8 = await buildPewLayoutWorkbook(p, { exportDocumentDate: new Date(2026, 0, 1) });
     const wb2 = new ExcelJS.Workbook();
     await wb2.xlsx.load(Buffer.from(u8));
-    const s = wb2.worksheets[0];
+    const s = wb2.worksheets[3];
     const r = 3;
     const contigRuns = (id: string) => {
       const hits: number[] = [];
@@ -337,7 +390,7 @@ describe("buildPewLayoutWorkbook", () => {
     const u8 = await buildPewLayoutWorkbook(p, { exportDocumentDate: new Date(2026, 0, 1) });
     const wb2 = new ExcelJS.Workbook();
     await wb2.xlsx.load(Buffer.from(u8));
-    const s = wb2.worksheets[0];
+    const s = wb2.worksheets[3];
     const merges = (s as unknown as { model?: { merges?: string[] } }).model?.merges ?? [];
     const toCol = (letters: string) => {
       let n = 0;
@@ -384,7 +437,7 @@ describe("buildPewLayoutWorkbook", () => {
     const u8 = await buildPewLayoutWorkbook(p, { exportDocumentDate: new Date(2026, 0, 1) });
     const wb2 = new ExcelJS.Workbook();
     await wb2.xlsx.load(Buffer.from(u8));
-    const s = wb2.worksheets[0];
+    const s = wb2.worksheets[3];
     const r = 3;
     const toCol = (letters: string) => {
       let n = 0;
@@ -425,7 +478,7 @@ describe("buildPewLayoutWorkbook", () => {
     const u8 = await buildPewLayoutWorkbook(p, { exportDocumentDate: new Date(2026, 0, 1) });
     const wb2 = new ExcelJS.Workbook();
     await wb2.xlsx.load(Buffer.from(u8));
-    const s = wb2.worksheets[0];
+    const s = wb2.worksheets[3];
     expect(String(s.getRow(3).getCell(1).value)).toContain("Pew Only");
     let foundPillar = false;
     for (let c = 2; c <= 40; c++) {
@@ -452,7 +505,7 @@ describe("buildPewLayoutWorkbook", () => {
     const u8 = await buildPewLayoutWorkbook(p, { exportDocumentDate: fixed });
     const wb2 = new ExcelJS.Workbook();
     await wb2.xlsx.load(Buffer.from(u8));
-    const title = String(wb2.worksheets[0].getRow(1).getCell(1).value);
+    const title = String(wb2.worksheets[3].getRow(1).getCell(1).value);
     expect(title).toContain("Part: —");
     expect(title).toContain("Date: April 5, 2026");
   });

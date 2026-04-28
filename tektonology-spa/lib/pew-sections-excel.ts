@@ -1,6 +1,12 @@
 import ExcelJS from "exceljs";
-import type { Kneeler, Project, PewRow, PewSection } from "@/data/types";
-import { emptyKneelerGridPadOnLeft, isPillarKneeler, type PewBenchSegment } from "@/lib/pew-layout";
+import type { HardwareStatus, Kneeler, Project, PewRow, PewSection } from "@/data/types";
+import {
+  emptyKneelerGridPadOnLeft,
+  isPillarKneeler,
+  kneelerStatusForPart,
+  type PewBenchSegment,
+} from "@/lib/pew-layout";
+import { collectGridRowNumbers, parseMapRowNumber } from "@/lib/pew-map-grid";
 import {
   formatBenchPewId,
   formatKneelerAggregateStatusForExcel,
@@ -119,6 +125,22 @@ function initKneelerWalkState(row: PewRow): KneelerWalkState {
 
 type PendingBenchMerge = { kneeler: Kneeler; col0: number; col1: number };
 
+/** Pew cells on Church grid: unknown / no-part reads as white (not aisle gray). */
+const pewMapUnknownOrNoneFill: ExcelJS.Fill = {
+  type: "pattern",
+  pattern: "solid",
+  fgColor: { argb: "FFFFFFFF" },
+};
+
+/** Light-mode Tailwind tints for needed / upcoming / installed (Excel is typically light). */
+const MAP_GRID_STATUS_FILL: Record<HardwareStatus | "none", ExcelJS.Fill> = {
+  unknown: pewMapUnknownOrNoneFill,
+  needed: { type: "pattern", pattern: "solid", fgColor: { argb: "FFFEF3C7" } },
+  upcoming: { type: "pattern", pattern: "solid", fgColor: { argb: "FFDBEAFE" } },
+  installed: { type: "pattern", pattern: "solid", fgColor: { argb: "FFDCFCE7" } },
+  none: pewMapUnknownOrNoneFill,
+};
+
 function applyPendingBenchMerge(
   ws: ExcelJS.Worksheet,
   r: number,
@@ -128,6 +150,7 @@ function applyPendingBenchMerge(
   partName: string,
   statusOnRow: boolean,
   benchPewIdShownKneelers: Set<string>,
+  applyPewMapStatusFill = false,
 ) {
   const { kneeler, col0, col1 } = pending;
   if (col0 < col1) {
@@ -147,10 +170,12 @@ function applyPendingBenchMerge(
     statusOnRow,
     continuationOfSameKneeler,
   );
-  master.alignment = { wrapText: true, vertical: "top" };
+  master.alignment = { wrapText: true, vertical: "top", horizontal: "center" };
   if (isPillarKneeler(kneeler)) {
     master.fill = pillarFill;
     master.font = { size: 9, italic: true, color: { argb: "FF6B7280" } };
+  } else if (applyPewMapStatusFill) {
+    master.fill = MAP_GRID_STATUS_FILL[kneelerStatusForPart(kneeler, partName)];
   }
 }
 
@@ -159,10 +184,11 @@ const thinSide = (style: "thin" | "medium" = "thin") =>
     ? { style: "medium" as const, color: { argb: "FF333333" } }
     : { style: "thin" as const, color: { argb: "FF888888" } };
 
+/** Pillar / rail gap: same gray as empty padding and aisles. */
 const pillarFill: ExcelJS.Fill = {
   type: "pattern",
   pattern: "solid",
-  fgColor: { argb: "FFEAECF0" },
+  fgColor: { argb: "FFE5E7EB" },
 };
 
 const headerFill: ExcelJS.Fill = {
@@ -171,7 +197,7 @@ const headerFill: ExcelJS.Fill = {
   fgColor: { argb: "FFF3F4F6" },
 };
 
-/** Trailing width padding (row shorter than section) or an all-empty kneeler row. */
+/** Trailing width padding, empty nave cells, W/E markers, center aisle, transept band. */
 const emptyPaddingFill: ExcelJS.Fill = {
   type: "pattern",
   pattern: "solid",
@@ -335,45 +361,614 @@ function setGridBorders(
   }
 }
 
-/** e.g. `B` → 2, `AA` → 27. */
-function excelColumnLettersToNumber(letters: string): number {
-  let n = 0;
-  for (const ch of letters.toUpperCase()) {
-    n = n * 26 + (ch.codePointAt(0)! - 64);
+const CHURCH_SHEET_BASE_NAME = "Church";
+const CHURCH_WEST_SHEET_BASE_NAME = "Church - West";
+const CHURCH_EAST_SHEET_BASE_NAME = "Church - East";
+
+type ChurchGridSide = "full" | "west" | "east";
+
+function churchGridTitleSubtitle(side: ChurchGridSide): string {
+  switch (side) {
+    case "full":
+      return "Church map (row grid)";
+    case "west":
+      return "Church map — West (row grid)";
+    case "east":
+      return "Church map — East (row grid)";
   }
-  return n;
 }
 
 /**
- * After `setGridBorders`, every narrow column in a merge still had left+right
- * “thin” borders, so a single kneeler merge looked like many stacked boxes.
- * Clear interior verticals so only the outer left/right of each horizontal merge
- * (one row) draw a line.
+ * Kneeler cells only (columns `firstCol`…`lastCol`), matching section export geometry.
+ * When `applyPewMapStatusFill`, non-pillar cells use the same status tints as the pew map.
  */
-function stripInteriorVerticalBordersInSingleRowMerges(ws: ExcelJS.Worksheet) {
-  const specs = (ws as unknown as { model?: { merges?: string[] } }).model?.merges;
-  if (!Array.isArray(specs)) {
+function writePewRowKneelersIntoGridColumns(
+  ws: ExcelJS.Worksheet,
+  r: number,
+  firstCol: number,
+  lastCol: number,
+  section: PewSection,
+  row: PewRow,
+  partName: string,
+  statusOnRow: boolean,
+  applyPewMapStatusFill: boolean,
+): void {
+  const maxUnits = lastCol - firstCol + 1;
+  const padEmptyOnLeft = emptyKneelerGridPadOnLeft(section);
+
+  if (row.kneelers.length === 0) {
+    if (maxUnits >= 1) {
+      setEmptyPaddingRegion(ws, r, firstCol, lastCol);
+    }
     return;
   }
-  for (const spec of specs) {
-    const m = spec.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/i);
-    if (!m) continue;
-    const c0 = excelColumnLettersToNumber(m[1]!);
-    const r0 = parseInt(m[2]!, 10);
-    const c1 = excelColumnLettersToNumber(m[3]!);
-    const r1 = parseInt(m[4]!, 10);
-    if (r0 !== r1 || c0 >= c1) continue;
-    for (let cc = c0; cc <= c1; cc++) {
-      const cell = ws.getCell(r0, cc);
-      const b = cell.border;
-      if (!b) continue;
-      const top = b.top;
-      const bottom = b.bottom;
-      const left = cc === c0 ? b.left : undefined;
-      const right = cc === c1 ? b.right : undefined;
-      cell.border = { top, bottom, left, right };
+
+  const rowUnits = rowDataColumnUnits(row, section);
+  let col = firstCol;
+  if (padEmptyOnLeft) {
+    const leftPad = maxUnits - rowUnits;
+    if (leftPad > 0) {
+      setEmptyPaddingRegion(ws, r, firstCol, firstCol + leftPad - 1);
+    }
+    col = firstCol + leftPad;
+  }
+  if (useExplicitPewRailLayoutForExport(row)) {
+    assertKneelersMatchPewSeatingOnExplicitRail(row);
+    const segs = explicitPewRailSegments(row);
+    const benchPewIdShownKneelers = new Set<string>();
+    let kWalk = initKneelerWalkState(row);
+    let pendingBench: PendingBenchMerge | null = null;
+    const flushPendingBench = () => {
+      if (!pendingBench) return;
+      applyPendingBenchMerge(
+        ws,
+        r,
+        pendingBench,
+        section,
+        row,
+        partName,
+        statusOnRow,
+        benchPewIdShownKneelers,
+        applyPewMapStatusFill,
+      );
+      pendingBench = null;
+    };
+    for (let si = 0; si < segs.length; si++) {
+      const seg = segs[si]!;
+      if (seg.variant === "gap") {
+        flushPendingBench();
+        const units = capacityToColumnUnits(seg.capacity);
+        const endCol = col + units - 1;
+        if (endCol > lastCol) {
+          throw new Error(
+            `Pew layout export: row ${row.id} overflow (span ends at ${endCol}, max ${lastCol})`,
+          );
+        }
+        if (col < endCol) {
+          ws.mergeCells(r, col, r, endCol);
+        }
+        const master = ws.getCell(r, col);
+        master.value = PILLAR_GAP_EXPORT_LABEL;
+        master.fill = pillarFill;
+        master.font = { ...emptyPaddingFont };
+        master.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
+        col = endCol + 1;
+      } else {
+        let cLeft = seg.capacity;
+        while (cLeft > 0 && kWalk.ki < row.kneelers.length) {
+          const k = row.kneelers[kWalk.ki]!;
+          if (kWalk.rem === 0) {
+            kWalk.rem = k.capacity;
+          }
+          const take = Math.min(cLeft, kWalk.rem);
+          if (take <= 0) {
+            break;
+          }
+          const sliceUnits = capacityToColumnUnits(take);
+          const endCol = col + sliceUnits - 1;
+          if (endCol > lastCol) {
+            throw new Error(
+              `Pew layout export: row ${row.id} overflow (span ends at ${endCol}, max ${lastCol})`,
+            );
+          }
+          const extendSame =
+            pendingBench !== null &&
+            pendingBench.kneeler.id === k.id &&
+            col === pendingBench.col1 + 1;
+          if (extendSame) {
+            pendingBench.col1 = endCol;
+          } else {
+            flushPendingBench();
+            pendingBench = { kneeler: k, col0: col, col1: endCol };
+          }
+          col = endCol + 1;
+          cLeft -= take;
+          kWalk.rem -= take;
+          if (kWalk.rem === 0) {
+            kWalk.ki += 1;
+            kWalk.rem = row.kneelers[kWalk.ki]?.capacity ?? 0;
+          }
+        }
+        const prevSeg = si > 0 ? segs[si - 1]! : null;
+        if (prevSeg?.variant === "gap" && cLeft < 0.05) {
+          flushPendingBench();
+        }
+      }
+    }
+    flushPendingBench();
+  } else {
+    for (const kneeler of row.kneelers) {
+      const units = capacityToColumnUnits(kneeler.capacity);
+      const endCol = col + units - 1;
+      if (endCol > lastCol) {
+        throw new Error(
+          `Pew layout export: row ${row.id} overflow (span ends at ${endCol}, max ${lastCol})`,
+        );
+      }
+      if (col < endCol) {
+        ws.mergeCells(r, col, r, endCol);
+      }
+      const master = ws.getCell(r, col);
+      const displayId = formatBenchPewId(section, row, kneeler);
+      master.value = cellTextForKneeler(
+        kneeler,
+        partName || undefined,
+        displayId,
+        statusOnRow,
+      );
+      master.alignment = { wrapText: true, vertical: "top", horizontal: "center" };
+      if (isPillarKneeler(kneeler)) {
+        master.fill = pillarFill;
+        master.font = { size: 9, italic: true, color: { argb: "FF6B7280" } };
+      } else if (applyPewMapStatusFill) {
+        master.fill = MAP_GRID_STATUS_FILL[kneelerStatusForPart(kneeler, partName)];
+      }
+      col = endCol + 1;
     }
   }
+  if (!padEmptyOnLeft && col <= lastCol) {
+    setEmptyPaddingRegion(ws, r, col, lastCol);
+  }
+}
+
+function maxZoneUnitsAcrossGridRows(
+  rowNums: number[],
+  pick: (n: number) => { section: PewSection; row: PewRow } | undefined,
+): number {
+  let m = 1;
+  for (const n of rowNums) {
+    const p = pick(n);
+    if (p) {
+      m = Math.max(m, rowDataColumnUnits(p.row, p.section));
+    }
+  }
+  return m;
+}
+
+function churchGridPickers(sections: PewSection[]) {
+  const westAll = sections
+    .filter((s) => s.side === "west" && (s.type ?? "pews") === "pews")
+    .slice()
+    .sort((a, b) => a.group - b.group);
+  const eastAll = sections
+    .filter((s) => s.side === "east" && (s.type ?? "pews") === "pews")
+    .slice()
+    .sort((a, b) => a.group - b.group);
+  const westOuter = sections.find((s) => s.side === "westOuter");
+  const eastOuter = sections.find((s) => s.side === "eastOuter");
+  const transeptSection = sections.find((s) => s.type === "crossAisle");
+  const alignment = westAll[0]?.alignment ?? eastAll[0]?.alignment ?? "nave";
+
+  function pickWest(n: number): { section: PewSection; row: PewRow } | undefined {
+    for (const sec of westAll) {
+      const row = sec.rows.find((rr) => parseMapRowNumber(rr) === n);
+      if (row) return { section: sec, row };
+    }
+    return undefined;
+  }
+
+  function pickEast(n: number): { section: PewSection; row: PewRow } | undefined {
+    for (const sec of eastAll) {
+      const row = sec.rows.find((rr) => parseMapRowNumber(rr) === n);
+      if (row) return { section: sec, row };
+    }
+    return undefined;
+  }
+
+  function pickOuter(
+    section: PewSection | undefined,
+    n: number,
+  ): { section: PewSection; row: PewRow } | undefined {
+    if (!section) return undefined;
+    const row = section.rows.find((rr) => parseMapRowNumber(rr) === n);
+    if (!row) return undefined;
+    return { section, row };
+  }
+
+  return { westOuter, eastOuter, transeptSection, alignment, pickWest, pickEast, pickOuter };
+}
+
+function writeChurchAlignedGridToWorksheet(
+  ws: ExcelJS.Worksheet,
+  project: Project,
+  layoutSections: PewSection[],
+  partName: string,
+  exportAt: Date,
+  side: ChurchGridSide = "full",
+): { lastRow: number; lastCol: number } {
+  const { westOuter, eastOuter, transeptSection, alignment, pickWest, pickEast, pickOuter } =
+    churchGridPickers(layoutSections);
+  const transeptLabel = transeptSection?.label ?? "Transept";
+  const rowNums = collectGridRowNumbers(layoutSections);
+  const firstRowN = rowNums[0] ?? 0;
+
+  const maxWo =
+    westOuter != null
+      ? maxZoneUnitsAcrossGridRows(rowNums, (n) => pickOuter(westOuter, n))
+      : 0;
+  const maxEo =
+    eastOuter != null
+      ? maxZoneUnitsAcrossGridRows(rowNums, (n) => pickOuter(eastOuter, n))
+      : 0;
+  const maxWest = maxZoneUnitsAcrossGridRows(rowNums, pickWest);
+  const maxEast = maxZoneUnitsAcrossGridRows(rowNums, pickEast);
+  const centerCols = alignment === "outer" ? 2 : 1;
+
+  const includeWest = side === "full" || side === "west";
+  const includeEast = side === "full" || side === "east";
+
+  let colWoStart = 0;
+  let colWoEnd = 0;
+  let colWmark = 0;
+  let colWestStart = 0;
+  let colWestEnd = 0;
+  let colCenterStart = 0;
+  let colCenterEnd = 0;
+  let colEastStart = 0;
+  let colEastEnd = 0;
+  let colEmark = 0;
+  let colEoStart = 0;
+  let colEoEnd = 0;
+
+  let c = 2;
+  if (includeWest) {
+    if (maxWo > 0) {
+      colWoStart = c;
+      colWoEnd = c + maxWo - 1;
+      c = colWoEnd + 1;
+    }
+    colWmark = c;
+    c += 1;
+    colWestStart = c;
+    colWestEnd = c + maxWest - 1;
+    c = colWestEnd + 1;
+  }
+  colCenterStart = c;
+  colCenterEnd = c + centerCols - 1;
+  c = colCenterEnd + 1;
+
+  if (includeEast) {
+    colEastStart = c;
+    colEastEnd = c + maxEast - 1;
+    c = colEastEnd + 1;
+    colEmark = c;
+    c += 1;
+    if (maxEo > 0) {
+      colEoStart = c;
+      colEoEnd = c + maxEo - 1;
+      c = colEoEnd + 1;
+    }
+  }
+
+  const lastCol = c - 1;
+  const partDisplay = partName || "—";
+  const titleRow = 1;
+  const headerRow = 2;
+  const firstDataRow = 3;
+
+  const title = ws.getCell(titleRow, 1);
+  title.value = trimTrailingNewlinesInCell(
+    `${project.name}${XlLf}${churchGridTitleSubtitle(side)}${XlLf}Part: ${partDisplay}${XlLf}${exportDateHeaderLine(exportAt)}`,
+  );
+  title.font = { bold: true, size: 12 };
+  title.alignment = { vertical: "top", wrapText: true };
+  if (lastCol > 1) {
+    ws.mergeCells(titleRow, 1, titleRow, lastCol);
+  }
+  ws.getRow(titleRow).height = Math.max(
+    PEW_TITLE_ROW_MIN_HEIGHT_PT,
+    88 - PEW_SHEET_DEFAULT_ROW_HEIGHT_PT,
+  );
+
+  const headerCells: { c0: number; c1: number; label: string }[] = [];
+  if (includeWest) {
+    if (maxWo > 0) {
+      headerCells.push({ c0: colWoStart, c1: colWoEnd, label: "West outer" });
+    }
+    headerCells.push({ c0: colWmark, c1: colWmark, label: "" });
+    headerCells.push({ c0: colWestStart, c1: colWestEnd, label: "West" });
+  }
+  headerCells.push({ c0: colCenterStart, c1: colCenterEnd, label: "···" });
+  if (includeEast) {
+    headerCells.push({ c0: colEastStart, c1: colEastEnd, label: "East" });
+    headerCells.push({ c0: colEmark, c1: colEmark, label: "" });
+    if (maxEo > 0) {
+      headerCells.push({ c0: colEoStart, c1: colEoEnd, label: "East outer" });
+    }
+  }
+
+  ws.getCell(headerRow, 1).value = "Row";
+  ws.getCell(headerRow, 1).font = { bold: true, size: 10 };
+  ws.getCell(headerRow, 1).fill = headerFill;
+  ws.getCell(headerRow, 1).alignment = { vertical: "middle", horizontal: "right", wrapText: false };
+
+  for (const h of headerCells) {
+    const cell = ws.getCell(headerRow, h.c0);
+    cell.value = h.label;
+    cell.font = { bold: true, size: 10 };
+    cell.fill = headerFill;
+    cell.alignment = { vertical: "middle", wrapText: false, horizontal: "center" };
+    if (h.c0 < h.c1) {
+      ws.mergeCells(headerRow, h.c0, headerRow, h.c1);
+    }
+  }
+
+  let outI = 0;
+  for (const n of rowNums) {
+    const r = firstDataRow + outI;
+    const rowNumCell = ws.getCell(r, 1);
+    rowNumCell.value = n;
+    rowNumCell.font = { size: 10 };
+    rowNumCell.alignment = { horizontal: "right", vertical: "middle", wrapText: false };
+
+    if (includeWest) {
+      const wo = pickOuter(westOuter, n);
+      if (maxWo > 0) {
+        if (wo) {
+          writePewRowKneelersIntoGridColumns(
+            ws,
+            r,
+            colWoStart,
+            colWoEnd,
+            wo.section,
+            wo.row,
+            partName,
+            false,
+            true,
+          );
+        } else {
+          setEmptyPaddingRegion(ws, r, colWoStart, colWoEnd);
+        }
+      }
+      const wMark = ws.getCell(r, colWmark);
+      wMark.value = n === firstRowN ? "W" : "";
+      wMark.font = { size: 9, color: { argb: "FF6B7280" } };
+      wMark.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
+      wMark.fill = emptyPaddingFill;
+    }
+
+    const isTranseptBand = n === 9 && Boolean(transeptSection);
+
+    if (isTranseptBand) {
+      if (side === "full") {
+        ws.mergeCells(r, colWestStart, r, colEastEnd);
+        const tr = ws.getCell(r, colWestStart);
+        tr.value = transeptLabel;
+        tr.font = { size: 10, italic: true, color: { argb: "FF6B7280" } };
+        tr.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
+        tr.fill = emptyPaddingFill;
+      } else if (side === "west") {
+        ws.mergeCells(r, colWestStart, r, colCenterEnd);
+        const tr = ws.getCell(r, colWestStart);
+        tr.value = transeptLabel;
+        tr.font = { size: 10, italic: true, color: { argb: "FF6B7280" } };
+        tr.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
+        tr.fill = emptyPaddingFill;
+      } else {
+        ws.mergeCells(r, colCenterStart, r, colEastEnd);
+        const tr = ws.getCell(r, colCenterStart);
+        tr.value = transeptLabel;
+        tr.font = { size: 10, italic: true, color: { argb: "FF6B7280" } };
+        tr.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
+        tr.fill = emptyPaddingFill;
+      }
+    } else {
+      if (includeWest) {
+        const w = pickWest(n);
+        if (w) {
+          writePewRowKneelersIntoGridColumns(
+            ws,
+            r,
+            colWestStart,
+            colWestEnd,
+            w.section,
+            w.row,
+            partName,
+            false,
+            true,
+          );
+        } else {
+          setEmptyPaddingRegion(ws, r, colWestStart, colWestEnd);
+        }
+      }
+
+      if (colCenterStart < colCenterEnd) {
+        ws.mergeCells(r, colCenterStart, r, colCenterEnd);
+      }
+      const mid = ws.getCell(r, colCenterStart);
+      mid.value = "";
+      mid.fill = emptyPaddingFill;
+
+      if (includeEast) {
+        const e = pickEast(n);
+        if (e) {
+          writePewRowKneelersIntoGridColumns(
+            ws,
+            r,
+            colEastStart,
+            colEastEnd,
+            e.section,
+            e.row,
+            partName,
+            false,
+            true,
+          );
+        } else {
+          setEmptyPaddingRegion(ws, r, colEastStart, colEastEnd);
+        }
+      }
+    }
+
+    if (includeEast) {
+      const eMark = ws.getCell(r, colEmark);
+      eMark.value = n === firstRowN ? "E" : "";
+      eMark.font = { size: 9, color: { argb: "FF6B7280" } };
+      eMark.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
+      eMark.fill = emptyPaddingFill;
+
+      if (maxEo > 0) {
+        const eo = pickOuter(eastOuter, n);
+        if (eo) {
+          writePewRowKneelersIntoGridColumns(
+            ws,
+            r,
+            colEoStart,
+            colEoEnd,
+            eo.section,
+            eo.row,
+            partName,
+            false,
+            true,
+          );
+        } else {
+          setEmptyPaddingRegion(ws, r, colEoStart, colEoEnd);
+        }
+      }
+    }
+
+    if (isTranseptBand) {
+      rowNumCell.fill = emptyPaddingFill;
+      if (includeWest && maxWo > 0) {
+        for (let cc = colWoStart; cc <= colWoEnd; cc++) {
+          ws.getCell(r, cc).fill = emptyPaddingFill;
+        }
+      }
+      if (includeEast && maxEo > 0) {
+        for (let cc = colEoStart; cc <= colEoEnd; cc++) {
+          ws.getCell(r, cc).fill = emptyPaddingFill;
+        }
+      }
+    }
+
+    ws.getRow(r).height = PEW_DATA_ROW_MIN_HEIGHT_PT;
+    outI += 1;
+  }
+
+  const lastRow = firstDataRow + outI - 1;
+  ws.getColumn(1).width = 8;
+  for (let cc = 2; cc <= lastCol; cc++) {
+    ws.getColumn(cc).width = WIDTH_UNITS_PER_PERSON / CAPACITY_TO_UNITS;
+  }
+
+  return { lastRow, lastCol };
+}
+
+/**
+ * Writes one section’s title, header, and pew grid starting at `startRow`.
+ * @param gridMaxUnits - When set, every row uses this grid width so stacked sections align on the Church sheet.
+ */
+function writePewSectionBlockToWorksheet(
+  ws: ExcelJS.Worksheet,
+  project: Project,
+  section: PewSection,
+  partName: string,
+  exportAt: Date,
+  startRow: number,
+  gridMaxUnits?: number,
+): { lastRow: number; lastCol: number } {
+  const maxUnits = gridMaxUnits ?? maxDataColumnUnitsInSection(section);
+  const lastCol = 1 + maxUnits;
+  const titleRow = startRow;
+  const headerRow = startRow + 1;
+  const firstDataRow = startRow + 2;
+
+  const partDisplay = partName || "—";
+  const title = ws.getCell(titleRow, 1);
+  title.value = trimTrailingNewlinesInCell(
+    `${project.name}${XlLf}Section: ${section.label}${XlLf}Part: ${partDisplay}${XlLf}${exportDateHeaderLine(exportAt)}`,
+  );
+  title.font = { bold: true, size: 12 };
+  title.alignment = { vertical: "top", wrapText: true };
+  if (lastCol > 1) {
+    ws.mergeCells(titleRow, 1, titleRow, lastCol);
+  }
+  ws.getRow(titleRow).height = Math.max(
+    PEW_TITLE_ROW_MIN_HEIGHT_PT,
+    88 - PEW_SHEET_DEFAULT_ROW_HEIGHT_PT,
+  );
+
+  ws.getCell(headerRow, 1).value = "Row";
+  ws.getCell(headerRow, 1).font = { bold: true, size: 10 };
+  ws.getCell(headerRow, 1).fill = headerFill;
+  ws.getCell(headerRow, 1).alignment = { vertical: "middle", wrapText: false };
+  if (maxUnits > 1) {
+    ws.mergeCells(headerRow, 2, headerRow, lastCol);
+  }
+  const h2 = ws.getCell(headerRow, 2);
+  h2.value = "Pews";
+  h2.font = { bold: true, size: 10 };
+  h2.fill = headerFill;
+  h2.alignment = { vertical: "middle", wrapText: false, horizontal: "left" as const };
+
+  let outRow = 0;
+
+  if (section.rows.length === 0) {
+    const cell = ws.getCell(firstDataRow, 1);
+    cell.value = "No rows in this section.";
+    cell.alignment = { wrapText: false };
+    outRow = 1;
+  } else {
+    for (const row of section.rows) {
+      const r = firstDataRow + outRow;
+      const a = ws.getRow(r).getCell(1);
+      a.font = { size: 10 };
+      a.alignment = { wrapText: true, vertical: "top" };
+      let rowHeight = 48;
+
+      if (row.kneelers.length === 0) {
+        a.value = `${rowLabelText(row)}${XlLf}(no kneelers; bench from pillar row)`;
+        if (maxUnits >= 1) {
+          setEmptyPaddingRegion(ws, r, 2, lastCol);
+        }
+      } else {
+        const hoist = hoistedStatusForRow(row, partName);
+        if (hoist) {
+          rowHeight = Math.max(PEW_DATA_ROW_HOISTED_MIN_HEIGHT_PT, 60 - PEW_SHEET_DEFAULT_ROW_HEIGHT_PT);
+        }
+        a.value = trimTrailingNewlinesInCell(
+          hoist ? `${rowLabelText(row)}${XlLf}${hoist}` : rowLabelText(row),
+        );
+        const statusOnRow = Boolean(hoist);
+        writePewRowKneelersIntoGridColumns(
+          ws,
+          r,
+          2,
+          lastCol,
+          section,
+          row,
+          partName,
+          statusOnRow,
+          false,
+        );
+      }
+
+      ws.getRow(r).height = rowHeight;
+      outRow += 1;
+    }
+  }
+
+  const lastRow = section.rows.length === 0 ? firstDataRow : firstDataRow + outRow - 1;
+  return { lastRow, lastCol };
 }
 
 export interface PewLayoutExcelOptions {
@@ -388,13 +983,10 @@ export interface PewLayoutExcelOptions {
 }
 
 /**
- * One worksheet per pew section: column A = row; B onward = a fixed grid of
- * narrow columns. Each kneeler spans a merge whose width in columns is
- * round(capacity×${CAPACITY_TO_UNITS}) (small integers, not hundredths). Each narrow column’s
- * width is ${WIDTH_UNITS_PER_PERSON}/${CAPACITY_TO_UNITS} so a capacity-1.0 cell spans
- * ${CAPACITY_TO_UNITS}× and totals width ${WIDTH_UNITS_PER_PERSON}. Shorter rows are padded
- * with empty unit columns on the right (west) or left (east), matching the pew map.
- * Cross-aisle sections skipped.
+ * Worksheets “Church”, “Church - West”, and “Church - East”: row-grid maps (shared row column A).
+ * Full Church matches the web; West/East omit the opposite side’s nave, outer, and aisle marker.
+ * Kneeler cells use pew-map status tints. Then one worksheet per pew section. Cross-aisle
+ * skipped on section sheets; included on church grids for transept band.
  */
 export async function buildPewLayoutWorkbook(
   project: Project,
@@ -422,208 +1014,63 @@ export async function buildPewLayoutWorkbook(
   const exportAt = options.exportDocumentDate ?? new Date();
   const unitWidth = WIDTH_UNITS_PER_PERSON / CAPACITY_TO_UNITS;
 
+  const layoutSectionsForGrid = project.layout.sections.filter((s) => {
+    if (isCrossAisle(s)) return true;
+    return !options.sectionId || s.id === options.sectionId;
+  });
+
+  const churchSheetName = sanitizeSheetName(CHURCH_SHEET_BASE_NAME, usedNames);
+  const churchWs = wb.addWorksheet(churchSheetName, {
+    properties: { defaultRowHeight: PEW_SHEET_DEFAULT_ROW_HEIGHT_PT },
+  });
+  const { lastRow: churchLastRow, lastCol: churchLastCol } = writeChurchAlignedGridToWorksheet(
+    churchWs,
+    project,
+    layoutSectionsForGrid,
+    partName,
+    exportAt,
+    "full",
+  );
+  setGridBorders(churchWs, 1, churchLastRow, 1, churchLastCol);
+  applyPewLayoutPrintPageSetup(churchWs);
+
+  const churchWestName = sanitizeSheetName(CHURCH_WEST_SHEET_BASE_NAME, usedNames);
+  const churchWestWs = wb.addWorksheet(churchWestName, {
+    properties: { defaultRowHeight: PEW_SHEET_DEFAULT_ROW_HEIGHT_PT },
+  });
+  const { lastRow: cwLastRow, lastCol: cwLastCol } = writeChurchAlignedGridToWorksheet(
+    churchWestWs,
+    project,
+    layoutSectionsForGrid,
+    partName,
+    exportAt,
+    "west",
+  );
+  setGridBorders(churchWestWs, 1, cwLastRow, 1, cwLastCol);
+  applyPewLayoutPrintPageSetup(churchWestWs);
+
+  const churchEastName = sanitizeSheetName(CHURCH_EAST_SHEET_BASE_NAME, usedNames);
+  const churchEastWs = wb.addWorksheet(churchEastName, {
+    properties: { defaultRowHeight: PEW_SHEET_DEFAULT_ROW_HEIGHT_PT },
+  });
+  const { lastRow: ceLastRow, lastCol: ceLastCol } = writeChurchAlignedGridToWorksheet(
+    churchEastWs,
+    project,
+    layoutSectionsForGrid,
+    partName,
+    exportAt,
+    "east",
+  );
+  setGridBorders(churchEastWs, 1, ceLastRow, 1, ceLastCol);
+  applyPewLayoutPrintPageSetup(churchEastWs);
+
   for (const section of sections) {
-    const padEmptyOnLeft = emptyKneelerGridPadOnLeft(section);
     const sheetName = sanitizeSheetName(section.label, usedNames);
     const maxUnits = maxDataColumnUnitsInSection(section);
     const lastCol = 1 + maxUnits;
     const ws = wb.addWorksheet(sheetName, { properties: { defaultRowHeight: PEW_SHEET_DEFAULT_ROW_HEIGHT_PT } });
-
-    const partDisplay = partName || "—";
-    const title = ws.getCell(1, 1);
-    title.value = trimTrailingNewlinesInCell(
-      `${project.name}${XlLf}Section: ${section.label}${XlLf}Part: ${partDisplay}${XlLf}${exportDateHeaderLine(exportAt)}`,
-    );
-    title.font = { bold: true, size: 12 };
-    title.alignment = { vertical: "top", wrapText: true };
-    if (lastCol > 1) {
-      ws.mergeCells(1, 1, 1, lastCol);
-    }
-    ws.getRow(1).height = Math.max(
-      PEW_TITLE_ROW_MIN_HEIGHT_PT,
-      88 - PEW_SHEET_DEFAULT_ROW_HEIGHT_PT,
-    );
-
-    ws.getCell(2, 1).value = "Row";
-    ws.getCell(2, 1).font = { bold: true, size: 10 };
-    ws.getCell(2, 1).fill = headerFill;
-    ws.getCell(2, 1).alignment = { vertical: "middle", wrapText: false };
-    if (maxUnits > 1) {
-      ws.mergeCells(2, 2, 2, lastCol);
-    }
-    const h2 = ws.getCell(2, 2);
-    h2.value = "Pews";
-    h2.font = { bold: true, size: 10 };
-    h2.fill = headerFill;
-    h2.alignment = { vertical: "middle", wrapText: false, horizontal: "left" as const };
-
-    const firstDataRow = 3;
-    let outRow = 0;
-
-    if (section.rows.length === 0) {
-      const cell = ws.getCell(firstDataRow, 1);
-      cell.value = "No rows in this section.";
-      cell.alignment = { wrapText: false };
-      outRow = 1;
-    } else {
-      for (const row of section.rows) {
-        const r = firstDataRow + outRow;
-        const a = ws.getRow(r).getCell(1);
-        a.font = { size: 10 };
-        a.alignment = { wrapText: true, vertical: "top" };
-        let rowHeight = 48;
-
-        if (row.kneelers.length === 0) {
-          a.value = `${rowLabelText(row)}${XlLf}(no kneelers; bench from pillar row)`;
-          if (maxUnits >= 1) {
-            setEmptyPaddingRegion(ws, r, 2, lastCol);
-          }
-        } else {
-          const hoist = hoistedStatusForRow(row, partName);
-          if (hoist) {
-            rowHeight = Math.max(PEW_DATA_ROW_HOISTED_MIN_HEIGHT_PT, 60 - PEW_SHEET_DEFAULT_ROW_HEIGHT_PT);
-          }
-          a.value = trimTrailingNewlinesInCell(
-            hoist ? `${rowLabelText(row)}${XlLf}${hoist}` : rowLabelText(row),
-          );
-          const rowUnits = rowDataColumnUnits(row, section);
-          let col = 2;
-          if (padEmptyOnLeft) {
-            const leftPad = maxUnits - rowUnits;
-            if (leftPad > 0) {
-              setEmptyPaddingRegion(ws, r, 2, 1 + leftPad);
-            }
-            col = 2 + leftPad;
-          }
-          const statusOnRow = Boolean(hoist);
-          if (useExplicitPewRailLayoutForExport(row)) {
-            assertKneelersMatchPewSeatingOnExplicitRail(row);
-            const segs = explicitPewRailSegments(row);
-            const benchPewIdShownKneelers = new Set<string>();
-            let kWalk = initKneelerWalkState(row);
-            let pendingBench: PendingBenchMerge | null = null;
-            const flushPendingBench = () => {
-              if (!pendingBench) return;
-              applyPendingBenchMerge(
-                ws,
-                r,
-                pendingBench,
-                section,
-                row,
-                partName,
-                statusOnRow,
-                benchPewIdShownKneelers,
-              );
-              pendingBench = null;
-            };
-            for (let si = 0; si < segs.length; si++) {
-              const seg = segs[si]!;
-              if (seg.variant === "gap") {
-                flushPendingBench();
-                const units = capacityToColumnUnits(seg.capacity);
-                const endCol = col + units - 1;
-                if (endCol > lastCol) {
-                  throw new Error(
-                    `Pew layout export: row ${row.id} overflow (span ends at ${endCol}, max ${lastCol})`,
-                  );
-                }
-                if (col < endCol) {
-                  ws.mergeCells(r, col, r, endCol);
-                }
-                const master = ws.getCell(r, col);
-                master.value = PILLAR_GAP_EXPORT_LABEL;
-                master.fill = pillarFill;
-                master.font = { ...emptyPaddingFont };
-                master.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
-                col = endCol + 1;
-              } else {
-                let cLeft = seg.capacity;
-                while (cLeft > 0 && kWalk.ki < row.kneelers.length) {
-                  const k = row.kneelers[kWalk.ki]!;
-                  if (kWalk.rem === 0) {
-                    kWalk.rem = k.capacity;
-                  }
-                  const take = Math.min(cLeft, kWalk.rem);
-                  if (take <= 0) {
-                    break;
-                  }
-                  const sliceUnits = capacityToColumnUnits(take);
-                  const endCol = col + sliceUnits - 1;
-                  if (endCol > lastCol) {
-                    throw new Error(
-                      `Pew layout export: row ${row.id} overflow (span ends at ${endCol}, max ${lastCol})`,
-                    );
-                  }
-                  const extendSame =
-                    pendingBench !== null &&
-                    pendingBench.kneeler.id === k.id &&
-                    col === pendingBench.col1 + 1;
-                  if (extendSame) {
-                    pendingBench.col1 = endCol;
-                  } else {
-                    flushPendingBench();
-                    pendingBench = { kneeler: k, col0: col, col1: endCol };
-                  }
-                  col = endCol + 1;
-                  cLeft -= take;
-                  kWalk.rem -= take;
-                  if (kWalk.rem === 0) {
-                    kWalk.ki += 1;
-                    kWalk.rem = row.kneelers[kWalk.ki]?.capacity ?? 0;
-                  }
-                }
-                const prevSeg = si > 0 ? segs[si - 1]! : null;
-                if (prevSeg?.variant === "gap" && cLeft < 0.05) {
-                  // After a pillar, do not let extendSame continue the same kneeler into the next pew
-                  // segment (3,2,1,3,3) — a 1p run must stay as its own column block, not merge with
-                  // the first part of 3p (which looked like 3+3+1). Adjacent pew|pew without a gap
-                  // (e.g. 2.66+ across [3,3,3] segments) still uses extendSame.
-                  flushPendingBench();
-                }
-              }
-            }
-            flushPendingBench();
-          } else {
-            for (const kneeler of row.kneelers) {
-              const units = capacityToColumnUnits(kneeler.capacity);
-              const endCol = col + units - 1;
-              if (endCol > lastCol) {
-                throw new Error(
-                  `Pew layout export: row ${row.id} overflow (span ends at ${endCol}, max ${lastCol})`,
-                );
-              }
-              if (col < endCol) {
-                ws.mergeCells(r, col, r, endCol);
-              }
-              const master = ws.getCell(r, col);
-              const displayId = formatBenchPewId(section, row, kneeler);
-              master.value = cellTextForKneeler(
-                kneeler,
-                partName || undefined,
-                displayId,
-                statusOnRow,
-              );
-              master.alignment = { wrapText: true, vertical: "top" };
-              if (isPillarKneeler(kneeler)) {
-                master.fill = pillarFill;
-                master.font = { size: 9, italic: true, color: { argb: "FF6B7280" } };
-              }
-              col = endCol + 1;
-            }
-          }
-          if (!padEmptyOnLeft && col <= lastCol) {
-            setEmptyPaddingRegion(ws, r, col, lastCol);
-          }
-        }
-
-        ws.getRow(r).height = rowHeight;
-        outRow += 1;
-      }
-    }
-
-    const lastRow = section.rows.length === 0 ? firstDataRow : firstDataRow + outRow - 1;
+    const { lastRow } = writePewSectionBlockToWorksheet(ws, project, section, partName, exportAt, 1);
     setGridBorders(ws, 1, lastRow, 1, lastCol);
-    stripInteriorVerticalBordersInSingleRowMerges(ws);
 
     ws.getColumn(1).width = 22;
     for (let c = 2; c <= lastCol; c++) {
