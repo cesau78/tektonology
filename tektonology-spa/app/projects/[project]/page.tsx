@@ -6,6 +6,7 @@ import { getProject, listProjectJsonSlugs } from "@/lib/project-data";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PewMap } from "./pew-map";
+import { kneelerHardware } from "@/lib/pew-layout";
 
 export function generateStaticParams() {
   return listProjectJsonSlugs().map((project) => ({ project }));
@@ -22,7 +23,7 @@ function getInventorySummary(project: Project) {
   const allHardware = project.layout.sections
     .flatMap((s) => s.rows)
     .flatMap((r) => r.kneelers)
-    .flatMap((k) => k.hardware);
+    .flatMap((k) => kneelerHardware(k));
 
   const byPart = new Map<
     string,
@@ -59,7 +60,7 @@ export default async function ProjectDetailPage({
       sections
         .flatMap((s) => s.rows)
         .flatMap((r) => r.kneelers)
-        .flatMap((k) => k.hardware)
+        .flatMap((k) => kneelerHardware(k))
         .map((h) => h.name),
     ),
   ).sort();

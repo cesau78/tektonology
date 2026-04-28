@@ -12,27 +12,180 @@ import {
   effectiveRowCapacityForMap,
   maxRowCapacityInSection,
   alignRowStripWidthPercent,
+  alignMapRowStripWidthPercent,
+  mapRowStripWidthNumerator,
+  maxMapRowStripWidthNumeratorInSection,
   emptyKneelerGridPadOnLeft,
+  railKneelerColumnsAligned,
+  pewRailChunksPerKneelerColumn,
+  mapPewRailSegmentsAlignedToKneelerColumns,
+  mapColumnRailVariant,
 } from "./pew-layout";
 
-function k(id: string, capacity: number, label?: string): Kneeler {
+function k(
+  id: string,
+  capacity: number,
+  label?: string,
+  type?: Kneeler["type"],
+): Kneeler {
+  const isPillarCol = type === "Pillar" || label === "Pillar";
   return {
     id,
     capacity,
     label,
-    hardware: label === "Pillar" ? [] : [{ partId: "foot", name: "Prayer Sole", quantity: 3, status: "unknown" }],
+    type,
+    hardware: isPillarCol
+      ? []
+      : [{ partId: "foot", name: "Prayer Sole", quantity: 3, status: "unknown" }],
   };
 }
 
 describe("pew-layout", () => {
+  it("mapColumnRailVariant handles empty, all-gap, pew-only, and mixed chunks", () => {
+    expect(mapColumnRailVariant([])).toBe("pew");
+    expect(mapColumnRailVariant([{ id: "a", capacity: 2, variant: "gap" }])).toBe("gap");
+    expect(mapColumnRailVariant([{ id: "b", capacity: 3, variant: "pew" }])).toBe("pew");
+    expect(
+      mapColumnRailVariant([
+        { id: "c", capacity: 1, variant: "gap" },
+        { id: "d", capacity: 2, variant: "pew" },
+      ]),
+    ).toBe("pew");
+  });
+
+  it("pewRailChunksPerKneelerColumn returns null for empty rail or kneeler list", () => {
+    expect(pewRailChunksPerKneelerColumn([], [k("a", 3)])).toBeNull();
+    expect(
+      pewRailChunksPerKneelerColumn([{ id: "x", capacity: 3, variant: "pew" }], []),
+    ).toBeNull();
+  });
+
+  it("railKneelerColumnsAligned is false when capacities mismatch at same column count", () => {
+    expect(
+      railKneelerColumnsAligned([{ id: "a", capacity: 3, variant: "pew" }], [k("b", 2)]),
+    ).toBe(false);
+  });
+
+  it("railKneelerColumnsAligned is false when gap segment does not align with pillar kneeler", () => {
+    expect(
+      railKneelerColumnsAligned([{ id: "g", capacity: 2, variant: "gap" }], [k("seat", 3)]),
+    ).toBe(false);
+  });
+
+  it("pewRailChunksPerKneelerColumn merges same-variant chunks in one column", () => {
+    const rail = [
+      { id: "a", capacity: 3, variant: "pew" as const },
+      { id: "b", capacity: 3, variant: "pew" as const },
+    ];
+    const kneelers = [k("x", 6)];
+    const chunks = pewRailChunksPerKneelerColumn(rail, kneelers);
+    expect(chunks).not.toBeNull();
+    expect(chunks![0]).toHaveLength(1);
+    expect(chunks![0]![0]!.capacity).toBe(6);
+    expect(chunks![0]![0]!.variant).toBe("pew");
+  });
+
   it("exports pew rail classes", () => {
     expect(pewRailColorClass).toContain("d4b896");
     expect(pewRailBarClass).toContain(pewRailColorClass);
   });
 
-  it("isPillarKneeler is true only when label is Pillar", () => {
+  it("isPillarKneeler is true for type Pillar or legacy label Pillar", () => {
     expect(isPillarKneeler(k("a", 3))).toBe(false);
     expect(isPillarKneeler(k("b", 2, "Pillar"))).toBe(true);
+    expect(isPillarKneeler({ id: "col-p", type: "Pillar", capacity: 2 })).toBe(true);
+    expect(isPillarKneeler({ id: "seat", type: "Kneeler", capacity: 3, hardware: [] })).toBe(false);
+  });
+
+  it("pewRailChunksPerKneelerColumn splits rail capacities across kneeler columns", () => {
+    const rail = [
+      { id: "a", capacity: 3, variant: "pew" as const },
+      { id: "b", capacity: 2, variant: "gap" as const },
+      { id: "c", capacity: 3, variant: "pew" as const },
+    ];
+    const kneelers = [k("x", 3), k("p", 2, "Pillar"), k("y", 3)];
+    const chunks = pewRailChunksPerKneelerColumn(rail, kneelers);
+    expect(chunks).not.toBeNull();
+    expect(chunks!.map((c) => c.map((s) => `${s.variant}:${s.capacity}`).join(","))).toEqual([
+      "pew:3",
+      "gap:2",
+      "pew:3",
+    ]);
+  });
+
+  it("pewRailChunksPerKneelerColumn returns null when rail sum does not match kneelers", () => {
+    const rail = [
+      { id: "a", capacity: 3, variant: "pew" as const },
+      { id: "b", capacity: 2, variant: "gap" as const },
+    ];
+    const kneelers = [k("x", 3), k("y", 3)];
+    expect(pewRailChunksPerKneelerColumn(rail, kneelers)).toBeNull();
+  });
+
+  it("mapPewRailSegmentsAlignedToKneelerColumns uses explicit rail when partition matches", () => {
+    const section: PewSection = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+      rows: [
+        {
+          id: "r1",
+          label: "Row 1",
+          frontType: "pew",
+          pewRailSegmentWidths: [3, 2, 3],
+          pewRailSegmentKinds: ["pew", "gap", "pew"],
+          kneelers: [k("a", 3), k("p", 2, "Pillar"), k("b", 3)],
+        },
+      ],
+    };
+    const row = section.rows[0]!;
+    const segs = mapPewRailSegmentsAlignedToKneelerColumns(section, row);
+    expect(segs.map((s) => `${s.variant}:${s.capacity}`)).toEqual(["pew:3", "gap:2", "pew:3"]);
+  });
+
+  it("mapPewRailSegmentsAlignedToKneelerColumns falls back to synthetic when explicit cannot partition", () => {
+    const section: PewSection = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+      rows: [
+        {
+          id: "r1",
+          label: "Row 1",
+          frontType: "pew",
+          pewRailSegmentWidths: [3, 2, 1, 3, 3],
+          pewRailSegmentKinds: ["pew", "gap", "pew", "pew", "pew"],
+          kneelers: [k("a", 3), k("b", 1), k("c", 3)],
+        },
+      ],
+    };
+    const row = section.rows[0]!;
+    const segs = mapPewRailSegmentsAlignedToKneelerColumns(section, row);
+    expect(segs).toHaveLength(3);
+    expect(segs.map((s) => `${s.variant}:${s.capacity}`)).toEqual(["pew:3", "pew:1", "pew:3"]);
+  });
+
+  it("railKneelerColumnsAligned requires matching widths and gap/pillar pairing", () => {
+    const kneelers = [k("a", 3), k("p", 2, "Pillar"), k("b", 3)];
+    const ok = [
+      { id: "0", capacity: 3, variant: "pew" as const },
+      { id: "1", capacity: 2, variant: "gap" as const },
+      { id: "2", capacity: 3, variant: "pew" as const },
+    ];
+    expect(railKneelerColumnsAligned(ok, kneelers)).toBe(true);
+    expect(railKneelerColumnsAligned([...ok, ok[2]!], kneelers)).toBe(false);
+    const badKind = [
+      { id: "0", capacity: 3, variant: "pew" as const },
+      { id: "1", capacity: 2, variant: "pew" as const },
+      { id: "2", capacity: 3, variant: "pew" as const },
+    ];
+    expect(railKneelerColumnsAligned(badKind, kneelers)).toBe(false);
   });
 
   it("kneelerStatusForPart matches hardware lines for the given part name", () => {
@@ -48,6 +201,97 @@ describe("pew-layout", () => {
     expect(kneelerStatusForPart(kneeler, "Other")).toBe("needed");
     expect(kneelerStatusForPart(kneeler, "Missing")).toBe("none");
     expect(kneelerStatusForPart({ ...kneeler, hardware: [] }, "Prayer Sole")).toBe("none");
+    expect(
+      kneelerStatusForPart(
+        {
+          id: "k2",
+          capacity: 1,
+          hardware: [{ partId: "z", name: "Only Unknown", quantity: 1, status: "unknown" }],
+        },
+        "Only Unknown",
+      ),
+    ).toBe("unknown");
+  });
+
+  it("mapPewRailSegmentsAlignedToKneelerColumns returns [] when kneelers empty and rail is null", () => {
+    const section: PewSection = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+      rows: [],
+    };
+    const row: PewRow = { id: "r0", label: "Row 0", frontType: "pew", kneelers: [] };
+    expect(mapPewRailSegmentsAlignedToKneelerColumns(section, row)).toEqual([]);
+  });
+
+  it("mapPewRailSegmentsAlignedToKneelerColumns returns aligned continuation rail as-is", () => {
+    const prev: PewRow = {
+      id: "r-up",
+      label: "Row up",
+      frontType: "pew",
+      kneelers: [k("a", 3), k("p", 2, "Pillar"), k("b", 3)],
+    };
+    const pillarId = prev.kneelers[1]!.id;
+    const section: PewSection = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+      rows: [
+        prev,
+        {
+          id: "r-down",
+          label: "Row down",
+          frontType: "pew",
+          kneelers: [k("c", 3), k("q", 2, "Pillar"), k("d", 3)],
+          pillarBenchContinuation: { fromRowId: "r-up", alignKneelerId: pillarId },
+        },
+      ],
+    };
+    const row = section.rows[1]!;
+    const segs = mapPewRailSegmentsAlignedToKneelerColumns(section, row);
+    expect(segs.map((s) => `${s.variant}:${s.capacity}`)).toEqual(["pew:3", "gap:2", "pew:3"]);
+  });
+
+  it("mapPewRailSegmentsAlignedToKneelerColumns partitions non-aligned continuation rail across kneelers", () => {
+    const prev: PewRow = {
+      id: "r-up",
+      label: "Row up",
+      frontType: "pew",
+      kneelers: [
+        { id: "a", capacity: 5, hardware: [] },
+        { id: "b", capacity: 5, hardware: [] },
+      ],
+    };
+    const section: PewSection = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+      rows: [
+        prev,
+        {
+          id: "r-down",
+          label: "Row down",
+          frontType: "pew",
+          kneelers: [
+            { id: "c", capacity: 5, hardware: [] },
+            { id: "d", capacity: 5, hardware: [] },
+          ],
+          pillarBenchContinuation: { fromRowId: "r-up", alignKneelerId: "a" },
+        },
+      ],
+    };
+    const row = section.rows[1]!;
+    const segs = mapPewRailSegmentsAlignedToKneelerColumns(section, row);
+    expect(segs.map((s) => `${s.variant}:${s.capacity}`)).toEqual(["gap:5", "pew:5"]);
   });
 
   it("pewBenchSegmentsFromKneelers returns four 3p runs when a pillar kneeler exists", () => {
@@ -61,6 +305,17 @@ describe("pew-layout", () => {
       "row-9-pew-run-2",
       "row-9-pew-run-3",
     ]);
+  });
+
+  it("pewBenchSegmentsFromKneelers treats type Pillar like label Pillar", () => {
+    const kneelers: Kneeler[] = [
+      k("r1", 3),
+      { id: "col-p", type: "Pillar", capacity: 2 },
+      k("r2", 1),
+    ];
+    const segs = pewBenchSegmentsFromKneelers(kneelers, "row-9");
+    expect(segs).toHaveLength(4);
+    expect(segs.every((s) => s.variant === "pew" && s.capacity === 3)).toBe(true);
   });
 
   it("pewBenchSegmentsFromKneelers maps one pew segment per kneeler when no pillar", () => {
@@ -182,6 +437,37 @@ describe("pew-layout", () => {
     } satisfies PewSection;
     expect(alignRowStripWidthPercent(section, 9)).toBe(100);
     expect(alignRowStripWidthPercent(section, 12)).toBe(100);
+  });
+
+  it("map strip width uses kneeler sum so rail rounding does not stretch the grid", () => {
+    const sectionBase = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+      mapRowAlign: "start" as const,
+    } satisfies Omit<PewSection, "rows">;
+    const rowFractional: PewRow = {
+      id: "r1",
+      label: "Row 1",
+      frontType: "pew",
+      pewRailSegmentWidths: [3, 3, 3],
+      kneelers: [k("a", 2.66), k("b", 2.66), k("c", 1), k("d", 2.66)],
+    };
+    const rowFull: PewRow = {
+      id: "r2",
+      label: "Row 2",
+      frontType: "pew",
+      kneelers: [k("e", 3), k("f", 3), k("g", 3), k("h", 3)],
+    };
+    const section: PewSection = { ...sectionBase, rows: [rowFractional, rowFull] };
+    expect(effectiveRowCapacityForMap(rowFractional, section)).toBe(9);
+    expect(mapRowStripWidthNumerator(rowFractional, section)).toBeCloseTo(8.98, 5);
+    expect(maxMapRowStripWidthNumeratorInSection(section)).toBe(12);
+    expect(alignMapRowStripWidthPercent(section, rowFractional)).toBeCloseTo((8.98 / 12) * 100, 5);
+    expect(alignMapRowStripWidthPercent(section, rowFull)).toBe(100);
   });
 
   it("rowCapacitySum and maxRowCapacityInSection", () => {

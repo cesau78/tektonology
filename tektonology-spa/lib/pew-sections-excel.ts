@@ -580,7 +580,8 @@ function churchGridPickers(sections: PewSection[]) {
     n: number,
   ): { section: PewSection; row: PewRow } | undefined {
     if (!section) return undefined;
-    const row = section.rows.find((rr) => parseMapRowNumber(rr) === n);
+    const adj = n + (section.churchGridRowDelta ?? 0);
+    const row = section.rows.find((rr) => parseMapRowNumber(rr) === adj);
     if (!row) return undefined;
     return { section, row };
   }
@@ -599,7 +600,8 @@ function writeChurchAlignedGridToWorksheet(
   const { westOuter, eastOuter, transeptSection, alignment, pickWest, pickEast, pickOuter } =
     churchGridPickers(layoutSections);
   const transeptLabel = transeptSection?.label ?? "Transept";
-  const rowNums = collectGridRowNumbers(layoutSections);
+  const transeptGridRow = project.layout.transeptGridRow ?? 9;
+  const rowNums = collectGridRowNumbers(layoutSections, transeptGridRow);
   const firstRowN = rowNums[0] ?? 0;
 
   const maxWo =
@@ -747,7 +749,7 @@ function writeChurchAlignedGridToWorksheet(
       wMark.fill = emptyPaddingFill;
     }
 
-    const isTranseptBand = n === 9 && Boolean(transeptSection);
+    const isTranseptBand = n === transeptGridRow && Boolean(transeptSection);
 
     if (isTranseptBand) {
       if (side === "full") {

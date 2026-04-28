@@ -5,28 +5,19 @@ import { PillarGapLabel } from "./pillar-gap-label";
 describe("PillarGapLabel", () => {
   afterEach(cleanup);
 
-  it("renders default detail size", () => {
+  it("renders kneeler-height strip (h-2) like map kneeler cells", () => {
     const { container } = render(<PillarGapLabel />);
-    expect(container.querySelector(".min-w-\\[44px\\]")).toBeTruthy();
-    expect(container).toHaveTextContent("Pillar");
+    expect(container.querySelector(".h-2")).toBeTruthy();
+    expect(container.querySelector(".rounded-sm")).toBeTruthy();
+    expect(container.querySelector(".bg-neutral-300")).toBeTruthy();
+    expect(container.textContent?.trim()).toBe("");
+    expect(container.querySelector("[aria-label='Pillar (structural gap)']")).toBeTruthy();
     expect(container.querySelector("[title='Pillar']")).toBeTruthy();
   });
 
-  it("renders compact non-spanning size", () => {
-    const { container } = render(<PillarGapLabel compact />);
-    expect(container.querySelector(".w-\\[16px\\]")).toBeTruthy();
-    expect(container.querySelector(".text-\\[9px\\]")).toBeTruthy();
-  });
-
-  it("renders compact spanning size", () => {
-    const { container } = render(<PillarGapLabel compact spanning />);
-    expect(container.querySelector(".w-\\[26px\\]")).toBeTruthy();
-  });
-
-  it("renders detail spanning size", () => {
-    const { container } = render(<PillarGapLabel spanning />);
-    expect(container.querySelector(".w-\\[68px\\]")).toBeTruthy();
-    expect(container.querySelector(".text-\\[15px\\]")).toBeTruthy();
+  it("renders rail-height strip to match pew rail bar", () => {
+    const { container } = render(<PillarGapLabel stripHeight="rail" />);
+    expect(container.querySelector(".h-\\[5px\\]")).toBeTruthy();
   });
 
   it("merges className on outer wrapper", () => {

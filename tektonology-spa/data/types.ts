@@ -47,19 +47,36 @@ export interface Batch {
 
 export type HardwareStatus = "unknown" | "needed" | "upcoming" | "installed";
 
+/** Pew-local side for hardware on a kneeler (liturgical L/M/R along the bench). */
+export type HardwareSide = "left" | "right" | "middle";
+
+/**
+ * When `side` is omitted and `quantity` is 2 or 3, strips treat the line as implied
+ * left+right or left+middle+right with equal weights (see `hardware-part-segments`).
+ */
 export interface HardwareItem {
   partId: string;
   name: string;
   quantity: number;
   status: HardwareStatus;
   date?: string;
+  side?: HardwareSide;
 }
+
+/** Row column: seating (`Kneeler`, default) or structural gap (`Pillar`). */
+export type PewColumnType = "Kneeler" | "Pillar";
 
 export interface Kneeler {
   id: string;
+  /**
+   * `"Pillar"` marks a structural column gap (same role as legacy `label: "Pillar"`).
+   * Omit for normal seating columns.
+   */
+  type?: PewColumnType;
   label?: string;
   capacity: number;
-  hardware: HardwareItem[];
+  /** Omit or `[]` for `type: "Pillar"`. */
+  hardware?: HardwareItem[];
 }
 
 export interface Aisle {
@@ -73,16 +90,19 @@ export type RowFrontType = "communionRail" | "pew" | "pewOnly";
 export interface PillarBenchContinuation {
   /** Row id in the same section whose kneeler widths to align with */
   fromRowId: string;
-  /** Kneeler id in that row marking the pillar column */
+  /** Column id in that row marking the pillar (`type: "Pillar"` or legacy pillar label). */
   alignKneelerId: string;
 }
 
 export interface PewRow {
   id: string;
   label: string;
+  /** Pew map / section panel: show wheelchair-accessible indicator for this row. */
+  handicapAccessible?: boolean;
   /** Pew map row grid: explicit sort key when label is not `Row N` (optional). */
   mapRowNumber?: number;
   frontType: RowFrontType;
+  /** Left-to-right columns: seating kneelers and/or `type: "Pillar"` gaps (capacity = column width). */
   kneelers: Kneeler[];
   pillarBenchContinuation?: PillarBenchContinuation;
   /** Flex widths for pew/rail strip when it differs from kneeler-derived layout. */
@@ -122,6 +142,11 @@ export interface PewSection {
    * share the same outer width as the ref (9) row.
    */
   mapRowAlignRefCapacity?: number;
+  /**
+   * Church-aligned grid / Excel only: added to the displayed row number before matching this
+   * section's rows. Use -1 when outer pew row labels are one line ahead of the nave (shift down).
+   */
+  churchGridRowDelta?: number;
 }
 
 export interface ChurchLayout {
@@ -133,6 +158,11 @@ export interface ChurchLayout {
    * rear, and outer sections stay vertically aligned (table layout).
    */
   pewMapUseRowGrid?: boolean;
+  /**
+   * Map row number where the cross-aisle band spans the nave center (same index as "Row N").
+   * Defaults to 9 when omitted. Use 10 (etc.) when that row is still used for nave pews.
+   */
+  transeptGridRow?: number;
 }
 
 export interface Project {

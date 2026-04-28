@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, cleanup, fireEvent, screen } from "@testing-library/react";
+import { render, cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { PewMap } from "./pew-map";
 import type {
   PewSection,
@@ -65,6 +65,35 @@ const miniProject: Project = {
 };
 
 describe("PewMap", () => {
+  it("shows wheelchair symbol when row.handicapAccessible", () => {
+    const sections: PewSection[] = [
+      makeSection({
+        id: "eo",
+        label: "East Outer",
+        side: "eastOuter",
+        group: 0,
+        rows: [
+          {
+            id: "r9",
+            label: "Row 9",
+            handicapAccessible: true,
+            frontType: "pewOnly",
+            kneelers: [],
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap
+        churchName="T"
+        orientation={orientation}
+        sections={sections}
+        partNames={["Prayer Sole"]}
+      />,
+    );
+    expect(container.textContent).toContain("♿");
+  });
+
   it("scales row widths in map when mapRowAlign is start or end", () => {
     const rowsNarrowWide = [
       {
@@ -507,6 +536,58 @@ describe("PewMap", () => {
     expect(container.querySelector('a[href="/projects/grid-proj/sections/wo/"]')).toBeTruthy();
   });
 
+  it("churchGridRowDelta -1 shifts west outer pew down one grid row vs nave", () => {
+    const sections: PewSection[] = [
+      {
+        id: "w",
+        label: "West",
+        side: "west",
+        alignment: "nave",
+        group: 0,
+        rows: [
+          { id: "r7", label: "Row 7", frontType: "pew", kneelers: [makeKneeler({ id: "w7" })] },
+          { id: "r8", label: "Row 8", frontType: "pew", kneelers: [makeKneeler({ id: "w8" })] },
+        ],
+      },
+      {
+        id: "e",
+        label: "East",
+        side: "east",
+        alignment: "nave",
+        group: 0,
+        rows: [
+          { id: "r7e", label: "Row 7", frontType: "pew", kneelers: [makeKneeler({ id: "e7" })] },
+          { id: "r8e", label: "Row 8", frontType: "pew", kneelers: [makeKneeler({ id: "e8" })] },
+        ],
+      },
+      {
+        id: "wo",
+        label: "WO",
+        side: "westOuter",
+        alignment: "nave",
+        group: 0,
+        churchGridRowDelta: -1,
+        rows: [{ id: "r7wo", label: "Row 7", frontType: "pew", kneelers: [makeKneeler({ id: "wo7" })] }],
+      },
+    ];
+    const { container } = render(
+      <PewMap
+        churchName="Delta"
+        orientation={orientation}
+        sections={sections}
+        partNames={["Prayer Sole"]}
+        projectSlug="delta-proj"
+        pewMapUseRowGrid
+      />,
+    );
+    const trFor = (n: string) =>
+      [...container.querySelectorAll("tbody tr")].find(
+        (tr) => tr.querySelector("td")?.textContent?.trim() === n,
+      );
+    expect(trFor("7")?.querySelector('a[href="/projects/delta-proj/sections/wo/"]')).toBeFalsy();
+    expect(trFor("8")?.querySelector('a[href="/projects/delta-proj/sections/wo/"]')).toBeTruthy();
+  });
+
   it("row grid handles missing outer sections and one-sided rear rows", () => {
     const sections: PewSection[] = [
       {
@@ -811,7 +892,32 @@ describe("PewMap", () => {
     const { container } = render(
       <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
-    expect(container.querySelectorAll(".flex.gap-px > div.rounded-sm.h-2").length).toBe(2);
+    expect(container.querySelectorAll('div.h-2.w-full.min-w-0.border.rounded-sm').length).toBe(3);
+  });
+
+  it("treats type Pillar column like legacy label Pillar on the map", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            kneelers: [
+              makeKneeler({ id: "k1" }),
+              { id: "col-p", type: "Pillar", capacity: 2 },
+              makeKneeler({ id: "k2" }),
+            ],
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
+    );
+    expect(container.querySelector('[title="Pillar (gap)"]')).toBeTruthy();
+    expect(container.querySelector(".rounded-sm.bg-neutral-300")).toBeTruthy();
   });
 
   it("renders bench gap with compact spanning pillar label on continuation row", () => {
@@ -842,8 +948,35 @@ describe("PewMap", () => {
     const { container } = render(
       <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
-    expect(container.querySelector(".w-\\[26px\\].h-\\[26px\\]")).toBeTruthy();
-    expect(container).toHaveTextContent("Pillar");
+    expect(container.querySelector(".rounded-sm.bg-neutral-300")).toBeTruthy();
+  });
+
+  it("places pillar in rail and kneeler grid rows like pew columns when explicit rail matches kneelers", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            pewRailSegmentWidths: [3, 2, 3],
+            pewRailSegmentKinds: ["pew", "gap", "pew"],
+            kneelers: [
+              makeKneeler({ id: "k1", capacity: 3 }),
+              { id: "pillar", capacity: 2, label: "Pillar", hardware: [] },
+              makeKneeler({ id: "k2", capacity: 3 }),
+            ],
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
+    );
+    expect(container.querySelector('[style*="1 / 3"]')).toBeNull();
+    const pillarCells = container.querySelectorAll('[title="Pillar (gap)"]');
+    expect(pillarCells.length).toBe(1);
   });
 
   it("uses rounded-sm bench wrap when continuation row has no kneelers and previous row has no kneelers", () => {
@@ -885,7 +1018,8 @@ describe("PewMap", () => {
     const { container } = render(
       <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
-    expect(container.querySelectorAll(".rounded-t-sm").length).toBeGreaterThan(0);
+    expect(container.querySelector("div.grid")).toBeTruthy();
+    expect(container.querySelector(".h-\\[5px\\].rounded-sm")).toBeTruthy();
   });
 
   it("wraps section tiles in Link when projectSlug is set", () => {
@@ -1148,6 +1282,153 @@ describe("PewMap", () => {
     expect(container).toHaveTextContent("3 / 3 Installed (100%)");
     const select = container.querySelector("select")!;
     expect(select.value).toBe("Prayer Sole");
+
+    vi.restoreAllMocks();
+  });
+
+  it("column grid shows pew rail bar in upper band when rails are on and segment is pew", () => {
+    const sections: PewSection[] = [
+      makeSection({
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            kneelers: [makeKneeler({ id: "a" }), makeKneeler({ id: "b" })],
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="T" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} showRails />,
+    );
+    expect(container.innerHTML).toContain("d4b896");
+  });
+
+  it("shows rail-height pillar label in column grid when rails are on and segment is a gap", () => {
+    const sections: PewSection[] = [
+      makeSection({
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            pewRailSegmentWidths: [3, 2, 3],
+            pewRailSegmentKinds: ["pew", "gap", "pew"],
+            kneelers: [
+              makeKneeler({ id: "a" }),
+              { id: "p", type: "Pillar" as const, capacity: 2 },
+              makeKneeler({ id: "b" }),
+            ],
+          },
+        ],
+      }),
+    ];
+    render(
+      <PewMap churchName="T" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} showRails />,
+    );
+    expect(screen.getAllByTitle("Pillar").length).toBeGreaterThan(0);
+  });
+
+  it("renders pillar rail spacer in column grid when rails are off but layout has a gap", () => {
+    const sections: PewSection[] = [
+      makeSection({
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            pewRailSegmentWidths: [3, 2, 3],
+            pewRailSegmentKinds: ["pew", "gap", "pew"],
+            kneelers: [
+              makeKneeler({ id: "a" }),
+              { id: "p", type: "Pillar" as const, capacity: 2 },
+              makeKneeler({ id: "b" }),
+            ],
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap
+        churchName="T"
+        orientation={orientation}
+        sections={sections}
+        partNames={["Prayer Sole"]}
+        showRails={false}
+      />,
+    );
+    expect(container.querySelector('[title="Pillar (gap)"]')).toBeTruthy();
+  });
+
+  it("renders pillar gap markers when rails are hidden and a rail-only row has a gap segment", () => {
+    const sections: PewSection[] = [
+      makeSection({
+        rows: [
+          {
+            id: "r-gap",
+            label: "Row 9",
+            frontType: "pew",
+            kneelers: [],
+            pewRailSegmentWidths: [3, 2, 3],
+            pewRailSegmentKinds: ["pew", "gap", "pew"],
+          },
+        ],
+      }),
+    ];
+    render(
+      <PewMap
+        churchName="T"
+        orientation={orientation}
+        sections={sections}
+        partNames={["Prayer Sole"]}
+        showRails={false}
+      />,
+    );
+    expect(screen.getAllByTitle("Pillar").length).toBeGreaterThan(0);
+  });
+
+  it("updates part filter when useSearchParams returns a new part after rerender", async () => {
+    const spRef = { current: new URLSearchParams("") };
+    vi.spyOn(navigation, "useSearchParams").mockImplementation(
+      () => spRef.current as ReturnType<typeof navigation.useSearchParams>,
+    );
+
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            kneelers: [
+              makeKneeler({
+                hardware: [
+                  makeHardware({ name: "Kneeler Bushing", quantity: 10, status: "needed" }),
+                  makeHardware({ name: "Prayer Sole", quantity: 3, status: "needed" }),
+                ],
+              }),
+            ],
+          },
+        ],
+      }),
+    ];
+    const props = {
+      churchName: "Test",
+      orientation,
+      sections,
+      partNames: ["Kneeler Bushing", "Prayer Sole"],
+    };
+    const { container, rerender } = render(<PewMap {...props} />);
+    expect((container.querySelector("select") as HTMLSelectElement).value).toBe("Kneeler Bushing");
+
+    spRef.current = new URLSearchParams("part=prayer-sole");
+    rerender(<PewMap {...props} />);
+
+    await waitFor(() => {
+      expect((container.querySelector("select") as HTMLSelectElement).value).toBe("Prayer Sole");
+    });
 
     vi.restoreAllMocks();
   });

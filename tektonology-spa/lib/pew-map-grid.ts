@@ -14,8 +14,11 @@ function isPewSectionForGrid(s: PewSection): boolean {
   return s.side !== "full";
 }
 
-/** Sorted unique row numbers across nave + rear + outer pews; includes transept row when layout has a cross aisle. */
-export function collectGridRowNumbers(sections: PewSection[]): number[] {
+/**
+ * Sorted unique row numbers across nave + rear + outer pews; includes the transept row when the
+ * layout has a cross aisle (`transeptGridRow`, default 9).
+ */
+export function collectGridRowNumbers(sections: PewSection[], transeptGridRow: number = 9): number[] {
   const set = new Set<number>();
   let hasTransept = false;
   for (const s of sections) {
@@ -30,7 +33,24 @@ export function collectGridRowNumbers(sections: PewSection[]): number[] {
     }
   }
   if (hasTransept) {
-    set.add(9);
+    set.add(transeptGridRow);
   }
   return [...set].sort((a, b) => a - b);
+}
+
+/**
+ * Pew sections in church-map column order for one grid row (matches {@link ChurchAlignedPewTable}):
+ * west outer, west blocks by group, east blocks by group, east outer. Omits cross-aisle / full-width.
+ */
+export function churchGridRowMajorSectionOrder(sections: PewSection[]): PewSection[] {
+  const pewSections = sections.filter((s) => s.type !== "crossAisle" && s.side !== "full");
+  const westOuter = pewSections.filter((s) => s.side === "westOuter");
+  const eastOuter = pewSections.filter((s) => s.side === "eastOuter");
+  const west = pewSections
+    .filter((s) => s.side === "west" && (s.type ?? "pews") === "pews")
+    .sort((a, b) => a.group - b.group);
+  const east = pewSections
+    .filter((s) => s.side === "east" && (s.type ?? "pews") === "pews")
+    .sort((a, b) => a.group - b.group);
+  return [...westOuter, ...west, ...east, ...eastOuter];
 }

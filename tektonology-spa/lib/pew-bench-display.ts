@@ -1,5 +1,6 @@
-import type { HardwareItem, Kneeler, PewRow, PewSection } from "@/data/types";
-import { isPillarKneeler, kneelerStatusForPart } from "./pew-layout";
+import type { HardwareItem, HardwareSide, Kneeler, PewRow, PewSection } from "@/data/types";
+import { sortHardwareItemsForPartDisplay } from "./hardware-part-segments";
+import { isPillarKneeler, kneelerHardware } from "./pew-layout";
 
 /** e.g. "3/14/26" for en-US. */
 export function formatShortUsDate(input: string): string {
@@ -73,8 +74,15 @@ export function formatBenchPewId(section: PewSection, row: PewRow, kneeler: Knee
   return `${pre}-${String(rowNum).padStart(2, "0")}${String(pewNum).padStart(2, "0")}`;
 }
 
-/** One line per hardware row in kneeler details: "Unknown" or "Needed: 3/14/26" (no part name). */
-export function formatHardwareItemStatusForDetails(h: HardwareItem): string {
+function sidePrefixLabel(side?: HardwareSide): string {
+  if (side === "left") return "L: ";
+  if (side === "right") return "R: ";
+  if (side === "middle") return "M: ";
+  return "";
+}
+
+/** Status text only (no side prefix, no quantity suffix). */
+function hardwareItemStatusCore(h: HardwareItem): string {
   if (h.status === "unknown") return "Unknown";
   const label =
     h.status === "needed"
@@ -88,6 +96,13 @@ export function formatHardwareItemStatusForDetails(h: HardwareItem): string {
   return `${label}: ${formatShortUsDate(h.date)}`;
 }
 
+/** One line per hardware row in kneeler details (no part name): optional L/M/R prefix and ×N when quantity &gt; 1. */
+export function formatHardwareItemStatusForDetails(h: HardwareItem): string {
+  const core = hardwareItemStatusCore(h);
+  const qty = h.quantity > 1 ? ` ×${h.quantity}` : "";
+  return `${sidePrefixLabel(h.side)}${core}${qty}`;
+}
+
 /** Pew layout xlsx: omit the word "Unknown" so cells stay visually blank like empty map strips. */
 function excelExportStatusLine(line: string): string {
   return line === "Unknown" ? "" : line;
@@ -95,15 +110,17 @@ function excelExportStatusLine(line: string): string {
 
 export function formatKneelerPartStatusForExcel(k: Kneeler, partName: string): string {
   const part = partName.trim();
-  const items = k.hardware.filter((h) => h.name === part);
+  const items = sortHardwareItemsForPartDisplay(kneelerHardware(k).filter((h) => h.name === part));
   if (items.length === 0) return "";
-  const st = kneelerStatusForPart(k, part);
-  const h = items.find((x) => x.status === st) ?? items[0]!;
-  return excelExportStatusLine(formatHardwareItemStatusForDetails(h));
+  const lines = items
+    .map((h) => excelExportStatusLine(formatHardwareItemStatusForDetails(h)))
+    .filter((line) => line.length > 0);
+  return lines.join("\r\n");
 }
 
 /** Requires `k.hardware.length > 0` (see `formatKneelerAggregateStatusForExcel`). */
 function pickPriorityHardwareItem(k: Kneeler): HardwareItem {
+  const hw = kneelerHardware(k);
   const order: Array<"needed" | "upcoming" | "installed" | "unknown"> = [
     "needed",
     "upcoming",
@@ -111,13 +128,14 @@ function pickPriorityHardwareItem(k: Kneeler): HardwareItem {
     "unknown",
   ];
   for (const st of order) {
-    const h = k.hardware.find((x) => x.status === st);
+    const h = hw.find((x) => x.status === st);
     if (h) return h;
   }
-  return k.hardware[0]!;
+  return hw[0]!;
 }
 
 export function formatKneelerAggregateStatusForExcel(k: Kneeler): string {
-  if (k.hardware.length === 0) return "";
+  const hw = kneelerHardware(k);
+  if (hw.length === 0) return "";
   return excelExportStatusLine(formatHardwareItemStatusForDetails(pickPriorityHardwareItem(k)));
 }

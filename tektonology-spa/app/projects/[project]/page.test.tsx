@@ -2,6 +2,7 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, cleanup } from "@testing-library/react";
 import type { Project, PewSection, Kneeler, HardwareItem } from "@/data/types";
+import { kneelerHardware } from "@/lib/pew-layout";
 
 const mockReaddirSync = vi.fn();
 const mockReadFileSync = vi.fn();
@@ -78,6 +79,12 @@ function makeSection(overrides: Partial<PewSection> = {}): PewSection {
     ],
     ...overrides,
   };
+}
+
+function partNamesForSection(section: PewSection): string[] {
+  return Array.from(
+    new Set(section.rows.flatMap((r) => r.kneelers).flatMap((k) => kneelerHardware(k)).map((h) => h.name)),
+  ).sort();
 }
 
 function makeProject(overrides: Partial<Project> = {}): Project {
@@ -235,7 +242,10 @@ describe("ProjectDetailPage", () => {
       },
     });
     const { SectionRowsPanel } = await import("./section-rows-panel");
-    const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
+    const { container } = render(<SectionRowsPanel
+      section={project.layout.sections[0]}
+      partNames={partNamesForSection(project.layout.sections[0])}
+    />);
 
     expect(container).toHaveTextContent("Communion Rail");
     expect(container).toHaveTextContent("Pew with Kneeler");
@@ -256,7 +266,10 @@ describe("ProjectDetailPage", () => {
       },
     });
     const { SectionRowsPanel } = await import("./section-rows-panel");
-    const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
+    const { container } = render(<SectionRowsPanel
+      section={project.layout.sections[0]}
+      partNames={partNamesForSection(project.layout.sections[0])}
+    />);
 
     expect(container).toHaveTextContent("Row 9");
     expect(container).toHaveTextContent("0 kneelers");
@@ -291,7 +304,10 @@ describe("ProjectDetailPage", () => {
       },
     });
     const { SectionRowsPanel } = await import("./section-rows-panel");
-    const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
+    const { container } = render(<SectionRowsPanel
+      section={project.layout.sections[0]}
+      partNames={partNamesForSection(project.layout.sections[0])}
+    />);
 
     expect(container).toHaveTextContent("Installed");
     expect(container).toHaveTextContent("Upcoming");
@@ -326,7 +342,10 @@ describe("ProjectDetailPage", () => {
       },
     });
     const { SectionRowsPanel } = await import("./section-rows-panel");
-    const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
+    const { container } = render(<SectionRowsPanel
+      section={project.layout.sections[0]}
+      partNames={partNamesForSection(project.layout.sections[0])}
+    />);
 
     const segments = container.querySelectorAll(".bg-green-100");
     expect(segments.length).toBeGreaterThan(0);
@@ -360,7 +379,10 @@ describe("ProjectDetailPage", () => {
       },
     });
     const { SectionRowsPanel } = await import("./section-rows-panel");
-    const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
+    const { container } = render(<SectionRowsPanel
+      section={project.layout.sections[0]}
+      partNames={partNamesForSection(project.layout.sections[0])}
+    />);
 
     const segments = container.querySelectorAll(".bg-blue-100");
     expect(segments.length).toBeGreaterThan(0);
@@ -391,7 +413,10 @@ describe("ProjectDetailPage", () => {
       },
     });
     const { SectionRowsPanel } = await import("./section-rows-panel");
-    const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
+    const { container } = render(<SectionRowsPanel
+      section={project.layout.sections[0]}
+      partNames={partNamesForSection(project.layout.sections[0])}
+    />);
 
     const segments = container.querySelectorAll(".bg-neutral-200");
     expect(segments.length).toBeGreaterThan(0);
@@ -458,7 +483,10 @@ describe("ProjectDetailPage", () => {
       },
     });
     const { SectionRowsPanel } = await import("./section-rows-panel");
-    const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
+    const { container } = render(<SectionRowsPanel
+      section={project.layout.sections[0]}
+      partNames={partNamesForSection(project.layout.sections[0])}
+    />);
 
     expect(container).toHaveTextContent("ws-0101");
   });
@@ -484,7 +512,10 @@ describe("ProjectDetailPage", () => {
       },
     });
     const { SectionRowsPanel } = await import("./section-rows-panel");
-    const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
+    const { container } = render(<SectionRowsPanel
+      section={project.layout.sections[0]}
+      partNames={partNamesForSection(project.layout.sections[0])}
+    />);
 
     expect(container).toHaveTextContent("ws-0101");
   });
@@ -514,7 +545,10 @@ describe("ProjectDetailPage", () => {
       },
     });
     const { SectionRowsPanel } = await import("./section-rows-panel");
-    const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
+    const { container } = render(<SectionRowsPanel
+      section={project.layout.sections[0]}
+      partNames={partNamesForSection(project.layout.sections[0])}
+    />);
 
     expect(container).toHaveTextContent("Installed");
     expect(container.textContent).toMatch(/Installed:.*3/);
@@ -546,7 +580,10 @@ describe("ProjectDetailPage", () => {
       },
     });
     const { SectionRowsPanel } = await import("./section-rows-panel");
-    const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
+    const { container } = render(<SectionRowsPanel
+      section={project.layout.sections[0]}
+      partNames={partNamesForSection(project.layout.sections[0])}
+    />);
 
     expect(container.querySelectorAll(".items-start .min-w-0[style]").length).toBeGreaterThan(0);
   });
@@ -577,7 +614,10 @@ describe("ProjectDetailPage", () => {
       },
     });
     const { SectionRowsPanel } = await import("./section-rows-panel");
-    const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
+    const { container } = render(<SectionRowsPanel
+      section={project.layout.sections[0]}
+      partNames={partNamesForSection(project.layout.sections[0])}
+    />);
 
     expect(container.querySelector(".items-end")).toBeTruthy();
   });
@@ -603,7 +643,10 @@ describe("ProjectDetailPage", () => {
       },
     });
     const { SectionRowsPanel } = await import("./section-rows-panel");
-    const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
+    const { container } = render(<SectionRowsPanel
+      section={project.layout.sections[0]}
+      partNames={partNamesForSection(project.layout.sections[0])}
+    />);
 
     expect(container).toHaveTextContent("Unknown");
   });
@@ -646,7 +689,10 @@ describe("ProjectDetailPage", () => {
       },
     });
     const { SectionRowsPanel } = await import("./section-rows-panel");
-    const { container } = render(<SectionRowsPanel section={project.layout.sections[0]} />);
+    const { container } = render(<SectionRowsPanel
+      section={project.layout.sections[0]}
+      partNames={partNamesForSection(project.layout.sections[0])}
+    />);
 
     expect(container.querySelectorAll("[title='Pillar']").length).toBeGreaterThan(0);
     expect(container.querySelector('[title="Pillar (gap)"]')).toBeTruthy();

@@ -1,39 +1,22 @@
-/** Circle label for structural pillar gaps (pew map + project row diagrams). */
-export function PillarGapLabel({
-  compact,
-  spanning,
-  className,
-}: {
-  /** Map thumbnails: smaller circle + type */
+/** Grey strip for structural pillar gaps; heights match pew map kneeler (`h-2`) or rail (`h-[5px]`) rows. */
+export function PillarGapLabel(props: {
   compact?: boolean;
-  /** Draw one marker that visually spans multiple row bands */
   spanning?: boolean;
+  /** `kneeler` = same as `KneelerPartStripMap` (`h-2`). `rail` = same as pew rail bar (`h-[5px]`). */
+  stripHeight?: "kneeler" | "rail";
   className?: string;
 }) {
+  const { stripHeight = "kneeler", className } = props;
+  const hClass = stripHeight === "rail" ? "h-[5px]" : "h-2";
   return (
     <div
-      className={`flex items-center justify-center min-w-0 ${className ?? ""}`}
+      className={`flex min-w-0 w-full min-h-0 h-full flex-col items-stretch justify-center ${className ?? ""}`}
       title="Pillar"
+      aria-label="Pillar (structural gap)"
     >
       <div
-        className={`rounded-full border border-dashed border-muted-foreground/60 bg-background/90 dark:bg-background/80 flex items-center justify-center shrink-0 ${
-          compact
-            ? spanning
-              ? "w-[26px] h-[26px] border-[0.5px]"
-              : "w-[16px] h-[16px] border-[0.5px]"
-            : spanning
-              ? "w-[68px] h-[68px]"
-              : "min-w-[44px] min-h-[44px] w-[min(100%,3.63rem)] h-[min(100%,3.63rem)]"
-        }`}
-      >
-        <span
-          className={`font-medium text-muted-foreground leading-none select-none text-center ${
-            compact ? "text-[9px] px-px" : "text-[15px]"
-          }`}
-        >
-          Pillar
-        </span>
-      </div>
+        className={`${hClass} w-full min-w-0 shrink-0 rounded-sm border border-neutral-400/70 bg-neutral-300 dark:border-neutral-500 dark:bg-neutral-600`}
+      />
     </div>
   );
 }

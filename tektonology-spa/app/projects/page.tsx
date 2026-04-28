@@ -2,6 +2,7 @@ import Link from "next/link";
 import { readdirSync, readFileSync, existsSync } from "fs";
 import { join } from "path";
 import type { Project, Product, HardwareItem } from "@/data/types";
+import { kneelerHardware } from "@/lib/pew-layout";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { ProductThumbnail } from "@/components/product-thumbnail";
 
@@ -27,7 +28,7 @@ function getProjectStats(project: Project) {
   const allKneelers = project.layout.sections
     .flatMap((s) => s.rows)
     .flatMap((r) => r.kneelers);
-  const allHardware = allKneelers.flatMap((k) => k.hardware);
+  const allHardware = allKneelers.flatMap((k) => kneelerHardware(k));
   const totalRows = project.layout.sections.reduce(
     (s, sec) => s + sec.rows.length,
     0,

@@ -161,6 +161,39 @@ describe("pew-bench-display", () => {
       ],
     };
     expect(formatKneelerPartStatusForExcel(kMixed, "Cushion")).toMatch(/Needed/);
+    expect(formatKneelerPartStatusForExcel(kMixed, "Cushion")).toMatch(/Installed/);
+    expect(formatKneelerPartStatusForExcel(kMixed, "Cushion")).toContain("\r\n");
+  });
+
+  it("formatHardwareItemStatusForDetails uses L/M/R prefix and quantity", () => {
+    expect(
+      formatHardwareItemStatusForDetails({
+        partId: "p",
+        name: "Spacer",
+        quantity: 2,
+        status: "needed",
+        side: "left",
+      }),
+    ).toBe("L: Needed ×2");
+    expect(
+      formatHardwareItemStatusForDetails({
+        partId: "p",
+        name: "Spacer",
+        quantity: 1,
+        status: "installed",
+        date: "2026-04-01",
+        side: "middle",
+      }),
+    ).toMatch(/M: Installed/);
+    expect(
+      formatHardwareItemStatusForDetails({
+        partId: "p",
+        name: "Spacer",
+        quantity: 2,
+        status: "needed",
+        side: "right",
+      }),
+    ).toMatch(/^R: Needed ×2$/);
   });
 
   it("formatKneelerAggregateStatusForExcel picks priority and fallbacks", () => {

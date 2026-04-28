@@ -1,8 +1,33 @@
 import { describe, expect, it } from "vitest";
 import type { PewSection } from "@/data/types";
-import { collectGridRowNumbers, parseMapRowNumber } from "./pew-map-grid";
+import {
+  churchGridRowMajorSectionOrder,
+  collectGridRowNumbers,
+  parseMapRowNumber,
+} from "./pew-map-grid";
 
 describe("pew-map-grid", () => {
+  it("churchGridRowMajorSectionOrder sorts west then east blocks by group with outers on the sides", () => {
+    const sections: PewSection[] = [
+      { id: "em-g1", label: "E", type: "pews", side: "east", alignment: "nave", group: 1, rows: [] },
+      { id: "eo", label: "EO", side: "eastOuter", alignment: "nave", group: 0, rows: [] },
+      { id: "wo", label: "WO", side: "westOuter", alignment: "nave", group: 0, rows: [] },
+      { id: "wm", label: "WM", type: "pews", side: "west", alignment: "nave", group: 0, rows: [] },
+      { id: "wr", label: "WR", type: "pews", side: "west", alignment: "nave", group: 2, rows: [] },
+      { id: "em-g0", label: "EM", type: "pews", side: "east", alignment: "nave", group: 0, rows: [] },
+      { id: "east-no-type", label: "X", side: "east", alignment: "nave", group: 0, rows: [] },
+    ];
+    expect(churchGridRowMajorSectionOrder(sections).map((s) => s.id)).toEqual([
+      "wo",
+      "wm",
+      "wr",
+      "em-g0",
+      "east-no-type",
+      "em-g1",
+      "eo",
+    ]);
+  });
+
   it("parseMapRowNumber reads Row N labels", () => {
     expect(
       parseMapRowNumber({
@@ -138,5 +163,39 @@ describe("pew-map-grid", () => {
       },
     ];
     expect(collectGridRowNumbers(sections)).toEqual([0, 8, 9, 10]);
+  });
+
+  it("collectGridRowNumbers uses custom transept row when nave includes row 9", () => {
+    const sections: PewSection[] = [
+      {
+        id: "w",
+        label: "W",
+        side: "west",
+        alignment: "nave",
+        group: 0,
+        rows: [
+          { id: "r8", label: "Row 8", frontType: "pew", kneelers: [] },
+          { id: "r9", label: "Row 9", frontType: "pewOnly", kneelers: [] },
+        ],
+      },
+      {
+        id: "t",
+        label: "Transept",
+        type: "crossAisle",
+        side: "full",
+        alignment: "full",
+        group: 1,
+        rows: [],
+      },
+      {
+        id: "wr",
+        label: "WR",
+        side: "west",
+        alignment: "nave",
+        group: 2,
+        rows: [{ id: "r11", label: "Row 11", frontType: "pew", kneelers: [] }],
+      },
+    ];
+    expect(collectGridRowNumbers(sections, 10)).toEqual([8, 9, 10, 11]);
   });
 });

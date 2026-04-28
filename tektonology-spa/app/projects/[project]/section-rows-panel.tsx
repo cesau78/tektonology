@@ -1,50 +1,44 @@
-import type { Kneeler, HardwareStatus, PewSection, PewRow } from "@/data/types";
+"use client";
+
+import { useMemo } from "react";
+import { useSearchParams } from "next/navigation";
+import type { Kneeler, PewSection, PewRow } from "@/data/types";
 import { formatBenchPewId, formatHardwareItemStatusForDetails } from "@/lib/pew-bench-display";
 import { labelForRowFrontType } from "@/lib/pew-front-type-labels";
 import {
   pewRailColorClass,
   isPillarKneeler,
+  kneelerHardware,
   pewRailSegmentsForRow,
-  effectiveRowCapacityForMap,
-  maxRowCapacityInSection,
-  alignRowStripWidthPercent,
+  alignMapRowStripWidthPercent,
+  maxMapRowStripWidthNumeratorInSection,
 } from "@/lib/pew-layout";
 import { PillarGapLabel } from "@/components/pillar-gap-label";
-
-function kneelerStatus(kneeler: Kneeler): HardwareStatus {
-  if (kneeler.hardware.length === 0) return "unknown";
-  const statuses = kneeler.hardware.map((h) => h.status);
-  if (statuses.every((s) => s === "installed")) return "installed";
-  if (statuses.some((s) => s === "installed" || s === "upcoming")) return "upcoming";
-  if (statuses.some((s) => s === "needed")) return "needed";
-  return "unknown";
-}
-
-const kneelerColors: Record<HardwareStatus, string> = {
-  unknown:
-    "bg-neutral-200 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600",
-  needed:
-    "bg-amber-100 dark:bg-amber-900 border-amber-300 dark:border-amber-700",
-  upcoming:
-    "bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700",
-  installed:
-    "bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700",
-};
+import { KneelerPartStripPanel } from "@/components/kneeler-part-strip";
+import { defaultPartFilter, partDisplaySegmentsForPartOnKneeler } from "@/lib/hardware-part-segments";
 
 function pewBenchStripForRow(section: PewSection, row: PewRow) {
   return pewRailSegmentsForRow(section, row);
 }
 
 function KneelerStatusList({ kneeler }: { kneeler: Kneeler }) {
-  if (kneeler.hardware.length === 0) {
+  if (isPillarKneeler(kneeler)) {
+    return (
+      <p className="px-2 pb-2 text-xs text-muted-foreground">
+        Structural column — no kneeler hardware.
+      </p>
+    );
+  }
+  const hw = kneelerHardware(kneeler);
+  if (hw.length === 0) {
     return (
       <p className="px-2 pb-2 text-xs text-muted-foreground">Unknown</p>
     );
   }
   return (
     <div className="px-2 pb-2 space-y-1.5 text-xs text-foreground">
-      {kneeler.hardware.map((h, hi) => (
-        <p key={hi} className="leading-snug">
+      {hw.map((h, hi) => (
+        <p key={`${h.partId}-${h.side ?? "n"}-${hi}`} className="leading-snug">
           {formatHardwareItemStatusForDetails(h)}
         </p>
       ))}
@@ -52,8 +46,20 @@ function KneelerStatusList({ kneeler }: { kneeler: Kneeler }) {
   );
 }
 
-/** Expandable rows: pew/rail strip, kneeler map, per-kneeler hardware. */
-export function SectionRowsPanel({ section }: { section: PewSection }) {
+/** Expandable rows: pew/rail strip, kneeler map (matches map part from `?part=`), per-kneeler hardware. */
+export function SectionRowsPanel({
+  section,
+  partNames,
+}: {
+  section: PewSection;
+  partNames: string[];
+}) {
+  const searchParams = useSearchParams();
+  const partFilter = useMemo(
+    () => defaultPartFilter(searchParams.get("part"), partNames, [section]),
+    [searchParams, partNames, section],
+  );
+
   return (
     <div
       className={`flex flex-col gap-2 ${
@@ -67,11 +73,9 @@ export function SectionRowsPanel({ section }: { section: PewSection }) {
       {section.rows.map((row) => {
         const benchStrip = pewBenchStripForRow(section, row);
         const mapAlign = section.mapRowAlign ?? "fill";
-        const maxCap = maxRowCapacityInSection(section);
+        const maxCap = maxMapRowStripWidthNumeratorInSection(section);
         const scaleRows = mapAlign !== "fill" && maxCap > 0;
-        const widthPct = scaleRows
-          ? alignRowStripWidthPercent(section, effectiveRowCapacityForMap(row, section))
-          : 100;
+        const widthPct = scaleRows ? alignMapRowStripWidthPercent(section, row) : 100;
 
         return (
           <div
@@ -84,6 +88,11 @@ export function SectionRowsPanel({ section }: { section: PewSection }) {
                 <summary className="px-3 py-2 text-sm cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{row.label}</span>
+                    {row.handicapAccessible ? (
+                      <span className="text-xs" title="Wheelchair accessible seating" aria-hidden>
+                        ♿
+                      </span>
+                    ) : null}
                     <span className="text-[10px] text-muted-foreground">
                       {labelForRowFrontType(row.frontType)}
                     </span>
@@ -98,17 +107,15 @@ export function SectionRowsPanel({ section }: { section: PewSection }) {
                       <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                         Pew / Rail
                       </div>
-                      <div className="relative flex w-full min-w-0 items-center gap-px overflow-visible border rounded p-2">
+                      <div className="flex w-full min-w-0 items-center gap-px overflow-hidden border rounded p-2">
                         {benchStrip.map((seg) =>
                           seg.variant === "gap" ? (
                             <div
                               key={seg.id}
-                              className="relative flex min-h-[8px] min-w-0 items-center justify-center overflow-visible"
+                              className="flex min-h-[8px] min-w-0 items-center self-stretch"
                               style={{ flex: seg.capacity }}
                             >
-                              <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
-                                <PillarGapLabel spanning />
-                              </div>
+                              <PillarGapLabel spanning />
                             </div>
                           ) : (
                             <div
@@ -124,30 +131,39 @@ export function SectionRowsPanel({ section }: { section: PewSection }) {
                   )}
 
                   {row.kneelers.length > 0 ? (
-                    <div className="flex w-full min-w-0 items-center gap-px border rounded p-2">
+                    <div className="flex w-full min-w-0 items-center gap-px overflow-hidden border rounded p-2">
                       {row.kneelers.map((kneeler) => {
                         const idLabel = formatBenchPewId(section, row, kneeler);
                         if (isPillarKneeler(kneeler)) {
                           return (
                             <div
                               key={kneeler.id}
-                              className="flex items-center justify-center min-w-0 py-1"
+                              className="flex min-w-0 items-center overflow-hidden py-1"
                               style={{ flex: kneeler.capacity }}
                               title="Pillar (gap)"
-                            />
+                            >
+                              <PillarGapLabel compact spanning={kneeler.capacity > 1} />
+                            </div>
                           );
                         }
-                        const status = kneelerStatus(kneeler);
+                        const items = kneelerHardware(kneeler).filter((h) => h.name === partFilter);
+                        const noneFill = !partFilter || items.length === 0;
+                        const segments = noneFill
+                          ? []
+                          : partDisplaySegmentsForPartOnKneeler(kneeler, partFilter);
                         return (
                           <div
                             key={kneeler.id}
-                            className={`rounded border ${kneelerColors[status]} flex items-center justify-center py-1`}
+                            className="flex min-w-0"
                             style={{ flex: kneeler.capacity }}
-                            title={idLabel}
                           >
-                            <span className="text-[8px] text-muted-foreground text-center leading-tight px-0.5">
+                            <KneelerPartStripPanel
+                              segments={segments}
+                              noneFill={noneFill}
+                              title={idLabel}
+                            >
                               {idLabel}
-                            </span>
+                            </KneelerPartStripPanel>
                           </div>
                         );
                       })}

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState, type ReactNode } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type {
   PewSection,
@@ -15,14 +15,17 @@ import {
   pewRailBarClass,
   pewRailColorClass,
   isPillarKneeler,
-  kneelerStatusForPart,
+  kneelerHardware,
   pewRailSegmentsForRow,
-  effectiveRowCapacityForMap,
-  maxRowCapacityInSection,
-  alignRowStripWidthPercent,
+  mapPewRailSegmentsAlignedToKneelerColumns,
+  alignMapRowStripWidthPercent,
+  maxMapRowStripWidthNumeratorInSection,
+  type PewBenchSegment,
 } from "@/lib/pew-layout";
 import { collectGridRowNumbers, parseMapRowNumber } from "@/lib/pew-map-grid";
 import { PillarGapLabel } from "@/components/pillar-gap-label";
+import { KneelerPartStripMap } from "@/components/kneeler-part-strip";
+import { defaultPartFilter, partDisplaySegmentsForPartOnKneeler } from "@/lib/hardware-part-segments";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ExportPewLayoutButton } from "@/components/export-pew-layout-button";
 import type { Project } from "@/data/types";
@@ -42,7 +45,7 @@ const kneelerColors: Record<HardwareStatus | "none", string> = {
 function sectionStats(section: PewSection, partFilter: string) {
   const allKneelers = section.rows.flatMap((r) => r.kneelers);
   const allHardware = allKneelers
-    .flatMap((k) => k.hardware)
+    .flatMap((k) => kneelerHardware(k))
     .filter((h) => h.name === partFilter);
   const total = allHardware.reduce((s, h) => s + h.quantity, 0);
   const installed = allHardware
@@ -64,40 +67,16 @@ function groupSections(sections: PewSection[]) {
     .map(([, secs]) => secs);
 }
 
-function KneelerSegments({
-  section,
-  row,
-  kneelers,
-  partFilter,
-}: {
-  section: PewSection;
-  row: PewRow;
-  kneelers: Kneeler[];
-  partFilter: string;
-}) {
+function HandicapRowBadge() {
   return (
-    <div className="flex w-full min-w-0 gap-px">
-      {kneelers.map((k) => {
-        if (isPillarKneeler(k)) {
-          return (
-            <div
-              key={k.id}
-              className="flex items-center justify-center min-w-0"
-              style={{ flex: k.capacity }}
-              title="Pillar (gap)"
-            />
-          );
-        }
-        const status = kneelerStatusForPart(k, partFilter);
-        return (
-          <div
-            key={k.id}
-            className={`rounded-sm h-2 border ${kneelerColors[status]}`}
-            style={{ flex: k.capacity }}
-            title={formatBenchPewId(section, row, k)}
-          />
-        );
-      })}
+    <div
+      className="flex w-full min-w-0 justify-center pb-px"
+      title="Wheelchair accessible seating"
+    >
+      <span className="text-[11px] leading-none select-none" aria-hidden>
+        ♿
+      </span>
+      <span className="sr-only">Wheelchair accessible seating</span>
     </div>
   );
 }
@@ -111,29 +90,22 @@ function PewRailStrip({
 }) {
   const segments = pewRailSegmentsForRow(section, row);
   if (!segments) {
-    return (
-      <div
-        className={`w-full ${pewRailBarClass} ${row.kneelers.length > 0 ? "rounded-t-sm" : "rounded-sm"}`}
-      />
-    );
+    return <div className={`w-full ${pewRailBarClass} rounded-sm`} />;
   }
   const hasGap = segments.some((s) => s.variant === "gap");
-  const benchWrapClass =
-    hasGap
-      ? "flex w-full min-w-0 gap-px min-h-[5px] items-stretch overflow-visible rounded-sm relative z-10"
-      : `flex w-full min-w-0 gap-px ${row.kneelers.length > 0 ? "rounded-t-sm overflow-hidden" : "rounded-sm overflow-hidden"}`;
+  const benchWrapClass = hasGap
+    ? "flex w-full min-w-0 gap-px items-stretch overflow-hidden rounded-sm"
+    : "flex w-full min-w-0 gap-px rounded-sm overflow-hidden";
   return (
     <div className={benchWrapClass}>
       {segments.map((s) =>
         s.variant === "gap" ? (
           <div
             key={s.id}
-            className="relative flex min-w-0 min-h-[5px] items-center justify-center overflow-visible"
+            className="flex min-w-0 min-h-0 items-center self-stretch"
             style={{ flex: s.capacity }}
           >
-            <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
-              <PillarGapLabel compact spanning />
-            </div>
+            <PillarGapLabel stripHeight="rail" />
           </div>
         ) : (
           <div key={s.id} className="flex min-w-0 items-center" style={{ flex: s.capacity }}>
@@ -141,6 +113,131 @@ function PewRailStrip({
           </div>
         ),
       )}
+    </div>
+  );
+}
+
+/** When rails are hidden (main project view), still show structural pillar gaps from pew/rail layout. */
+function RailPillarGapsOnly({ row, section }: { row: PewRow; section: PewSection }) {
+  const segments = pewRailSegmentsForRow(section, row);
+  if (!segments?.some((s) => s.variant === "gap")) return null;
+  return (
+    <div className="flex w-full min-w-0 gap-px items-stretch overflow-hidden rounded-sm">
+      {segments.map((s) =>
+        s.variant === "gap" ? (
+          <div
+            key={s.id}
+            className="flex min-w-0 min-h-0 items-center self-stretch"
+            style={{ flex: s.capacity }}
+          >
+            <PillarGapLabel stripHeight="rail" />
+          </div>
+        ) : (
+          <div
+            key={s.id}
+            className="flex min-w-0 min-h-[5px] items-center self-stretch"
+            style={{ flex: s.capacity }}
+            aria-hidden
+          />
+        ),
+      )}
+    </div>
+  );
+}
+
+/** Pew rail + kneeler strip when column widths match (pillar = one cell spanning both bands). */
+function RowStripColumnGrid({
+  section,
+  row,
+  partFilter,
+  showRails,
+  segments,
+}: {
+  section: PewSection;
+  row: PewRow;
+  partFilter: string;
+  showRails: boolean;
+  segments: PewBenchSegment[];
+}) {
+  const kneelers = row.kneelers;
+  const pillarGapsWhenRailsOff = !showRails && segments.some((s) => s.variant === "gap");
+  const upperBand = showRails || pillarGapsWhenRailsOff;
+  const gridCols = kneelers.map((k) => `${k.capacity}fr`).join(" ");
+
+  return (
+    <div
+      className="grid w-full min-w-0 gap-px overflow-hidden"
+      style={{
+        gridTemplateColumns: gridCols,
+        gridTemplateRows: upperBand ? "auto 1fr" : "1fr",
+      }}
+    >
+      {kneelers.flatMap((k, i): ReactNode[] => {
+        const seg = segments[i]!;
+        if (isPillarKneeler(k)) {
+          /** Upper band: spacer only (matches rail row height; avoids a second grey pill). Kneeler band: pillar strip. */
+          const out: ReactNode[] = [];
+          if (upperBand) {
+            out.push(
+              <div
+                key={`${k.id}-pillar-rail`}
+                className="flex min-w-0 min-h-0 items-center overflow-hidden"
+                style={{ gridColumn: i + 1, gridRow: 1 }}
+              >
+                <div className="min-h-[5px] w-full min-w-0 shrink-0" aria-hidden />
+              </div>,
+            );
+          }
+          out.push(
+            <div
+              key={`${k.id}-pillar-kneel`}
+              className="flex min-w-0 min-h-0 items-stretch overflow-hidden"
+              style={{ gridColumn: i + 1, gridRow: upperBand ? 2 : 1 }}
+              title="Pillar (gap)"
+            >
+              <PillarGapLabel stripHeight="kneeler" />
+            </div>,
+          );
+          return out;
+        }
+        const out: ReactNode[] = [];
+        if (upperBand) {
+          out.push(
+            <div
+              key={`${k.id}-upper`}
+              className="flex min-w-0 min-h-0 items-center"
+              style={{ gridColumn: i + 1, gridRow: 1 }}
+            >
+              {showRails ? (
+                seg.variant === "gap" ? (
+                  <PillarGapLabel stripHeight="rail" />
+                ) : (
+                  <div className={`${pewRailBarClass} w-full min-h-[5px]`} />
+                )
+              ) : (
+                <div className="min-h-[5px] w-full min-h-0" aria-hidden />
+              )}
+            </div>,
+          );
+        }
+        const items = kneelerHardware(k).filter((h) => h.name === partFilter);
+        const noneFill = items.length === 0;
+        const kneelerSegs = noneFill ? [] : partDisplaySegmentsForPartOnKneeler(k, partFilter);
+        out.push(
+          <div
+            key={`${k.id}-kneel`}
+            className="flex min-w-0 min-h-0 items-center"
+            style={{ gridColumn: i + 1, gridRow: upperBand ? 2 : 1 }}
+          >
+            <KneelerPartStripMap
+              segments={kneelerSegs}
+              noneFill={noneFill}
+              title={formatBenchPewId(section, row, k)}
+            />
+          </div>,
+        );
+        return out;
+      })}
     </div>
   );
 }
@@ -156,20 +253,35 @@ function RowStrip({
   section: PewSection;
   showRails: boolean;
 }) {
-  return (
-    <div className="flex w-full min-w-0 flex-col gap-0 overflow-visible">
-      {showRails && <PewRailStrip row={row} section={section} />}
-      {!showRails && row.kneelers.length === 0 ? (
-        <div className="h-2 w-full shrink-0 rounded-sm bg-transparent" aria-hidden />
-      ) : null}
-      {row.kneelers.length > 0 && (
-        <KneelerSegments
+  const handicap = row.handicapAccessible ? <HandicapRowBadge /> : null;
+
+  if (row.kneelers.length > 0) {
+    const mapSegments = mapPewRailSegmentsAlignedToKneelerColumns(section, row);
+    return (
+      <div className="flex w-full min-w-0 flex-col gap-0">
+        {handicap}
+        <RowStripColumnGrid
           section={section}
           row={row}
-          kneelers={row.kneelers}
           partFilter={partFilter}
+          showRails={showRails}
+          segments={mapSegments}
         />
-      )}
+      </div>
+    );
+  }
+
+  const segments = pewRailSegmentsForRow(section, row);
+  const pillarGapsWhenRailsOff = !showRails && segments?.some((s) => s.variant === "gap");
+
+  return (
+    <div className="flex w-full min-w-0 flex-col gap-0 overflow-hidden">
+      {handicap}
+      {showRails && <PewRailStrip row={row} section={section} />}
+      {!showRails && <RailPillarGapsOnly row={row} section={section} />}
+      {!showRails && !pillarGapsWhenRailsOff ? (
+        <div className="h-2 w-full shrink-0 rounded-sm bg-transparent" aria-hidden />
+      ) : null}
     </div>
   );
 }
@@ -187,7 +299,7 @@ function SectionMapBlock({
 }) {
   const stats = sectionStats(section, partFilter);
   const mapAlign = section.mapRowAlign ?? "fill";
-  const maxCap = maxRowCapacityInSection(section);
+  const maxCap = maxMapRowStripWidthNumeratorInSection(section);
   const scaleRows = mapAlign !== "fill" && maxCap > 0;
   const colAlign =
     mapAlign === "start" ? "items-start" : mapAlign === "end" ? "items-end" : "";
@@ -201,10 +313,9 @@ function SectionMapBlock({
           {stats.pct}%
         </span>
       </div>
-      <div className={`flex flex-col gap-1 ${colAlign}`}>
+      <div className={`flex flex-col gap-0.5 ${colAlign}`}>
         {section.rows.map((row) => {
-          const sum = effectiveRowCapacityForMap(row, section);
-          const widthPct = scaleRows ? alignRowStripWidthPercent(section, sum) : 100;
+          const widthPct = scaleRows ? alignMapRowStripWidthPercent(section, row) : 100;
           return (
             <div
               key={row.id}
@@ -254,10 +365,9 @@ function MapGridCell({
   projectSlug?: string;
 }) {
   const mapAlign = section.mapRowAlign ?? "fill";
-  const maxCap = maxRowCapacityInSection(section);
+  const maxCap = maxMapRowStripWidthNumeratorInSection(section);
   const scaleRows = mapAlign !== "fill" && maxCap > 0;
-  const sum = effectiveRowCapacityForMap(row, section);
-  const widthPct = scaleRows ? alignRowStripWidthPercent(section, sum) : 100;
+  const widthPct = scaleRows ? alignMapRowStripWidthPercent(section, row) : 100;
   const colAlign =
     mapAlign === "start" ? "items-start" : mapAlign === "end" ? "items-end" : "";
 
@@ -298,15 +408,18 @@ function ChurchAlignedPewTable({
   partFilter,
   showRails,
   projectSlug,
+  transeptGridRow = 9,
 }: {
   sections: PewSection[];
   partFilter: string;
   showRails: boolean;
   projectSlug?: string;
+  /** Map row index for the cross-aisle band across the nave (default 9). */
+  transeptGridRow?: number;
 }) {
   const transeptSection = sections.find((s) => s.type === "crossAisle");
   const transeptLabel = transeptSection?.label ?? "Transept";
-  const rowNums = collectGridRowNumbers(sections);
+  const rowNums = collectGridRowNumbers(sections, transeptGridRow);
 
   const westAll = sections
     .filter((s) => s.side === "west" && (s.type ?? "pews") === "pews")
@@ -337,7 +450,8 @@ function ChurchAlignedPewTable({
 
   function pickOuter(section: PewSection | undefined, n: number) {
     if (!section) return undefined;
-    const row = section.rows.find((r) => parseMapRowNumber(r) === n);
+    const adj = n + (section.churchGridRowDelta ?? 0);
+    const row = section.rows.find((r) => parseMapRowNumber(r) === adj);
     if (!row) return undefined;
     return { section, row };
   }
@@ -362,14 +476,14 @@ function ChurchAlignedPewTable({
           const eo = pickOuter(eastOuter, n);
           const w = pickWest(n);
           const e = pickEast(n);
-          const isTranseptBand = n === 9 && transeptSection;
+          const isTranseptBand = n === transeptGridRow && transeptSection;
 
           return (
-            <tr key={n} className="align-top">
-              <td className="border-b border-neutral-200 px-0.5 py-1 align-middle text-right text-[8px] tabular-nums text-muted-foreground dark:border-neutral-700">
+            <tr key={n} className="align-middle">
+              <td className="border-b border-neutral-200 px-0.5 py-0.5 align-middle text-right text-[8px] tabular-nums text-muted-foreground dark:border-neutral-700">
                 {n}
               </td>
-              <td className="border-b border-neutral-200 p-0 align-top dark:border-neutral-700">
+              <td className="border-b border-neutral-200 p-0 align-middle dark:border-neutral-700">
                 {wo ? (
                   <MapGridCell
                     section={wo.section}
@@ -382,8 +496,8 @@ function ChurchAlignedPewTable({
                   <div className="min-h-[8px]" aria-hidden />
                 )}
               </td>
-              <td className="border-x border-dashed border-neutral-300 p-0 align-top dark:border-neutral-600">
-                <div className="flex min-h-[8px] flex-col items-center">
+              <td className="border-x border-dashed border-neutral-300 p-0 align-middle dark:border-neutral-600">
+                <div className="flex min-h-[8px] flex-col items-center justify-center">
                   {n === firstRowN && (
                     <span className="text-[8px] text-muted-foreground">W</span>
                   )}
@@ -391,7 +505,7 @@ function ChurchAlignedPewTable({
               </td>
               {isTranseptBand ? (
                 <td
-                  className="border-b border-neutral-200 p-0 align-top dark:border-neutral-700"
+                  className="border-b border-neutral-200 p-0 align-middle dark:border-neutral-700"
                   colSpan={3}
                   title={`Row ${n}`}
                 >
@@ -401,7 +515,7 @@ function ChurchAlignedPewTable({
                 </td>
               ) : (
                 <>
-                  <td className="border-b border-neutral-200 p-0 align-top dark:border-neutral-700">
+                  <td className="border-b border-neutral-200 p-0 align-middle dark:border-neutral-700">
                     {w ? (
                       <MapGridCell
                         section={w.section}
@@ -415,13 +529,13 @@ function ChurchAlignedPewTable({
                     )}
                   </td>
                   <td
-                    className={`border-x border-dashed border-neutral-300 p-0 align-top dark:border-neutral-600 ${
+                    className={`border-x border-dashed border-neutral-300 p-0 align-middle dark:border-neutral-600 ${
                       alignment === "outer" ? "min-w-[4rem] w-[4rem]" : "w-[1.5rem]"
                     }`}
                   >
                     <div className="min-h-[8px]" aria-hidden />
                   </td>
-                  <td className="border-b border-neutral-200 p-0 align-top dark:border-neutral-700">
+                  <td className="border-b border-neutral-200 p-0 align-middle dark:border-neutral-700">
                     {e ? (
                       <MapGridCell
                         section={e.section}
@@ -436,14 +550,14 @@ function ChurchAlignedPewTable({
                   </td>
                 </>
               )}
-              <td className="border-x border-dashed border-neutral-300 p-0 align-top dark:border-neutral-600">
-                <div className="flex min-h-[8px] flex-col items-center">
+              <td className="border-x border-dashed border-neutral-300 p-0 align-middle dark:border-neutral-600">
+                <div className="flex min-h-[8px] flex-col items-center justify-center">
                   {n === firstRowN && (
                     <span className="text-[8px] text-muted-foreground">E</span>
                   )}
                 </div>
               </td>
-              <td className="border-b border-neutral-200 p-0 align-top dark:border-neutral-700">
+              <td className="border-b border-neutral-200 p-0 align-middle dark:border-neutral-700">
                 {eo ? (
                   <MapGridCell
                     section={eo.section}
@@ -494,43 +608,29 @@ export function PewMap({
   pewMapUseRowGrid?: boolean;
 }) {
   const searchParams = useSearchParams();
-  const initialPart = searchParams.get("part");
+  const pathname = usePathname();
+  const router = useRouter();
 
-  function defaultPart(): string {
-    if (initialPart) {
-      const match = partNames.find(
-        (n) => n === initialPart || n.toLowerCase().replace(/\s+/g, "-") === initialPart,
-      );
-      if (match) return match;
-    }
-    const allHw = sections
-      .flatMap((s) => s.rows)
-      .flatMap((r) => r.kneelers)
-      .flatMap((k) => k.hardware);
-    const counts: Record<string, number> = {};
-    for (const h of allHw) {
-      if (h.status === "needed" || h.status === "upcoming") {
-        counts[h.name] = (counts[h.name] ?? 0) + h.quantity;
-      }
-    }
-    let best = partNames[0] ?? "";
-    let bestCount = -1;
-    for (const name of partNames) {
-      if ((counts[name] ?? 0) > bestCount) {
-        best = name;
-        bestCount = counts[name] ?? 0;
-      }
-    }
-    return best;
-  }
+  const [partFilter, setPartFilter] = useState<string>(() =>
+    defaultPartFilter(searchParams.get("part"), partNames, sections),
+  );
 
-  const [partFilter, setPartFilter] = useState<string>(defaultPart);
+  useEffect(() => {
+    const param = searchParams.get("part");
+    if (!param) return;
+    const match = partNames.find(
+      (n) => n === param || n.toLowerCase().replace(/\s+/g, "-") === param,
+    );
+    if (match && match !== partFilter) {
+      setPartFilter(match);
+    }
+  }, [searchParams, partNames, partFilter]);
   const sectionGroups = groupSections(sections);
 
   const allHardware = sections
     .flatMap((s) => s.rows)
     .flatMap((r) => r.kneelers)
-    .flatMap((k) => k.hardware)
+    .flatMap((k) => kneelerHardware(k))
     .filter((h) => h.name === partFilter);
   const installedCount = allHardware
     .filter((h) => h.status === "installed")
@@ -553,7 +653,13 @@ export function PewMap({
             <select
               className="text-xs border rounded px-2 py-1 bg-background text-foreground"
               value={partFilter}
-              onChange={(e) => setPartFilter(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                setPartFilter(v);
+                const params = new URLSearchParams(searchParams.toString());
+                params.set("part", v.toLowerCase().replace(/\s+/g, "-"));
+                router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+              }}
             >
               {partNames.map((name) => (
                 <option key={name} value={name}>
@@ -660,9 +766,10 @@ export function PewMap({
               partFilter={partFilter}
               showRails={showRails}
               projectSlug={projectSlug}
+              transeptGridRow={project?.layout.transeptGridRow ?? 9}
             />
           ) : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
             {sectionGroups.map((group, gi) => {
               const fullSection = group.find((s) => s.side === "full");
 

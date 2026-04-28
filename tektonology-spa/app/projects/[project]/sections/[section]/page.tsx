@@ -5,6 +5,7 @@ import { getProject, listProjectSectionStaticParams } from "@/lib/project-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PewMap } from "../../pew-map";
 import { SectionRowsPanel } from "../../section-rows-panel";
+import { kneelerHardware } from "@/lib/pew-layout";
 
 export function generateStaticParams() {
   return listProjectSectionStaticParams();
@@ -16,7 +17,7 @@ function partNamesForProject(project: NonNullable<ReturnType<typeof getProject>>
       project.layout.sections
         .flatMap((s) => s.rows)
         .flatMap((r) => r.kneelers)
-        .flatMap((k) => k.hardware)
+        .flatMap((k) => kneelerHardware(k))
         .map((h) => h.name),
     ),
   ).sort();
@@ -78,7 +79,7 @@ export default async function ProjectSectionPage({
           </p>
         </CardHeader>
         <CardContent>
-          <SectionRowsPanel section={section} />
+          <SectionRowsPanel section={section} partNames={partNames} />
         </CardContent>
       </Card>
     </div>
