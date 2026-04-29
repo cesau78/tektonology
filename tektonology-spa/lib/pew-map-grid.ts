@@ -54,3 +54,87 @@ export function churchGridRowMajorSectionOrder(sections: PewSection[]): PewSecti
     .sort((a, b) => a.group - b.group);
   return [...westOuter, ...west, ...east, ...eastOuter];
 }
+
+/** One rendered row in the church-alignment pew grid (web + Excel). */
+export type ChurchAlignGridTableRow =
+  | { kind: "transept"; n: number }
+  | { kind: "pews"; n: number; group: number };
+
+function sortedNavePewSides(sections: PewSection[]): {
+  westAll: PewSection[];
+  eastAll: PewSection[];
+} {
+  const westAll = sections
+    .filter((s) => s.side === "west" && (s.type ?? "pews") === "pews")
+    .slice()
+    .sort((a, b) => a.group - b.group);
+  const eastAll = sections
+    .filter((s) => s.side === "east" && (s.type ?? "pews") === "pews")
+    .slice()
+    .sort((a, b) => a.group - b.group);
+  return { westAll, eastAll };
+}
+
+/**
+ * Rows for the aligned church table: same map row index can appear once per nave `group`
+ * (e.g. East Main Row 15 vs East Rear Row 15). West and east strips on one line share the same
+ * `group` so counts match a single pew row (like Row 21), not two sections concatenated.
+ */
+export function collectChurchAlignGridTableRows(
+  sections: PewSection[],
+  transeptGridRow: number = 9,
+): ChurchAlignGridTableRow[] {
+  const transeptSection = sections.find((s) => s.type === "crossAisle");
+  const { westAll, eastAll } = sortedNavePewSides(sections);
+  const rowNums = collectGridRowNumbers(sections, transeptGridRow);
+  const out: ChurchAlignGridTableRow[] = [];
+
+  for (const n of rowNums) {
+    if (n === transeptGridRow && transeptSection) {
+      out.push({ kind: "transept", n });
+      continue;
+    }
+    const groups = new Set<number>();
+    for (const sec of westAll) {
+      if (sec.rows.some((row) => parseMapRowNumber(row) === n)) {
+        groups.add(sec.group);
+      }
+    }
+    for (const sec of eastAll) {
+      if (sec.rows.some((row) => parseMapRowNumber(row) === n)) {
+        groups.add(sec.group);
+      }
+    }
+    const sorted = [...groups].sort((a, b) => a - b);
+    if (sorted.length === 0) {
+      out.push({ kind: "pews", n, group: 0 });
+    } else {
+      for (const g of sorted) {
+        out.push({ kind: "pews", n, group: g });
+      }
+    }
+  }
+  return out;
+}
+
+export function pickWestForChurchAlignGrid(
+  westAll: PewSection[],
+  n: number,
+  group: number,
+): { section: PewSection; row: PewRow } | undefined {
+  const sec = westAll.find((s) => s.group === group);
+  if (!sec) return undefined;
+  const row = sec.rows.find((r) => parseMapRowNumber(r) === n);
+  return row ? { section: sec, row } : undefined;
+}
+
+export function pickEastForChurchAlignGrid(
+  eastAll: PewSection[],
+  n: number,
+  group: number,
+): { section: PewSection; row: PewRow } | undefined {
+  const sec = eastAll.find((s) => s.group === group);
+  if (!sec) return undefined;
+  const row = sec.rows.find((r) => parseMapRowNumber(r) === n);
+  return row ? { section: sec, row } : undefined;
+}

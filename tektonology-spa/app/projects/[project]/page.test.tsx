@@ -459,6 +459,69 @@ describe("ProjectDetailPage", () => {
     expect(container).toHaveTextContent("Spacer");
   });
 
+  it("splits kneeler plates by left and right in parts inventory", async () => {
+    const project = makeProject({
+      layout: {
+        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
+        aisles: [],
+        sections: [
+          makeSection({
+            id: "s1",
+            rows: [
+              {
+                id: "r1",
+                label: "Row 1",
+                frontType: "pew",
+                kneelers: [
+                  makeKneeler({
+                    hardware: [
+                      {
+                        partId: "kneeler-pew-plate",
+                        name: "Kneeler Plate",
+                        quantity: 1,
+                        status: "needed",
+                        side: "left",
+                      },
+                      {
+                        partId: "kneeler-pew-plate",
+                        name: "Kneeler Plate",
+                        quantity: 1,
+                        status: "inspected",
+                        side: "right",
+                      },
+                    ],
+                  }),
+                ],
+              },
+            ],
+          }),
+        ],
+      },
+    });
+    mockReadFileSync.mockReturnValue(JSON.stringify(project));
+    mockReaddirSync.mockReturnValue(["test-project.json"]);
+
+    const { default: Page } = await import("./page");
+    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
+
+    expect(container).toHaveTextContent("Kneeler Plate (Left)");
+    expect(container).toHaveTextContent("Kneeler Plate (Right)");
+    const leftRow = Array.from(container.querySelectorAll("tbody tr")).find((tr) =>
+      tr.textContent?.includes("Kneeler Plate (Left)"),
+    );
+    const rightRow = Array.from(container.querySelectorAll("tbody tr")).find((tr) =>
+      tr.textContent?.includes("Kneeler Plate (Right)"),
+    );
+    expect(leftRow).toBeTruthy();
+    expect(rightRow).toBeTruthy();
+    const leftCells = leftRow!.querySelectorAll("td");
+    const rightCells = rightRow!.querySelectorAll("td");
+    expect(leftCells[1].textContent).toBe("1");
+    expect(leftCells[3].textContent).toBe("1");
+    expect(rightCells[1].textContent).toBe("1");
+    expect(rightCells[2].textContent).toBe("1");
+  });
+
   it("renders kneeler label fallback when no label set", async () => {
     const project = makeProject({
       layout: {

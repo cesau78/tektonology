@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import type { HardwareStatus, Project } from "@/data/types";
+import type { HardwareItem, HardwareStatus, Project } from "@/data/types";
 import { getProject, listProjectJsonSlugs } from "@/lib/project-data";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,15 @@ import { kneelerHardware } from "@/lib/pew-layout";
 
 export function generateStaticParams() {
   return listProjectJsonSlugs().map((project) => ({ project }));
+}
+
+/** Display bucket for inventory table: kneeler pew plates with `side` split into Left / Right / Middle rows. */
+function inventoryRowLabel(h: HardwareItem): string {
+  if (h.partId === "kneeler-pew-plate" && h.side) {
+    const sideLabel = h.side === "left" ? "Left" : h.side === "right" ? "Right" : "Middle";
+    return `Kneeler Plate (${sideLabel})`;
+  }
+  return h.name;
 }
 
 function getInventorySummary(project: Project) {
@@ -27,9 +36,10 @@ function getInventorySummary(project: Project) {
   });
   const byPart = new Map<string, Record<HardwareStatus, number>>();
   for (const h of allHardware) {
-    const entry = byPart.get(h.name) ?? emptyCounts();
+    const key = inventoryRowLabel(h);
+    const entry = byPart.get(key) ?? emptyCounts();
     entry[h.status] += h.quantity;
-    byPart.set(h.name, entry);
+    byPart.set(key, entry);
   }
 
   return Array.from(byPart.entries())

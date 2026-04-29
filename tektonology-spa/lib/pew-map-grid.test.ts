@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { PewSection } from "@/data/types";
 import {
   churchGridRowMajorSectionOrder,
+  collectChurchAlignGridTableRows,
   collectGridRowNumbers,
   parseMapRowNumber,
+  pickEastForChurchAlignGrid,
+  pickWestForChurchAlignGrid,
 } from "./pew-map-grid";
 
 describe("pew-map-grid", () => {
@@ -197,5 +200,99 @@ describe("pew-map-grid", () => {
       },
     ];
     expect(collectGridRowNumbers(sections, 10)).toEqual([8, 9, 10, 11]);
+  });
+
+  it("collectChurchAlignGridTableRows expands one line per nave group when map row exists on both main and rear", () => {
+    const row15 = { id: "r15", label: "Row 15", frontType: "pew" as const, kneelers: [] };
+    const sections: PewSection[] = [
+      {
+        id: "wm",
+        label: "WM",
+        type: "pews",
+        side: "west",
+        alignment: "nave",
+        group: 0,
+        rows: [row15],
+      },
+      {
+        id: "em",
+        label: "EM",
+        type: "pews",
+        side: "east",
+        alignment: "nave",
+        group: 0,
+        rows: [row15],
+      },
+      {
+        id: "wr",
+        label: "WR",
+        type: "pews",
+        side: "west",
+        alignment: "nave",
+        group: 2,
+        rows: [row15],
+      },
+      {
+        id: "er",
+        label: "ER",
+        type: "pews",
+        side: "east",
+        alignment: "nave",
+        group: 2,
+        rows: [row15],
+      },
+    ];
+    expect(collectChurchAlignGridTableRows(sections, 9)).toEqual([
+      { kind: "pews", n: 15, group: 0 },
+      { kind: "pews", n: 15, group: 2 },
+    ]);
+  });
+
+  it("pickWestForChurchAlignGrid / pickEastForChurchAlignGrid resolve paired sections by group", () => {
+    const row15 = { id: "r15w", label: "Row 15", frontType: "pew" as const, kneelers: [] };
+    const row15e = { id: "r15e", label: "Row 15", frontType: "pew" as const, kneelers: [] };
+    const westAll: PewSection[] = [
+      { id: "wm", label: "WM", type: "pews", side: "west", alignment: "nave", group: 0, rows: [row15] },
+      { id: "wr", label: "WR", type: "pews", side: "west", alignment: "nave", group: 2, rows: [{ ...row15, id: "r15wr" }] },
+    ];
+    const eastAll: PewSection[] = [
+      { id: "em", label: "EM", type: "pews", side: "east", alignment: "nave", group: 0, rows: [row15e] },
+      { id: "er", label: "ER", type: "pews", side: "east", alignment: "nave", group: 2, rows: [{ ...row15e, id: "r15er" }] },
+    ];
+    expect(pickWestForChurchAlignGrid(westAll, 15, 0)?.row.id).toBe("r15w");
+    expect(pickWestForChurchAlignGrid(westAll, 15, 2)?.row.id).toBe("r15wr");
+    expect(pickEastForChurchAlignGrid(eastAll, 15, 0)?.row.id).toBe("r15e");
+    expect(pickEastForChurchAlignGrid(eastAll, 15, 2)?.row.id).toBe("r15er");
+  });
+
+  it("collectChurchAlignGridTableRows uses group 0 when the map row exists only on outer sections", () => {
+    const sections: PewSection[] = [
+      {
+        id: "eo",
+        label: "East Outer",
+        type: "pews",
+        side: "eastOuter",
+        alignment: "nave",
+        group: 2,
+        rows: [{ id: "r7", label: "Row 7", frontType: "pew", kneelers: [] }],
+      },
+    ];
+    expect(collectChurchAlignGridTableRows(sections, 9)).toEqual([{ kind: "pews", n: 7, group: 0 }]);
+  });
+
+  it("pickWestForChurchAlignGrid returns undefined when the group or map row is missing", () => {
+    const westAll: PewSection[] = [
+      { id: "wm", label: "WM", type: "pews", side: "west", alignment: "nave", group: 0, rows: [] },
+    ];
+    expect(pickWestForChurchAlignGrid(westAll, 5, 0)).toBeUndefined();
+    expect(pickWestForChurchAlignGrid(westAll, 5, 99)).toBeUndefined();
+  });
+
+  it("pickEastForChurchAlignGrid returns undefined when the group or map row is missing", () => {
+    const eastAll: PewSection[] = [
+      { id: "em", label: "EM", type: "pews", side: "east", alignment: "nave", group: 0, rows: [] },
+    ];
+    expect(pickEastForChurchAlignGrid(eastAll, 5, 0)).toBeUndefined();
+    expect(pickEastForChurchAlignGrid(eastAll, 5, 99)).toBeUndefined();
   });
 });

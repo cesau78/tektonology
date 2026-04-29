@@ -25,8 +25,14 @@ import {
   maxMapRowStripWidthNumeratorInSection,
   type PewBenchSegment,
 } from "@/lib/pew-layout";
-import { collectGridRowNumbers, parseMapRowNumber } from "@/lib/pew-map-grid";
-import { PillarGapLabel } from "@/components/pillar-gap-label";
+import {
+  collectChurchAlignGridTableRows,
+  collectGridRowNumbers,
+  parseMapRowNumber,
+  pickEastForChurchAlignGrid,
+  pickWestForChurchAlignGrid,
+} from "@/lib/pew-map-grid";
+import { PillarGapLabel, pillarGapStripColorClass } from "@/components/pillar-gap-label";
 import { KneelerPartStripMap } from "@/components/kneeler-part-strip";
 import { defaultPartFilter, partDisplaySegmentsForPartOnKneeler } from "@/lib/hardware-part-segments";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -442,6 +448,7 @@ function ChurchAlignedPewTable({
   const transeptSection = sections.find((s) => s.type === "crossAisle");
   const transeptLabel = transeptSection?.label ?? "Transept";
   const rowNums = collectGridRowNumbers(sections, transeptGridRow);
+  const tableRows = collectChurchAlignGridTableRows(sections, transeptGridRow);
 
   const westAll = sections
     .filter((s) => s.side === "west" && (s.type ?? "pews") === "pews")
@@ -453,22 +460,6 @@ function ChurchAlignedPewTable({
   const westOuter = sections.find((s) => s.side === "westOuter");
   const eastOuter = sections.find((s) => s.side === "eastOuter");
   const alignment = westAll[0]?.alignment ?? eastAll[0]?.alignment ?? "nave";
-
-  function pickWest(n: number): { section: PewSection; row: PewRow } | undefined {
-    for (const sec of westAll) {
-      const row = sec.rows.find((r) => parseMapRowNumber(r) === n);
-      if (row) return { section: sec, row };
-    }
-    return undefined;
-  }
-
-  function pickEast(n: number): { section: PewSection; row: PewRow } | undefined {
-    for (const sec of eastAll) {
-      const row = sec.rows.find((r) => parseMapRowNumber(r) === n);
-      if (row) return { section: sec, row };
-    }
-    return undefined;
-  }
 
   function pickOuter(section: PewSection | undefined, n: number) {
     if (!section) return undefined;
@@ -493,17 +484,33 @@ function ChurchAlignedPewTable({
         <col className="w-[11%]" />
       </colgroup>
       <tbody>
-        {rowNums.map((n) => {
+        {tableRows.map((entry, rowIdx) => {
+          const n = entry.n;
           const wo = pickOuter(westOuter, n);
           const eo = pickOuter(eastOuter, n);
-          const w = pickWest(n);
-          const e = pickEast(n);
-          const isTranseptBand = n === transeptGridRow && transeptSection;
+          const isTranseptBand = entry.kind === "transept";
+          const prev = rowIdx > 0 ? tableRows[rowIdx - 1] : undefined;
+          const isFirstPewBandForRowN =
+            entry.kind === "pews" &&
+            (prev == null ||
+              prev.kind === "transept" ||
+              (prev.kind === "pews" && prev.n !== entry.n));
+          const rowLabel =
+            entry.kind === "transept"
+              ? n
+              : isFirstPewBandForRowN
+                ? n
+                : "";
+          const w = entry.kind === "pews" ? pickWestForChurchAlignGrid(westAll, n, entry.group) : undefined;
+          const e = entry.kind === "pews" ? pickEastForChurchAlignGrid(eastAll, n, entry.group) : undefined;
 
           return (
-            <tr key={n} className="align-middle">
+            <tr
+              key={isTranseptBand ? `t-${n}` : `p-${n}-g-${entry.kind === "pews" ? entry.group : ""}`}
+              className="align-middle"
+            >
               <td className="border-b border-neutral-200 px-0.5 py-0.5 align-middle text-right text-[8px] tabular-nums text-muted-foreground dark:border-neutral-700">
-                {n}
+                {rowLabel}
               </td>
               <td className="border-b border-neutral-200 p-0 align-middle dark:border-neutral-700">
                 {wo ? (
@@ -520,7 +527,7 @@ function ChurchAlignedPewTable({
               </td>
               <td className="border-x border-dashed border-neutral-300 p-0 align-middle dark:border-neutral-600">
                 <div className="flex min-h-[8px] flex-col items-center justify-center">
-                  {n === firstRowN && (
+                  {entry.kind === "pews" && n === firstRowN && isFirstPewBandForRowN && (
                     <span className="text-[8px] text-muted-foreground">W</span>
                   )}
                 </div>
@@ -574,7 +581,7 @@ function ChurchAlignedPewTable({
               )}
               <td className="border-x border-dashed border-neutral-300 p-0 align-middle dark:border-neutral-600">
                 <div className="flex min-h-[8px] flex-col items-center justify-center">
-                  {n === firstRowN && (
+                  {entry.kind === "pews" && n === firstRowN && isFirstPewBandForRowN && (
                     <span className="text-[8px] text-muted-foreground">E</span>
                   )}
                 </div>
@@ -742,6 +749,10 @@ export function PewMap({
                   <span>{pewPartLegendLabel[status]}</span>
                 </div>
               ))}
+              <div className="flex items-center gap-1.5">
+                <div className={`h-2 w-6 shrink-0 ${pillarGapStripColorClass}`} />
+                <span>Pillar</span>
+              </div>
               <div className="flex items-center gap-1.5">
                 <div className={`h-2 w-6 shrink-0 rounded-sm ${pewRailColorClass}`} />
                 <span>Pew Only</span>

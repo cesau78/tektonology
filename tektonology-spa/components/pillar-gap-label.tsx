@@ -1,3 +1,7 @@
+/** Border/background for structural pillar strips; shared with pew map legend swatch. */
+export const pillarGapStripColorClass =
+  "rounded-sm border border-neutral-400/70 bg-neutral-300 dark:border-neutral-500 dark:bg-neutral-600";
+
 /** Grey strip for structural pillar gaps; heights match pew map kneeler (`h-2`) or rail (`h-[5px]`) rows. */
 export function PillarGapLabel(props: {
   compact?: boolean;
@@ -14,9 +18,7 @@ export function PillarGapLabel(props: {
       title="Pillar"
       aria-label="Pillar (structural gap)"
     >
-      <div
-        className={`${hClass} w-full min-w-0 shrink-0 rounded-sm border border-neutral-400/70 bg-neutral-300 dark:border-neutral-500 dark:bg-neutral-600`}
-      />
+      <div className={`${hClass} w-full min-w-0 shrink-0 ${pillarGapStripColorClass}`} />
     </div>
   );
 }

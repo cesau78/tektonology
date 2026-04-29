@@ -7,7 +7,14 @@ import {
   kneelerStatusForPart,
   type PewBenchSegment,
 } from "@/lib/pew-layout";
-import { collectGridRowNumbers, parseMapRowNumber } from "@/lib/pew-map-grid";
+import {
+  collectChurchAlignGridTableRows,
+  collectGridRowNumbers,
+  parseMapRowNumber,
+  pickEastForChurchAlignGrid,
+  pickWestForChurchAlignGrid,
+  type ChurchAlignGridTableRow,
+} from "@/lib/pew-map-grid";
 import {
   formatBenchPewId,
   formatKneelerAggregateStatusForExcel,
@@ -644,6 +651,26 @@ function maxZoneUnitsAcrossGridRows(
   return m;
 }
 
+function maxNaveZoneUnitsAcrossChurchTable(
+  tableRows: ChurchAlignGridTableRow[],
+  westAll: PewSection[],
+  eastAll: PewSection[],
+  side: "west" | "east",
+): number {
+  let m = 1;
+  for (const e of tableRows) {
+    if (e.kind !== "pews") continue;
+    const p =
+      side === "west"
+        ? pickWestForChurchAlignGrid(westAll, e.n, e.group)
+        : pickEastForChurchAlignGrid(eastAll, e.n, e.group);
+    if (p) {
+      m = Math.max(m, rowDataColumnUnits(p.row, p.section));
+    }
+  }
+  return m;
+}
+
 function churchGridPickers(sections: PewSection[]) {
   const westAll = sections
     .filter((s) => s.side === "west" && (s.type ?? "pews") === "pews")
@@ -658,22 +685,6 @@ function churchGridPickers(sections: PewSection[]) {
   const transeptSection = sections.find((s) => s.type === "crossAisle");
   const alignment = westAll[0]?.alignment ?? eastAll[0]?.alignment ?? "nave";
 
-  function pickWest(n: number): { section: PewSection; row: PewRow } | undefined {
-    for (const sec of westAll) {
-      const row = sec.rows.find((rr) => parseMapRowNumber(rr) === n);
-      if (row) return { section: sec, row };
-    }
-    return undefined;
-  }
-
-  function pickEast(n: number): { section: PewSection; row: PewRow } | undefined {
-    for (const sec of eastAll) {
-      const row = sec.rows.find((rr) => parseMapRowNumber(rr) === n);
-      if (row) return { section: sec, row };
-    }
-    return undefined;
-  }
-
   function pickOuter(
     section: PewSection | undefined,
     n: number,
@@ -685,7 +696,7 @@ function churchGridPickers(sections: PewSection[]) {
     return { section, row };
   }
 
-  return { westOuter, eastOuter, transeptSection, alignment, pickWest, pickEast, pickOuter };
+  return { westOuter, eastOuter, transeptSection, alignment, westAll, eastAll, pickOuter };
 }
 
 function writeChurchAlignedGridToWorksheet(
@@ -696,11 +707,12 @@ function writeChurchAlignedGridToWorksheet(
   exportAt: Date,
   side: ChurchGridSide = "full",
 ): { lastRow: number; lastCol: number } {
-  const { westOuter, eastOuter, transeptSection, alignment, pickWest, pickEast, pickOuter } =
+  const { westOuter, eastOuter, transeptSection, alignment, westAll, eastAll, pickOuter } =
     churchGridPickers(layoutSections);
   const transeptLabel = transeptSection?.label ?? "Transept";
   const transeptGridRow = project.layout.transeptGridRow ?? 9;
   const rowNums = collectGridRowNumbers(layoutSections, transeptGridRow);
+  const tableRows = collectChurchAlignGridTableRows(layoutSections, transeptGridRow);
   const firstRowN = rowNums[0] ?? 0;
 
   const maxWo =
@@ -711,8 +723,8 @@ function writeChurchAlignedGridToWorksheet(
     eastOuter != null
       ? maxZoneUnitsAcrossGridRows(rowNums, (n) => pickOuter(eastOuter, n))
       : 0;
-  const maxWest = maxZoneUnitsAcrossGridRows(rowNums, pickWest);
-  const maxEast = maxZoneUnitsAcrossGridRows(rowNums, pickEast);
+  const maxWest = maxNaveZoneUnitsAcrossChurchTable(tableRows, westAll, eastAll, "west");
+  const maxEast = maxNaveZoneUnitsAcrossChurchTable(tableRows, westAll, eastAll, "east");
   const centerCols = alignment === "outer" ? 2 : 1;
 
   const includeWest = side === "full" || side === "west";
@@ -815,12 +827,30 @@ function writeChurchAlignedGridToWorksheet(
   }
 
   let outI = 0;
-  for (const n of rowNums) {
+  let prevPewN: number | undefined;
+  for (const entry of tableRows) {
     const r = firstDataRow + outI;
+    const n = entry.n;
     const rowNumCell = ws.getCell(r, 1);
-    rowNumCell.value = n;
+    if (entry.kind === "transept") {
+      rowNumCell.value = n;
+    } else {
+      if (prevPewN !== entry.n) {
+        rowNumCell.value = entry.n;
+      } else {
+        rowNumCell.value = "";
+      }
+      prevPewN = entry.n;
+    }
     rowNumCell.font = { size: 10 };
     rowNumCell.alignment = { horizontal: "right", vertical: "middle", wrapText: false };
+
+    const prevEntry = outI > 0 ? tableRows[outI - 1] : undefined;
+    const isFirstPewBandForRowN =
+      entry.kind === "pews" &&
+      (prevEntry == null ||
+        prevEntry.kind === "transept" ||
+        (prevEntry.kind === "pews" && prevEntry.n !== entry.n));
 
     if (includeWest) {
       const wo = pickOuter(westOuter, n);
@@ -842,13 +872,14 @@ function writeChurchAlignedGridToWorksheet(
         }
       }
       const wMark = ws.getCell(r, colWmark);
-      wMark.value = n === firstRowN ? "W" : "";
+      wMark.value =
+        entry.kind === "pews" && n === firstRowN && isFirstPewBandForRowN ? "W" : "";
       wMark.font = { size: 9, color: { argb: "FF6B7280" } };
       wMark.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
       wMark.fill = emptyPaddingFill;
     }
 
-    const isTranseptBand = n === transeptGridRow && Boolean(transeptSection);
+    const isTranseptBand = entry.kind === "transept";
 
     if (isTranseptBand) {
       if (side === "full") {
@@ -875,7 +906,10 @@ function writeChurchAlignedGridToWorksheet(
       }
     } else {
       if (includeWest) {
-        const w = pickWest(n);
+        const w =
+          entry.kind === "pews"
+            ? pickWestForChurchAlignGrid(westAll, n, entry.group)
+            : undefined;
         if (w) {
           writePewRowKneelersIntoGridColumns(
             ws,
@@ -901,7 +935,10 @@ function writeChurchAlignedGridToWorksheet(
       mid.fill = emptyPaddingFill;
 
       if (includeEast) {
-        const e = pickEast(n);
+        const e =
+          entry.kind === "pews"
+            ? pickEastForChurchAlignGrid(eastAll, n, entry.group)
+            : undefined;
         if (e) {
           writePewRowKneelersIntoGridColumns(
             ws,
@@ -922,7 +959,8 @@ function writeChurchAlignedGridToWorksheet(
 
     if (includeEast) {
       const eMark = ws.getCell(r, colEmark);
-      eMark.value = n === firstRowN ? "E" : "";
+      eMark.value =
+        entry.kind === "pews" && n === firstRowN && isFirstPewBandForRowN ? "E" : "";
       eMark.font = { size: 9, color: { argb: "FF6B7280" } };
       eMark.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
       eMark.fill = emptyPaddingFill;
