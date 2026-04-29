@@ -253,6 +253,27 @@ describe("pew-layout", () => {
     expect(kneelerStatusForPart(kneeler, "Brace")).toBe("needed");
   });
 
+  it("kneelerStatusForPart returns upcoming when same part mixes complete or upcoming with open work", () => {
+    const installedAndNeeded: Kneeler = {
+      id: "k",
+      capacity: 1,
+      hardware: [
+        { partId: "a", name: "Rail", quantity: 1, status: "installed" },
+        { partId: "b", name: "Rail", quantity: 1, status: "needed" },
+      ],
+    };
+    expect(kneelerStatusForPart(installedAndNeeded, "Rail")).toBe("upcoming");
+    const upcomingAndUnknown: Kneeler = {
+      id: "k2",
+      capacity: 1,
+      hardware: [
+        { partId: "a", name: "Cap", quantity: 1, status: "upcoming" },
+        { partId: "b", name: "Cap", quantity: 1, status: "unknown" },
+      ],
+    };
+    expect(kneelerStatusForPart(upcomingAndUnknown, "Cap")).toBe("upcoming");
+  });
+
   it("mapPewRailSegmentsAlignedToKneelerColumns returns [] when kneelers empty and rail is null", () => {
     const section: PewSection = {
       id: "s",

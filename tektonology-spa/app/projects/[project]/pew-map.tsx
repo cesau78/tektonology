@@ -153,16 +153,18 @@ function RowStripColumnGrid({
   segments: PewBenchSegment[];
 }) {
   const kneelers = row.kneelers;
-  const pillarGapsWhenRailsOff = !showRails && segments.some((s) => s.variant === "gap");
-  const upperBand = showRails || pillarGapsWhenRailsOff;
+  /** Upper rail row only when drawing rails; no spacer row when rails are hidden (avoids extra vertical gap). */
+  const upperBand = showRails;
   const gridCols = kneelers.map((k) => `${k.capacity}fr`).join(" ");
 
   return (
     <div
-      className="grid w-full min-w-0 gap-px overflow-hidden"
+      className="grid w-full min-w-0 items-center gap-px overflow-hidden"
       style={{
         gridTemplateColumns: gridCols,
-        gridTemplateRows: upperBand ? "auto 1fr" : "1fr",
+        // Content-sized rows; align-items center so pillar/gap cells match kneeler strip height
+        // (stretch + h-full on pillar used to inflate row height and misalign the table row).
+        gridTemplateRows: upperBand ? "auto auto" : "auto",
       }}
     >
       {kneelers.flatMap((k, i): ReactNode[] => {
@@ -174,17 +176,16 @@ function RowStripColumnGrid({
             out.push(
               <div
                 key={`${k.id}-pillar-rail`}
-                className="flex min-w-0 min-h-0 items-center overflow-hidden"
+                className="flex min-w-0 min-h-[5px] items-center overflow-hidden"
                 style={{ gridColumn: i + 1, gridRow: 1 }}
-              >
-                <div className="min-h-[5px] w-full min-w-0 shrink-0" aria-hidden />
-              </div>,
+                aria-hidden
+              />,
             );
           }
           out.push(
             <div
               key={`${k.id}-pillar-kneel`}
-              className="flex min-w-0 min-h-0 items-stretch overflow-hidden"
+              className="flex min-w-0 min-h-0 items-center overflow-hidden"
               style={{ gridColumn: i + 1, gridRow: upperBand ? 2 : 1 }}
               title="Pillar (gap)"
             >
@@ -202,14 +203,10 @@ function RowStripColumnGrid({
                 className="flex min-w-0 min-h-0 items-center"
                 style={{ gridColumn: i + 1, gridRow: 1 }}
               >
-                {showRails ? (
-                  seg.variant === "gap" ? (
-                    <PillarGapLabel stripHeight="rail" />
-                  ) : (
-                    <div className={`${pewRailBarClass} w-full min-h-[5px]`} />
-                  )
+                {seg.variant === "gap" ? (
+                  <PillarGapLabel stripHeight="rail" />
                 ) : (
-                  <div className="min-h-[5px] w-full min-h-0" aria-hidden />
+                  <div className={`${pewRailBarClass} w-full min-h-[5px]`} />
                 )}
               </div>,
             );
@@ -217,11 +214,11 @@ function RowStripColumnGrid({
           out.push(
             <div
               key={`${k.id}-pew-only-bench`}
-              className="flex min-w-0 min-h-0 items-stretch overflow-hidden justify-center"
+              className="flex min-w-0 min-h-0 items-center overflow-hidden justify-center"
               style={{ gridColumn: i + 1, gridRow: upperBand ? 2 : 1 }}
               title="Pew only (no kneeler hardware)"
             >
-              <div className={`w-full self-center ${pewMapBenchBandClass}`} />
+              <div className={`w-full ${pewMapBenchBandClass}`} />
             </div>,
           );
           return out;
@@ -234,14 +231,10 @@ function RowStripColumnGrid({
               className="flex min-w-0 min-h-0 items-center"
               style={{ gridColumn: i + 1, gridRow: 1 }}
             >
-              {showRails ? (
-                seg.variant === "gap" ? (
-                  <PillarGapLabel stripHeight="rail" />
-                ) : (
-                  <div className={`${pewRailBarClass} w-full min-h-[5px]`} />
-                )
+              {seg.variant === "gap" ? (
+                <PillarGapLabel stripHeight="rail" />
               ) : (
-                <div className="min-h-[5px] w-full min-h-0" aria-hidden />
+                <div className={`${pewRailBarClass} w-full min-h-[5px]`} />
               )}
             </div>,
           );
@@ -307,15 +300,10 @@ function RowStrip({
     );
   }
 
-  const pillarGapsWhenRailsOff = !showRails && segments?.some((s) => s.variant === "gap");
-
   return (
     <div className="flex w-full min-w-0 flex-col gap-0 overflow-hidden">
       {handicap}
       {showRails && <PewRailStrip row={row} section={section} />}
-      {!showRails && !pillarGapsWhenRailsOff ? (
-        <div className="h-2 w-full shrink-0 rounded-sm bg-transparent" aria-hidden />
-      ) : null}
     </div>
   );
 }
@@ -666,17 +654,21 @@ export function PewMap({
     .flatMap((r) => r.kneelers)
     .flatMap((k) => kneelerHardware(k))
     .filter((h) => h.name === partFilter);
-  const installedCount = allHardware
-    .filter((h) => hardwareStatusIsComplete(h.status))
+  const installedQty = allHardware
+    .filter((h) => h.status === "installed")
     .reduce((s, h) => s + h.quantity, 0);
+  const inspectedQty = allHardware
+    .filter((h) => h.status === "inspected")
+    .reduce((s, h) => s + h.quantity, 0);
+  const restoredCount = installedQty + inspectedQty;
   const neededCount = allHardware
     .filter((h) => h.status === "needed")
     .reduce((s, h) => s + h.quantity, 0);
   const upcomingCount = allHardware
     .filter((h) => h.status === "upcoming")
     .reduce((s, h) => s + h.quantity, 0);
-  const trackable = installedCount + neededCount + upcomingCount;
-  const pct = trackable > 0 ? Math.round((installedCount / trackable) * 100) : 0;
+  const trackable = restoredCount + neededCount + upcomingCount;
+  const pct = trackable > 0 ? Math.round((restoredCount / trackable) * 100) : 0;
 
   return (
     <Card className="mb-6">
@@ -716,7 +708,7 @@ export function PewMap({
       <CardContent>
         <div className="mb-4 max-w-xs mx-auto">
           <div className="text-sm text-muted-foreground text-center mb-1">
-            {installedCount} / {trackable} resolved ({pct}%)
+            {restoredCount} / {trackable} Restored ({pct}%)
           </div>
           <div className="h-2 rounded-full bg-neutral-200 overflow-hidden">
             <div

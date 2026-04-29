@@ -10,7 +10,7 @@ export function PillarGapLabel(props: {
   const hClass = stripHeight === "rail" ? "h-[5px]" : "h-2";
   return (
     <div
-      className={`flex min-w-0 w-full min-h-0 h-full flex-col items-stretch justify-center ${className ?? ""}`}
+      className={`flex min-w-0 w-full min-h-0 flex-col items-stretch justify-center ${className ?? ""}`}
       title="Pillar"
       aria-label="Pillar (structural gap)"
     >

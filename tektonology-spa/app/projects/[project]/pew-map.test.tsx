@@ -210,12 +210,12 @@ describe("PewMap", () => {
     );
 
     // Default is Kneeler Bushing (most needed+upcoming = 4)
-    expect(container).toHaveTextContent("0 / 4 resolved (0%)");
+    expect(container).toHaveTextContent("0 / 4 Restored (0%)");
 
     // Switch to Prayer Sole
     const select = container.querySelector("select")!;
     fireEvent.change(select, { target: { value: "Prayer Sole" } });
-    expect(container).toHaveTextContent("3 / 5 resolved (60%)");
+    expect(container).toHaveTextContent("3 / 5 Restored (60%)");
   });
 
   it("updates summary when part filter is changed", () => {
@@ -245,10 +245,10 @@ describe("PewMap", () => {
 
     const select = container.querySelector("select")!;
     fireEvent.change(select, { target: { value: "Prayer Sole" } });
-    expect(container).toHaveTextContent("3 / 3 resolved (100%)");
+    expect(container).toHaveTextContent("3 / 3 Restored (100%)");
 
     fireEvent.change(select, { target: { value: "Kneeler Bushing" } });
-    expect(container).toHaveTextContent("0 / 2 resolved (0%)");
+    expect(container).toHaveTextContent("0 / 2 Restored (0%)");
   });
 
   it("includes upcoming in summary total", () => {
@@ -276,7 +276,34 @@ describe("PewMap", () => {
     const { container } = render(
       <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Foot"]} />,
     );
-    expect(container).toHaveTextContent("3 / 6 resolved (50%)");
+    expect(container).toHaveTextContent("3 / 6 Restored (50%)");
+  });
+
+  it("counts inspected quantities in Restored summary", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            kneelers: [
+              makeKneeler({
+                hardware: [
+                  makeHardware({ name: "Foot", quantity: 2, status: "inspected" }),
+                  makeHardware({ name: "Foot", quantity: 1, status: "needed" }),
+                ],
+              }),
+            ],
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Foot"]} />,
+    );
+    expect(container).toHaveTextContent("2 / 3 Restored (67%)");
   });
 
   it("shows 0% when no trackable parts exist for selected part", () => {
@@ -300,7 +327,7 @@ describe("PewMap", () => {
     const { container } = render(
       <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
-    expect(container).toHaveTextContent("0 / 0 resolved (0%)");
+    expect(container).toHaveTextContent("0 / 0 Restored (0%)");
   });
 
   it("renders Altar and Entrance labels without direction", () => {
@@ -1070,7 +1097,7 @@ describe("PewMap", () => {
     expect(kneelBars.length).toBe(1);
   });
 
-  it("renders transparent row spacer when showRails is false and row has no kneelers", () => {
+  it("does not inject transparent spacer when showRails is false and row has no kneelers", () => {
     const sections = [
       makeSection({
         id: "s1",
@@ -1094,7 +1121,7 @@ describe("PewMap", () => {
         showRails={false}
       />,
     );
-    expect(container.querySelector('[aria-hidden="true"].bg-transparent.h-2')).toBeTruthy();
+    expect(container.querySelector('[aria-hidden="true"].bg-transparent.h-2')).toBeNull();
   });
 
   it("maps PewOnly kneeler as bench band with optional upper rail band", () => {
@@ -1402,7 +1429,7 @@ describe("PewMap", () => {
     );
 
     // URL param overrides default (Kneeler Bushing would be default by count)
-    expect(container).toHaveTextContent("3 / 3 resolved (100%)");
+    expect(container).toHaveTextContent("3 / 3 Restored (100%)");
     const select = container.querySelector("select")!;
     expect(select.value).toBe("Prayer Sole");
 
@@ -1453,7 +1480,7 @@ describe("PewMap", () => {
     expect(screen.getAllByTitle("Pillar").length).toBeGreaterThan(0);
   });
 
-  it("renders pillar rail spacer in column grid when rails are off but layout has a gap", () => {
+  it("renders pillar kneeler gap in column grid when rails are off and layout has a gap segment", () => {
     const sections: PewSection[] = [
       makeSection({
         rows: [
