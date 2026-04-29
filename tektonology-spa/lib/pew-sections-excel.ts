@@ -241,15 +241,27 @@ const PAPER_SIZE_US_LETTER = 1;
  * so “Fit to” applies.
  */
 function applyPewLayoutPrintPageSetup(ws: ExcelJS.Worksheet) {
-  const next: ExcelJS.PageSetup = { ...ws.pageSetup };
+  const defaultMargins: ExcelJS.Margins = {
+    left: 0.5,
+    right: 0.5,
+    top: 0.5,
+    bottom: 0.5,
+    header: 0.3,
+    footer: 0.3,
+  };
+  const prev = ws.pageSetup;
+  /** ExcelJS `PaperSize` enum omits US Letter; runtime still uses OOXML value 1. */
+  const next = {
+    ...prev,
+    margins: prev.margins ?? defaultMargins,
+    paperSize: PAPER_SIZE_US_LETTER,
+    orientation: "landscape" as const,
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    horizontalCentered: true,
+  } as unknown as ExcelJS.PageSetup;
   delete (next as { scale?: number }).scale;
-  next.paperSize = PAPER_SIZE_US_LETTER;
-  next.orientation = "landscape";
-  next.margins = { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 };
-  next.fitToPage = true;
-  next.fitToWidth = 1;
-  next.fitToHeight = 0;
-  next.horizontalCentered = true;
   ws.pageSetup = next;
 }
 
@@ -574,11 +586,11 @@ function writePewRowKneelersIntoGridColumns(
               `Pew layout export: row ${row.id} overflow (span ends at ${endCol}, max ${lastCol})`,
             );
           }
-          const extendSame =
+          if (
             pendingBench !== null &&
             pendingBench.kneeler.id === k.id &&
-            col === pendingBench.col1 + 1;
-          if (extendSame) {
+            col === pendingBench.col1 + 1
+          ) {
             pendingBench.col1 = endCol;
           } else {
             flushPendingBench();

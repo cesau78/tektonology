@@ -79,7 +79,9 @@ export default async function ProjectSectionPage({
           </p>
         </CardHeader>
         <CardContent>
-          <SectionRowsPanel section={section} partNames={partNames} />
+          <Suspense fallback={null}>
+            <SectionRowsPanel section={section} partNames={partNames} />
+          </Suspense>
         </CardContent>
       </Card>
     </div>
