@@ -231,6 +231,28 @@ describe("pew-layout", () => {
     expect(kneelerStatusForPart(mixed, "Foot")).toBe("installed");
   });
 
+  it("kneelerStatusForPart returns none for PewOnly kneeler", () => {
+    const pewOnly: Kneeler = {
+      id: "po",
+      capacity: 4,
+      type: "PewOnly",
+      hardware: [{ partId: "a", name: "Prayer Sole", quantity: 1, status: "needed" }],
+    };
+    expect(kneelerStatusForPart(pewOnly, "Prayer Sole")).toBe("none");
+  });
+
+  it("kneelerStatusForPart returns needed when same part has needed and non-complete non-upcoming", () => {
+    const kneeler: Kneeler = {
+      id: "k",
+      capacity: 1,
+      hardware: [
+        { partId: "a", name: "Brace", quantity: 1, status: "needed" },
+        { partId: "b", name: "Brace", quantity: 1, status: "unknown" },
+      ],
+    };
+    expect(kneelerStatusForPart(kneeler, "Brace")).toBe("needed");
+  });
+
   it("mapPewRailSegmentsAlignedToKneelerColumns returns [] when kneelers empty and rail is null", () => {
     const section: PewSection = {
       id: "s",
@@ -486,6 +508,59 @@ describe("pew-layout", () => {
     expect(maxMapRowStripWidthNumeratorInSection(section)).toBe(12);
     expect(alignMapRowStripWidthPercent(section, rowFractional)).toBeCloseTo((8.98 / 12) * 100, 5);
     expect(alignMapRowStripWidthPercent(section, rowFull)).toBe(100);
+  });
+
+  it("alignMapRowStripWidthPercent returns 100 for fill or default alignment", () => {
+    const row = { id: "a", label: "A", frontType: "pew" as const, kneelers: [k("x", 3)] };
+    const fillSection = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+      mapRowAlign: "fill" as const,
+      rows: [row],
+    } satisfies PewSection;
+    expect(alignMapRowStripWidthPercent(fillSection, row)).toBe(100);
+    const defaultAlignSection = {
+      id: "s2",
+      label: "S2",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+      rows: [row],
+    } satisfies PewSection;
+    expect(alignMapRowStripWidthPercent(defaultAlignSection, row)).toBe(100);
+  });
+
+  it("alignMapRowStripWidthPercent returns 100 when ref capacity is zero", () => {
+    const row = { id: "a", label: "A", frontType: "pew" as const, kneelers: [k("x", 3)] };
+    const section = {
+      id: "s",
+      label: "S",
+      type: "pews",
+      side: "west",
+      alignment: "nave",
+      group: 0,
+      mapRowAlign: "start" as const,
+      mapRowAlignRefCapacity: 0,
+      rows: [row],
+    } satisfies PewSection;
+    expect(alignMapRowStripWidthPercent(section, row)).toBe(100);
+  });
+
+  it("pewRailChunksPerKneelerColumn ignores takes below numerical epsilon", () => {
+    const rail = [
+      { id: "tiny", capacity: 1e-7, variant: "pew" as const },
+      { id: "rest", capacity: 3, variant: "pew" as const },
+    ];
+    const kneelers = [k("x", 3)];
+    const result = pewRailChunksPerKneelerColumn(rail, kneelers);
+    expect(result).not.toBeNull();
+    expect(result![0]!.length).toBeGreaterThan(0);
+    expect(result![0]!.reduce((s, c) => s + c.capacity, 0)).toBeCloseTo(3, 5);
   });
 
   it("rowCapacitySum and maxRowCapacityInSection", () => {

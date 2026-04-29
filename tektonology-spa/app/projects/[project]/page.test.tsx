@@ -736,6 +736,46 @@ describe("ProjectDetailPage", () => {
     expect(cells[6].querySelector("[class]")).toBeTruthy();
   });
 
+  it("shows inspected badge in inventory when inspected quantity is present", async () => {
+    const project = makeProject({
+      layout: {
+        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
+        aisles: [],
+        sections: [
+          makeSection({
+            id: "s1",
+            rows: [
+              {
+                id: "r1",
+                label: "Row 1",
+                frontType: "pew",
+                kneelers: [
+                  makeKneeler({
+                    hardware: [makeHardware({ name: "Checked Part", quantity: 2, status: "inspected" })],
+                  }),
+                ],
+              },
+            ],
+          }),
+        ],
+      },
+    });
+    mockReadFileSync.mockReturnValue(JSON.stringify(project));
+    mockReaddirSync.mockReturnValue(["test-project.json"]);
+
+    const { default: Page } = await import("./page");
+    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
+
+    expect(container).toHaveTextContent("Checked Part");
+    const row = Array.from(container.querySelectorAll("tbody tr")).find((tr) =>
+      tr.textContent?.includes("Checked Part"),
+    );
+    expect(row).toBeTruthy();
+    const cells = row!.querySelectorAll("td");
+    expect(cells[2].textContent).toBe("2");
+    expect(cells[2].querySelector("[class]")).toBeTruthy();
+  });
+
   it("renders inventory row without badges when count is zero", async () => {
     const project = makeProject({
       layout: {

@@ -138,34 +138,6 @@ function PewRailStrip({
   );
 }
 
-/** When rails are hidden (main project view), still show structural pillar gaps from pew/rail layout. */
-function RailPillarGapsOnly({ row, section }: { row: PewRow; section: PewSection }) {
-  const segments = pewRailSegmentsForRow(section, row);
-  if (!segments?.some((s) => s.variant === "gap")) return null;
-  return (
-    <div className="flex w-full min-w-0 gap-px items-stretch overflow-hidden rounded-sm">
-      {segments.map((s) =>
-        s.variant === "gap" ? (
-          <div
-            key={s.id}
-            className="flex min-w-0 min-h-0 items-center self-stretch"
-            style={{ flex: s.capacity }}
-          >
-            <PillarGapLabel stripHeight="rail" />
-          </div>
-        ) : (
-          <div
-            key={s.id}
-            className="flex min-w-0 min-h-[5px] items-center self-stretch"
-            style={{ flex: s.capacity }}
-            aria-hidden
-          />
-        ),
-      )}
-    </div>
-  );
-}
-
 /** Pew rail + kneeler strip when column widths match (pillar = one cell spanning both bands). */
 function RowStripColumnGrid({
   section,
@@ -341,7 +313,6 @@ function RowStrip({
     <div className="flex w-full min-w-0 flex-col gap-0 overflow-hidden">
       {handicap}
       {showRails && <PewRailStrip row={row} section={section} />}
-      {!showRails && <RailPillarGapsOnly row={row} section={section} />}
       {!showRails && !pillarGapsWhenRailsOff ? (
         <div className="h-2 w-full shrink-0 rounded-sm bg-transparent" aria-hidden />
       ) : null}

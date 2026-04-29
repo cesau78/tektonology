@@ -1097,6 +1097,128 @@ describe("PewMap", () => {
     expect(container.querySelector('[aria-hidden="true"].bg-transparent.h-2')).toBeTruthy();
   });
 
+  it("maps PewOnly kneeler as bench band with optional upper rail band", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            kneelers: [
+              makeKneeler({ id: "a", capacity: 3 }),
+              {
+                id: "po",
+                capacity: 4,
+                type: "PewOnly",
+                hardware: [],
+              },
+              makeKneeler({ id: "b", capacity: 3 }),
+            ],
+          },
+        ],
+      }),
+    ];
+    const rRailsOn = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} showRails />,
+    );
+    expect(rRailsOn.getAllByTitle("Pew only (no kneeler hardware)").length).toBeGreaterThanOrEqual(1);
+    expect(rRailsOn.container.querySelectorAll(".h-\\[5px\\].rounded-sm").length).toBeGreaterThan(0);
+
+    cleanup();
+
+    const rRailsOff = render(
+      <PewMap
+        churchName="Test"
+        orientation={orientation}
+        sections={sections}
+        partNames={["Prayer Sole"]}
+        showRails={false}
+      />,
+    );
+    expect(rRailsOff.getAllByTitle("Pew only (no kneeler hardware)").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("renders rail gap in upper band for regular kneeler when segment variant is gap", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            pewRailSegmentWidths: [3, 3],
+            pewRailSegmentKinds: [undefined, "gap"],
+            kneelers: [makeKneeler({ id: "a", capacity: 3 }), makeKneeler({ id: "b", capacity: 3 })],
+          },
+        ],
+      }),
+    ];
+    const { container } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} showRails />,
+    );
+    expect(container.querySelectorAll(".flex.min-w-0.min-h-0.items-stretch").length).toBeGreaterThan(0);
+  });
+
+  it("renders rail gap in upper band for PewOnly column when segment variant is gap", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            pewRailSegmentWidths: [3, 2, 3],
+            pewRailSegmentKinds: [undefined, "gap", undefined],
+            kneelers: [
+              makeKneeler({ id: "a", capacity: 3 }),
+              { id: "po", capacity: 2, type: "PewOnly", hardware: [] },
+              makeKneeler({ id: "b", capacity: 3 }),
+            ],
+          },
+        ],
+      }),
+    ];
+    const { getAllByTitle } = render(
+      <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} showRails />,
+    );
+    expect(getAllByTitle("Pew only (no kneeler hardware)").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("pillar kneeler strip uses grid row 1 when upper band is off", () => {
+    const sections = [
+      makeSection({
+        id: "s1",
+        rows: [
+          {
+            id: "r1",
+            label: "Row 1",
+            frontType: "pew",
+            pewRailSegmentWidths: [3, 3, 3],
+            kneelers: [
+              makeKneeler({ id: "a", capacity: 3 }),
+              { id: "pill", capacity: 3, label: "Pillar", type: "Pillar", hardware: [] },
+              makeKneeler({ id: "b", capacity: 3 }),
+            ],
+          },
+        ],
+      }),
+    ];
+    const { getByTitle } = render(
+      <PewMap
+        churchName="Test"
+        orientation={orientation}
+        sections={sections}
+        partNames={["Prayer Sole"]}
+        showRails={false}
+      />,
+    );
+    expect(getByTitle("Pillar (gap)")).toBeTruthy();
+  });
+
   it("renders section stats (rows, kneelers, pct)", () => {
     const { container } = render(
       <PewMap
