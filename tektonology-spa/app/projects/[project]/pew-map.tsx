@@ -14,7 +14,10 @@ import { formatBenchPewId } from "@/lib/pew-bench-display";
 import {
   pewRailBarClass,
   pewRailColorClass,
+  pewMapBenchBandClass,
+  hardwareStatusIsComplete,
   isPillarKneeler,
+  isPewOnlyKneeler,
   kneelerHardware,
   pewRailSegmentsForRow,
   mapPewRailSegmentsAlignedToKneelerColumns,
@@ -39,7 +42,19 @@ const kneelerColors: Record<HardwareStatus | "none", string> = {
     "bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700",
   installed:
     "bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700",
+  inspected:
+    "bg-teal-100 dark:bg-teal-900 border-teal-300 dark:border-teal-700",
   none: "bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700",
+};
+
+/** Pew Parts legend order: inspection first, then replacement pipeline. */
+const PEW_PART_LEGEND_ORDER = ["inspected", "needed", "upcoming", "installed"] as const satisfies readonly HardwareStatus[];
+
+const pewPartLegendLabel: Record<(typeof PEW_PART_LEGEND_ORDER)[number], string> = {
+  inspected: "Inspected",
+  needed: "Parts Needed",
+  upcoming: "Upcoming",
+  installed: "Installed",
 };
 
 function sectionStats(section: PewSection, partFilter: string) {
@@ -49,7 +64,7 @@ function sectionStats(section: PewSection, partFilter: string) {
     .filter((h) => h.name === partFilter);
   const total = allHardware.reduce((s, h) => s + h.quantity, 0);
   const installed = allHardware
-    .filter((h) => h.status === "installed")
+    .filter((h) => hardwareStatusIsComplete(h.status))
     .reduce((s, h) => s + h.quantity, 0);
   const pct = total > 0 ? Math.round((installed / total) * 100) : 0;
   return { kneelers: allKneelers.length, total, installed, pct };
@@ -84,13 +99,19 @@ function HandicapRowBadge() {
 function PewRailStrip({
   row,
   section,
+  /** `map` = one band matching kneeler strip height (pew-only rows). `rail` = thin rail bar above kneelers. */
+  benchStripHeight = "rail",
 }: {
   row: PewRow;
   section: PewSection;
+  benchStripHeight?: "rail" | "map";
 }) {
   const segments = pewRailSegmentsForRow(section, row);
+  const mapBand = benchStripHeight === "map";
+  const gapStrip: "rail" | "kneeler" = mapBand ? "kneeler" : "rail";
+  const pewBarClass = mapBand ? pewMapBenchBandClass : pewRailBarClass;
   if (!segments) {
-    return <div className={`w-full ${pewRailBarClass} rounded-sm`} />;
+    return <div className={`w-full ${mapBand ? pewMapBenchBandClass : pewRailBarClass}`} />;
   }
   const hasGap = segments.some((s) => s.variant === "gap");
   const benchWrapClass = hasGap
@@ -105,11 +126,11 @@ function PewRailStrip({
             className="flex min-w-0 min-h-0 items-center self-stretch"
             style={{ flex: s.capacity }}
           >
-            <PillarGapLabel stripHeight="rail" />
+            <PillarGapLabel stripHeight={gapStrip} />
           </div>
         ) : (
           <div key={s.id} className="flex min-w-0 items-center" style={{ flex: s.capacity }}>
-            <div className={`${pewRailBarClass} w-full`} />
+            <div className={pewBarClass} />
           </div>
         ),
       )}
@@ -200,6 +221,39 @@ function RowStripColumnGrid({
           );
           return out;
         }
+        if (isPewOnlyKneeler(k)) {
+          const out: ReactNode[] = [];
+          if (upperBand) {
+            out.push(
+              <div
+                key={`${k.id}-pew-only-upper`}
+                className="flex min-w-0 min-h-0 items-center"
+                style={{ gridColumn: i + 1, gridRow: 1 }}
+              >
+                {showRails ? (
+                  seg.variant === "gap" ? (
+                    <PillarGapLabel stripHeight="rail" />
+                  ) : (
+                    <div className={`${pewRailBarClass} w-full min-h-[5px]`} />
+                  )
+                ) : (
+                  <div className="min-h-[5px] w-full min-h-0" aria-hidden />
+                )}
+              </div>,
+            );
+          }
+          out.push(
+            <div
+              key={`${k.id}-pew-only-bench`}
+              className="flex min-w-0 min-h-0 items-stretch overflow-hidden justify-center"
+              style={{ gridColumn: i + 1, gridRow: upperBand ? 2 : 1 }}
+              title="Pew only (no kneeler hardware)"
+            >
+              <div className={`w-full self-center ${pewMapBenchBandClass}`} />
+            </div>,
+          );
+          return out;
+        }
         const out: ReactNode[] = [];
         if (upperBand) {
           out.push(
@@ -272,6 +326,15 @@ function RowStrip({
   }
 
   const segments = pewRailSegmentsForRow(section, row);
+  if (segments?.length) {
+    return (
+      <div className="flex w-full min-w-0 flex-col gap-0 overflow-hidden">
+        {handicap}
+        <PewRailStrip row={row} section={section} benchStripHeight="map" />
+      </div>
+    );
+  }
+
   const pillarGapsWhenRailsOff = !showRails && segments?.some((s) => s.variant === "gap");
 
   return (
@@ -633,7 +696,7 @@ export function PewMap({
     .flatMap((k) => kneelerHardware(k))
     .filter((h) => h.name === partFilter);
   const installedCount = allHardware
-    .filter((h) => h.status === "installed")
+    .filter((h) => hardwareStatusIsComplete(h.status))
     .reduce((s, h) => s + h.quantity, 0);
   const neededCount = allHardware
     .filter((h) => h.status === "needed")
@@ -682,7 +745,7 @@ export function PewMap({
       <CardContent>
         <div className="mb-4 max-w-xs mx-auto">
           <div className="text-sm text-muted-foreground text-center mb-1">
-            {installedCount} / {trackable} Installed ({pct}%)
+            {installedCount} / {trackable} resolved ({pct}%)
           </div>
           <div className="h-2 rounded-full bg-neutral-200 overflow-hidden">
             <div
@@ -707,21 +770,19 @@ export function PewMap({
           )}
           <div>
             <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5">
-              Kneeler Parts
+              Pew Parts
             </div>
             <div className="flex flex-wrap gap-4">
-              {(["needed", "upcoming", "installed"] as const).map((status) => (
+              {PEW_PART_LEGEND_ORDER.map((status) => (
                 <div key={status} className="flex items-center gap-1.5">
                   <div className={`w-6 h-2 rounded-sm border ${kneelerColors[status]}`} />
-                  <span>
-                    {status === "needed"
-                      ? "Parts Needed"
-                      : status === "upcoming"
-                        ? "Upcoming"
-                        : "Installed"}
-                  </span>
+                  <span>{pewPartLegendLabel[status]}</span>
                 </div>
               ))}
+              <div className="flex items-center gap-1.5">
+                <div className={`h-2 w-6 shrink-0 rounded-sm ${pewRailColorClass}`} />
+                <span>Pew Only</span>
+              </div>
             </div>
           </div>
         </div>

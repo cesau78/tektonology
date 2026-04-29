@@ -45,7 +45,8 @@ export interface Batch {
   quantity: number;
 }
 
-export type HardwareStatus = "unknown" | "needed" | "upcoming" | "installed";
+/** Lifecycle: inspected (OK as-is) → needed → upcoming (scheduled) → installed (replacement in place). */
+export type HardwareStatus = "unknown" | "inspected" | "needed" | "upcoming" | "installed";
 
 /** Pew-local side for hardware on a kneeler (liturgical L/M/R along the bench). */
 export type HardwareSide = "left" | "right" | "middle";
@@ -63,8 +64,8 @@ export interface HardwareItem {
   side?: HardwareSide;
 }
 
-/** Row column: seating (`Kneeler`, default) or structural gap (`Pillar`). */
-export type PewColumnType = "Kneeler" | "Pillar";
+/** Row column: seating (`Kneeler`, default), structural gap (`Pillar`), or bench without kneeler hardware (`PewOnly`). */
+export type PewColumnType = "Kneeler" | "Pillar" | "PewOnly";
 
 export interface Kneeler {
   id: string;

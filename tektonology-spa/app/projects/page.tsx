@@ -2,7 +2,7 @@ import Link from "next/link";
 import { readdirSync, readFileSync, existsSync } from "fs";
 import { join } from "path";
 import type { Project, Product, HardwareItem } from "@/data/types";
-import { kneelerHardware } from "@/lib/pew-layout";
+import { hardwareStatusIsComplete, kneelerHardware } from "@/lib/pew-layout";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { ProductThumbnail } from "@/components/product-thumbnail";
 
@@ -48,7 +48,9 @@ function getProjectStats(project: Project) {
       partId,
       name,
       total: items.reduce((s, h) => s + h.quantity, 0),
-      installed: items.filter((h) => h.status === "installed").reduce((s, h) => s + h.quantity, 0),
+      installed: items
+        .filter((h) => hardwareStatusIsComplete(h.status))
+        .reduce((s, h) => s + h.quantity, 0),
       needed: items.filter((h) => h.status === "needed").reduce((s, h) => s + h.quantity, 0),
       upcoming: items.filter((h) => h.status === "upcoming").reduce((s, h) => s + h.quantity, 0),
       product: getProduct(partId),
@@ -130,7 +132,7 @@ export default function ProjectsPage() {
                               </div>
                             </div>
                             <span className="text-xs text-muted-foreground">
-                              {part.installed} / {part.total} units installed
+                              {part.installed} / {part.total} units resolved
                             </span>
                           </div>
 

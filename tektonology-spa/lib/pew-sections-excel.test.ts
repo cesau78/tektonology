@@ -457,6 +457,47 @@ describe("buildPewLayoutWorkbook", () => {
     expect(w0802InMergeMasters).toBe(1);
   });
 
+  it("emits a single pillar region when rail gap matches a pillar kneeler (no duplicate box)", async () => {
+    const p = project([
+      sectionBase("s1", "West", [
+        {
+          id: "r1",
+          label: "Row 1",
+          frontType: "pewOnly",
+          kneelers: [
+            kneeler({ id: "a", capacity: 3, hardware: [part("installed")] }),
+            kneeler({ id: "p", capacity: 2, label: "Pillar", hardware: [] }),
+            kneeler({ id: "b", capacity: 1, hardware: [part("installed")] }),
+            kneeler({ id: "c", capacity: 3, hardware: [part("installed")] }),
+            kneeler({ id: "d", capacity: 3, hardware: [part("installed")] }),
+          ],
+          pewRailSegmentWidths: [3, 2, 1, 3, 3],
+          pewRailSegmentKinds: ["pew", "gap", "pew", "pew", "pew"],
+        },
+      ]),
+    ]);
+    const u8 = await buildPewLayoutWorkbook(p, { exportDocumentDate: new Date(2026, 0, 1) });
+    const wb2 = new ExcelJS.Workbook();
+    await wb2.xlsx.load(Buffer.from(u8));
+    const s = wb2.worksheets[3]!;
+    const r = 3;
+    const toCol = (letters: string) => {
+      let n = 0;
+      for (const ch of letters.toUpperCase()) n = n * 26 + (ch.codePointAt(0)! - 64);
+      return n;
+    };
+    const merges = (s as unknown as { model?: { merges?: string[] } }).model?.merges ?? [];
+    let pillarMergeMasters = 0;
+    for (const sp of merges) {
+      const m = sp.match(/^([A-Z]+)3:([A-Z]+)3$/i);
+      if (!m) continue;
+      const c0 = toCol(m[1]!);
+      if (c0 < 2) continue;
+      if (String(s.getRow(r).getCell(c0).value ?? "") === "pillar") pillarMergeMasters += 1;
+    }
+    expect(pillarMergeMasters).toBe(1);
+  });
+
   it("interleaves a pillar gap from explicit pew rail (2p) between kneeler blocks", async () => {
     const p = project([
       sectionBase("s1", "West", [

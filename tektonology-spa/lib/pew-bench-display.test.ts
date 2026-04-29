@@ -109,6 +109,15 @@ describe("pew-bench-display", () => {
         date: "2026-06-01",
       }),
     ).toMatch(/Installed/);
+    expect(
+      formatHardwareItemStatusForDetails({
+        partId: "a",
+        name: "X",
+        quantity: 1,
+        status: "inspected",
+        date: "2026-06-15",
+      }),
+    ).toMatch(/Inspected/);
   });
 
   it("formatShortUsDate passthroughs invalid input", () => {

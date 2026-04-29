@@ -213,6 +213,24 @@ describe("pew-layout", () => {
     ).toBe("unknown");
   });
 
+  it("kneelerStatusForPart returns inspected when all lines inspected; mixes complete states to installed", () => {
+    const allInspected: Kneeler = {
+      id: "k",
+      capacity: 1,
+      hardware: [{ partId: "a", name: "Foot", quantity: 1, status: "inspected" }],
+    };
+    expect(kneelerStatusForPart(allInspected, "Foot")).toBe("inspected");
+    const mixed: Kneeler = {
+      id: "k2",
+      capacity: 1,
+      hardware: [
+        { partId: "a", name: "Foot", quantity: 1, status: "installed" },
+        { partId: "b", name: "Foot", quantity: 1, status: "inspected" },
+      ],
+    };
+    expect(kneelerStatusForPart(mixed, "Foot")).toBe("installed");
+  });
+
   it("mapPewRailSegmentsAlignedToKneelerColumns returns [] when kneelers empty and rail is null", () => {
     const section: PewSection = {
       id: "s",

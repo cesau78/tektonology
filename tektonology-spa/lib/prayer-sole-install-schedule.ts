@@ -5,7 +5,7 @@ import {
   parseMapRowNumber,
 } from "@/lib/pew-map-grid";
 
-export const PRAYER_SOLE_PART_ID = "kneeler-boot-compound-fastened";
+export const PRAYER_SOLE_PART_ID = "prayer-sole";
 
 /** Sum of Prayer Sole `quantity` assigned per install session (was 60 × 4 sessions; now 75 × 3). */
 export const PRAYER_SOLE_SESSION_CAPACITY = 75;
@@ -52,7 +52,7 @@ function forEachUpcomingPrayerSoleHardwareInRowMajorOrder(
  * church **row-major** order until {@link retainQuantity} units are reached (whole hardware
  * lines, same threshold rule as {@link retainUpcomingPrayerSoleQuantity}). Use this so the next
  * install batch spans sections by pew-map row instead of staying where the JSON happened to mark
- * `upcoming`. Does not change `installed` lines.
+ * `upcoming`. Does not change `installed` or `inspected` lines.
  */
 export function reselectUpcomingPrayerSoleInRowMajorOrder(
   sections: PewSection[],

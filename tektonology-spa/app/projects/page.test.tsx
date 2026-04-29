@@ -109,12 +109,12 @@ describe("ProjectsPage", () => {
 
     // Foot: 3 installed / 5 total = 60%
     expect(container).toHaveTextContent("Prayer Sole");
-    expect(container).toHaveTextContent("3 / 5 units installed");
+    expect(container).toHaveTextContent("3 / 5 units resolved");
     expect(container).toHaveTextContent("60%");
 
     // Collar: 0 installed / 3 total = 0%
     expect(container).toHaveTextContent("Kneeler Bushing");
-    expect(container).toHaveTextContent("0 / 3 units installed");
+    expect(container).toHaveTextContent("0 / 3 units resolved");
     expect(container).toHaveTextContent("0%");
   });
 
@@ -285,7 +285,7 @@ describe("ProjectsPage", () => {
 
     expect(container).toHaveTextContent("Spacer");
     expect(container).toHaveTextContent("0%");
-    expect(container).toHaveTextContent("0 / 0 units installed");
+    expect(container).toHaveTextContent("0 / 0 units resolved");
   });
 
   it("renders installation map links with tokenized part filter", async () => {
@@ -313,8 +313,8 @@ describe("ProjectsPage", () => {
 
     // Both parts should have their own progress info
     expect(container).toHaveTextContent("Prayer Sole");
-    expect(container).toHaveTextContent("3 / 5 units installed");
+    expect(container).toHaveTextContent("3 / 5 units resolved");
     expect(container).toHaveTextContent("Kneeler Bushing");
-    expect(container).toHaveTextContent("0 / 3 units installed");
+    expect(container).toHaveTextContent("0 / 3 units resolved");
   });
 });

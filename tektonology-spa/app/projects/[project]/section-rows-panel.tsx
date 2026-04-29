@@ -7,7 +7,9 @@ import { formatBenchPewId, formatHardwareItemStatusForDetails } from "@/lib/pew-
 import { labelForRowFrontType } from "@/lib/pew-front-type-labels";
 import {
   pewRailColorClass,
+  pewMapBenchBandClass,
   isPillarKneeler,
+  isPewOnlyKneeler,
   kneelerHardware,
   pewRailSegmentsForRow,
   alignMapRowStripWidthPercent,
@@ -26,6 +28,13 @@ function KneelerStatusList({ kneeler }: { kneeler: Kneeler }) {
     return (
       <p className="px-2 pb-2 text-xs text-muted-foreground">
         Structural column — no kneeler hardware.
+      </p>
+    );
+  }
+  if (isPewOnlyKneeler(kneeler)) {
+    return (
+      <p className="px-2 pb-2 text-xs text-muted-foreground">
+        Pew only — no kneeler hardware.
       </p>
     );
   }
@@ -146,6 +155,18 @@ export function SectionRowsPanel({
                             </div>
                           );
                         }
+                        if (isPewOnlyKneeler(kneeler)) {
+                          return (
+                            <div
+                              key={kneeler.id}
+                              className="flex min-w-0 items-center justify-center overflow-hidden py-1"
+                              style={{ flex: kneeler.capacity }}
+                              title="Pew only (no kneeler hardware)"
+                            >
+                              <div className={`self-center ${pewMapBenchBandClass}`} />
+                            </div>
+                          );
+                        }
                         const items = kneelerHardware(kneeler).filter((h) => h.name === partFilter);
                         const noneFill = !partFilter || items.length === 0;
                         const segments = noneFill
@@ -181,7 +202,9 @@ export function SectionRowsPanel({
                           <summary className="px-2 py-1 text-xs cursor-pointer hover:bg-muted/50">
                             {isPillarKneeler(kneeler)
                               ? "Pillar (gap)"
-                              : formatBenchPewId(section, row, kneeler)}
+                              : isPewOnlyKneeler(kneeler)
+                                ? "Pew only"
+                                : formatBenchPewId(section, row, kneeler)}
                           </summary>
                           <KneelerStatusList kneeler={kneeler} />
                         </details>

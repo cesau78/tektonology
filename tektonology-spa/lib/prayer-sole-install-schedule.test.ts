@@ -9,7 +9,7 @@ import {
 
 function sole(q: number, date: string) {
   return {
-    partId: "kneeler-boot-compound-fastened",
+    partId: "prayer-sole",
     name: "Prayer Sole",
     quantity: q,
     status: "upcoming" as const,
@@ -19,7 +19,7 @@ function sole(q: number, date: string) {
 
 function soleNeeded(q: number) {
   return {
-    partId: "kneeler-boot-compound-fastened",
+    partId: "prayer-sole",
     name: "Prayer Sole",
     quantity: q,
     status: "needed" as const,
@@ -383,7 +383,7 @@ describe("reselectUpcomingPrayerSoleInRowMajorOrder defaults", () => {
                 hardware: [
                   soleNeeded(10),
                   {
-                    partId: "kneeler-boot-compound-fastened",
+                    partId: "prayer-sole",
                     name: "Prayer Sole",
                     quantity: 5,
                     status: "installed",

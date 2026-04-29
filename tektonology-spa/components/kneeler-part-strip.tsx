@@ -12,6 +12,8 @@ export const kneelerStripTailwindByStatus: Record<HardwareStatus | "none", strin
     "bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700",
   installed:
     "bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700",
+  inspected:
+    "bg-teal-100 dark:bg-teal-900 border-teal-300 dark:border-teal-700",
   none: "bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700",
 };
 

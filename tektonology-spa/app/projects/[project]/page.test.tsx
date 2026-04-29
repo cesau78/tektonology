@@ -190,7 +190,7 @@ describe("ProjectDetailPage", () => {
     expect(pewMap.getAttribute("data-project-slug")).toBe("test-project");
   });
 
-  it("renders legend with kneeler part statuses", async () => {
+  it("renders PewMap (status legend is inside the map card)", async () => {
     const project = makeProject();
     mockReadFileSync.mockReturnValue(JSON.stringify(project));
     mockReaddirSync.mockReturnValue(["test-project.json"]);
@@ -198,10 +198,7 @@ describe("ProjectDetailPage", () => {
     const { default: Page } = await import("./page");
     const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
 
-    expect(container).toHaveTextContent("Map (selected part)");
-    expect(container).toHaveTextContent("Parts Needed");
-    expect(container).toHaveTextContent("Upcoming");
-    expect(container).toHaveTextContent("Installed");
+    expect(container.querySelector("[data-testid='pew-map']")).toBeTruthy();
   });
 
   it("renders pew map when layout includes crossAisle section", async () => {
@@ -734,8 +731,9 @@ describe("ProjectDetailPage", () => {
     );
     expect(mysteryRow).toBeTruthy();
     const cells = mysteryRow!.querySelectorAll("td");
-    expect(cells[2].textContent).toBe("2");
-    expect(cells[2].querySelector("[class]")).toBeTruthy();
+    // Part, Total, Inspected, Needed, Upcoming, Installed, Unknown
+    expect(cells[6].textContent).toBe("2");
+    expect(cells[6].querySelector("[class]")).toBeTruthy();
   });
 
   it("renders inventory row without badges when count is zero", async () => {

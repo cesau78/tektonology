@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import type { Project, HardwareStatus } from "@/data/types";
+import type { HardwareStatus, Project } from "@/data/types";
 import { getProject, listProjectJsonSlugs } from "@/lib/project-data";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,25 +12,22 @@ export function generateStaticParams() {
   return listProjectJsonSlugs().map((project) => ({ project }));
 }
 
-const statusLabels: Record<HardwareStatus, string> = {
-  unknown: "Unknown",
-  needed: "Parts Needed",
-  upcoming: "Upcoming",
-  installed: "Installed",
-};
-
 function getInventorySummary(project: Project) {
   const allHardware = project.layout.sections
     .flatMap((s) => s.rows)
     .flatMap((r) => r.kneelers)
     .flatMap((k) => kneelerHardware(k));
 
-  const byPart = new Map<
-    string,
-    { unknown: number; needed: number; upcoming: number; installed: number }
-  >();
+  const emptyCounts = (): Record<HardwareStatus, number> => ({
+    unknown: 0,
+    inspected: 0,
+    needed: 0,
+    upcoming: 0,
+    installed: 0,
+  });
+  const byPart = new Map<string, Record<HardwareStatus, number>>();
   for (const h of allHardware) {
-    const entry = byPart.get(h.name) ?? { unknown: 0, needed: 0, upcoming: 0, installed: 0 };
+    const entry = byPart.get(h.name) ?? emptyCounts();
     entry[h.status] += h.quantity;
     byPart.set(h.name, entry);
   }
@@ -39,7 +36,12 @@ function getInventorySummary(project: Project) {
     .map(([name, counts]) => ({
       name,
       ...counts,
-      total: counts.unknown + counts.needed + counts.upcoming + counts.installed,
+      total:
+        counts.unknown +
+        counts.needed +
+        counts.upcoming +
+        counts.installed +
+        counts.inspected,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -82,35 +84,6 @@ export default async function ProjectDetailPage({
         </p>
       </div>
 
-      <div className="mb-4">
-        <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5">
-          Map (selected part)
-        </div>
-        <p className="text-xs text-muted-foreground mb-3">
-          Kneeler strips show status for the part chosen in the map card. Click a section to open rows,
-          kneelers, and hardware on the section page.
-        </p>
-        <div className="flex flex-wrap gap-4">
-          {(["needed", "upcoming", "installed"] as const).map((status) => (
-            <div
-              key={status}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground"
-            >
-              <div
-                className={`w-6 h-2 rounded-sm border ${
-                  status === "needed"
-                    ? "bg-amber-100 dark:bg-amber-900 border-amber-300 dark:border-amber-700"
-                    : status === "upcoming"
-                      ? "bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700"
-                      : "bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700"
-                }`}
-              />
-              {statusLabels[status]}
-            </div>
-          ))}
-        </div>
-      </div>
-
       <Suspense fallback={null}>
         <PewMap
           churchName={project.church}
@@ -135,10 +108,11 @@ export default async function ProjectDetailPage({
                 <tr className="border-b text-left">
                   <th className="pb-2 font-medium">Part</th>
                   <th className="pb-2 font-medium text-right">Total</th>
-                  <th className="pb-2 font-medium text-right">Unknown</th>
+                  <th className="pb-2 font-medium text-right">Inspected</th>
                   <th className="pb-2 font-medium text-right">Needed</th>
                   <th className="pb-2 font-medium text-right">Upcoming</th>
                   <th className="pb-2 font-medium text-right">Installed</th>
+                  <th className="pb-2 font-medium text-right">Unknown</th>
                 </tr>
               </thead>
               <tbody>
@@ -147,9 +121,9 @@ export default async function ProjectDetailPage({
                     <td className="py-2">{row.name}</td>
                     <td className="py-2 text-right">{row.total}</td>
                     <td className="py-2 text-right">
-                      {row.unknown > 0 && (
-                        <Badge variant="outline" className="text-xs">
-                          {row.unknown}
+                      {row.inspected > 0 && (
+                        <Badge className="bg-teal-100 text-teal-900 border-teal-300 hover:bg-teal-100 text-xs">
+                          {row.inspected}
                         </Badge>
                       )}
                     </td>
@@ -171,6 +145,13 @@ export default async function ProjectDetailPage({
                       {row.installed > 0 && (
                         <Badge className="bg-green-100 text-green-900 border-green-300 hover:bg-green-100 text-xs">
                           {row.installed}
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="py-2 text-right">
+                      {row.unknown > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          {row.unknown}
                         </Badge>
                       )}
                     </td>

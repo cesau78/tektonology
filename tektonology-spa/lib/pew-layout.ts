@@ -9,8 +9,20 @@ export const pewRailColorClass =
 
 export const pewRailBarClass = `h-[5px] rounded-sm ${pewRailColorClass}`;
 
+/** Map pew-only row (no kneeler band): same height as {@link KneelerPartStripMap} (`h-2`). */
+export const pewMapBenchBandClass = `h-2 w-full min-w-0 shrink-0 rounded-sm ${pewRailColorClass}`;
+
 export function isPillarKneeler(k: Kneeler): boolean {
   return k.type === "Pillar" || k.label === "Pillar";
+}
+
+export function isPewOnlyKneeler(k: Kneeler): boolean {
+  return k.type === "PewOnly";
+}
+
+/** Map progress numerator: no open work (original OK after inspection, or replacement installed). */
+export function hardwareStatusIsComplete(status: HardwareStatus): boolean {
+  return status === "installed" || status === "inspected";
 }
 
 /** Safe hardware list (pillars often omit `hardware` in JSON). */
@@ -26,14 +38,18 @@ export function kneelerStatusForPart(
   kneeler: Kneeler,
   partName: string,
 ): HardwareStatus | "none" {
-  if (isPillarKneeler(kneeler)) return "none";
+  if (isPillarKneeler(kneeler) || isPewOnlyKneeler(kneeler)) return "none";
   const hw = kneelerHardware(kneeler);
   if (hw.length === 0) return "none";
   const items = hw.filter((h) => h.name === partName);
   if (items.length === 0) return "none";
   const statuses = items.map((h) => h.status);
-  if (statuses.every((s) => s === "installed")) return "installed";
-  if (statuses.some((s) => s === "installed" || s === "upcoming")) return "upcoming";
+  if (statuses.every((s) => hardwareStatusIsComplete(s))) {
+    if (statuses.every((s) => s === "inspected")) return "inspected";
+    if (statuses.every((s) => s === "installed")) return "installed";
+    return "installed";
+  }
+  if (statuses.some((s) => hardwareStatusIsComplete(s) || s === "upcoming")) return "upcoming";
   if (statuses.some((s) => s === "needed")) return "needed";
   return "unknown";
 }

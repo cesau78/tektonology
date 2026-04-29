@@ -1,5 +1,5 @@
 import type { HardwareItem, HardwareStatus, Kneeler, PewSection } from "@/data/types";
-import { isPillarKneeler, kneelerHardware } from "@/lib/pew-layout";
+import { isPillarKneeler, isPewOnlyKneeler, kneelerHardware } from "@/lib/pew-layout";
 
 /** One horizontal slice of the kneeler strip for a single part name (L/M/R or implied). */
 export interface PartDisplaySegment {
@@ -48,7 +48,7 @@ export function partDisplaySegmentsForPartOnKneeler(
   partName: string,
 ): PartDisplaySegment[] {
   const name = partName.trim();
-  if (!name || isPillarKneeler(kneeler)) return [];
+  if (!name || isPillarKneeler(kneeler) || isPewOnlyKneeler(kneeler)) return [];
   const items = kneelerHardware(kneeler).filter((h) => h.name === name);
   if (items.length === 0) return [];
   const out: PartDisplaySegment[] = [];

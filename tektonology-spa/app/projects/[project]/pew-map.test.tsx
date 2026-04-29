@@ -210,12 +210,12 @@ describe("PewMap", () => {
     );
 
     // Default is Kneeler Bushing (most needed+upcoming = 4)
-    expect(container).toHaveTextContent("0 / 4 Installed (0%)");
+    expect(container).toHaveTextContent("0 / 4 resolved (0%)");
 
     // Switch to Prayer Sole
     const select = container.querySelector("select")!;
     fireEvent.change(select, { target: { value: "Prayer Sole" } });
-    expect(container).toHaveTextContent("3 / 5 Installed (60%)");
+    expect(container).toHaveTextContent("3 / 5 resolved (60%)");
   });
 
   it("updates summary when part filter is changed", () => {
@@ -245,10 +245,10 @@ describe("PewMap", () => {
 
     const select = container.querySelector("select")!;
     fireEvent.change(select, { target: { value: "Prayer Sole" } });
-    expect(container).toHaveTextContent("3 / 3 Installed (100%)");
+    expect(container).toHaveTextContent("3 / 3 resolved (100%)");
 
     fireEvent.change(select, { target: { value: "Kneeler Bushing" } });
-    expect(container).toHaveTextContent("0 / 2 Installed (0%)");
+    expect(container).toHaveTextContent("0 / 2 resolved (0%)");
   });
 
   it("includes upcoming in summary total", () => {
@@ -276,7 +276,7 @@ describe("PewMap", () => {
     const { container } = render(
       <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Foot"]} />,
     );
-    expect(container).toHaveTextContent("3 / 6 Installed (50%)");
+    expect(container).toHaveTextContent("3 / 6 resolved (50%)");
   });
 
   it("shows 0% when no trackable parts exist for selected part", () => {
@@ -300,7 +300,7 @@ describe("PewMap", () => {
     const { container } = render(
       <PewMap churchName="Test" orientation={orientation} sections={sections} partNames={["Prayer Sole"]} />,
     );
-    expect(container).toHaveTextContent("0 / 0 Installed (0%)");
+    expect(container).toHaveTextContent("0 / 0 resolved (0%)");
   });
 
   it("renders Altar and Entrance labels without direction", () => {
@@ -1066,7 +1066,8 @@ describe("PewMap", () => {
     const fullBars = full.querySelectorAll(".bg-\\[\\#d4b896\\]");
     const kneelBars = kneel.querySelectorAll(".bg-\\[\\#d4b896\\]");
     expect(fullBars.length).toBeGreaterThan(0);
-    expect(kneelBars.length).toBe(0);
+    // Row strips omit pew bench color when rails are hidden; legend still has one "Pew Only" swatch.
+    expect(kneelBars.length).toBe(1);
   });
 
   it("renders transparent row spacer when showRails is false and row has no kneelers", () => {
@@ -1279,7 +1280,7 @@ describe("PewMap", () => {
     );
 
     // URL param overrides default (Kneeler Bushing would be default by count)
-    expect(container).toHaveTextContent("3 / 3 Installed (100%)");
+    expect(container).toHaveTextContent("3 / 3 resolved (100%)");
     const select = container.querySelector("select")!;
     expect(select.value).toBe("Prayer Sole");
 

@@ -91,7 +91,9 @@ function hardwareItemStatusCore(h: HardwareItem): string {
         ? "Upcoming"
         : h.status === "installed"
           ? "Installed"
-          : "Unknown";
+          : h.status === "inspected"
+            ? "Inspected"
+            : "Unknown";
   if (!h.date) return label;
   return `${label}: ${formatShortUsDate(h.date)}`;
 }
@@ -121,12 +123,7 @@ export function formatKneelerPartStatusForExcel(k: Kneeler, partName: string): s
 /** Requires `k.hardware.length > 0` (see `formatKneelerAggregateStatusForExcel`). */
 function pickPriorityHardwareItem(k: Kneeler): HardwareItem {
   const hw = kneelerHardware(k);
-  const order: Array<"needed" | "upcoming" | "installed" | "unknown"> = [
-    "needed",
-    "upcoming",
-    "installed",
-    "unknown",
-  ];
+  const order: HardwareItem["status"][] = ["needed", "upcoming", "unknown", "installed", "inspected"];
   for (const st of order) {
     const h = hw.find((x) => x.status === st);
     if (h) return h;

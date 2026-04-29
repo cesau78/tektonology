@@ -3,6 +3,7 @@ import type { HardwareStatus, Kneeler, Project, PewRow, PewSection } from "@/dat
 import {
   emptyKneelerGridPadOnLeft,
   isPillarKneeler,
+  isPewOnlyKneeler,
   kneelerStatusForPart,
   type PewBenchSegment,
 } from "@/lib/pew-layout";
@@ -132,12 +133,14 @@ const pewMapUnknownOrNoneFill: ExcelJS.Fill = {
   fgColor: { argb: "FFFFFFFF" },
 };
 
-/** Light-mode Tailwind tints for needed / upcoming / installed (Excel is typically light). */
+/** Light-mode tints aligned with pew map (Excel is typically light). */
 const MAP_GRID_STATUS_FILL: Record<HardwareStatus | "none", ExcelJS.Fill> = {
   unknown: pewMapUnknownOrNoneFill,
   needed: { type: "pattern", pattern: "solid", fgColor: { argb: "FFFEF3C7" } },
   upcoming: { type: "pattern", pattern: "solid", fgColor: { argb: "FFDBEAFE" } },
   installed: { type: "pattern", pattern: "solid", fgColor: { argb: "FFDCFCE7" } },
+  /** Teal-100 (~#ccfbf1), distinct from installed green. */
+  inspected: { type: "pattern", pattern: "solid", fgColor: { argb: "FFCCFBF1" } },
   none: pewMapUnknownOrNoneFill,
 };
 
@@ -159,8 +162,10 @@ function applyPendingBenchMerge(
   const master = ws.getCell(r, col0);
   const displayId = formatBenchPewId(section, row, kneeler);
   const continuationOfSameKneeler =
-    !isPillarKneeler(kneeler) && benchPewIdShownKneelers.has(kneeler.id);
-  if (!isPillarKneeler(kneeler) && !continuationOfSameKneeler) {
+    !isPillarKneeler(kneeler) &&
+    !isPewOnlyKneeler(kneeler) &&
+    benchPewIdShownKneelers.has(kneeler.id);
+  if (!isPillarKneeler(kneeler) && !isPewOnlyKneeler(kneeler) && !continuationOfSameKneeler) {
     benchPewIdShownKneelers.add(kneeler.id);
   }
   master.value = cellTextForKneeler(
@@ -173,7 +178,10 @@ function applyPendingBenchMerge(
   master.alignment = { wrapText: true, vertical: "top", horizontal: "center" };
   if (isPillarKneeler(kneeler)) {
     master.fill = pillarFill;
-    master.font = { size: 9, italic: true, color: { argb: "FF6B7280" } };
+    master.font = { ...emptyPaddingFont };
+  } else if (isPewOnlyKneeler(kneeler)) {
+    master.fill = pewBenchOnlyFill;
+    master.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
   } else if (applyPewMapStatusFill) {
     master.fill = MAP_GRID_STATUS_FILL[kneelerStatusForPart(kneeler, partName)];
   }
@@ -195,6 +203,13 @@ const headerFill: ExcelJS.Fill = {
   type: "pattern",
   pattern: "solid",
   fgColor: { argb: "FFF3F4F6" },
+};
+
+/** Pew bench spans with no kneeler hardware (pew-only row); near map pew-rail tan. */
+const pewBenchOnlyFill: ExcelJS.Fill = {
+  type: "pattern",
+  pattern: "solid",
+  fgColor: { argb: "FFE8D5C4" },
 };
 
 /** Trailing width padding, empty nave cells, W/E markers, center aisle, transept band. */
@@ -266,7 +281,7 @@ function excelStatusLineForPewKneeler(
   k: Kneeler,
   partName: string,
 ): string | null {
-  if (isPillarKneeler(k)) return null;
+  if (isPillarKneeler(k) || isPewOnlyKneeler(k)) return null;
   if (!partName) {
     return formatKneelerAggregateStatusForExcel(k);
   }
@@ -278,7 +293,7 @@ function hoistedStatusForRow(row: PewRow, partName: string): string | null {
   let common: string | null = null;
   let count = 0;
   for (const k of row.kneelers) {
-    if (isPillarKneeler(k)) continue;
+    if (isPillarKneeler(k) || isPewOnlyKneeler(k)) continue;
     const line = excelStatusLineForPewKneeler(k, partName);
     if (line === null) continue;
     count += 1;
@@ -300,7 +315,10 @@ function cellTextForKneeler(
   continuationOfSameKneeler = false,
 ): string {
   if (isPillarKneeler(k)) {
-    return "Pillar (structural gap)";
+    return PILLAR_GAP_EXPORT_LABEL;
+  }
+  if (isPewOnlyKneeler(k)) {
+    return "";
   }
   const name = k.label ? `${k.label}${XlLf}` : "";
   if (continuationOfSameKneeler) {
@@ -328,6 +346,56 @@ function rowLabelText(row: PewRow): string {
   return trimTrailingNewlinesInCell(
     `${row.label}${XlLf}[${labelForRowFrontType(row.frontType)}]`,
   );
+}
+
+/** Explicit rail geometry when a row has no kneelers (e.g. pew-only): bench + pillar spans, no part IDs. */
+function writeExplicitPewRailGeometryOnlyCells(
+  ws: ExcelJS.Worksheet,
+  r: number,
+  firstCol: number,
+  lastCol: number,
+  section: PewSection,
+  row: PewRow,
+): void {
+  const maxUnits = lastCol - firstCol + 1;
+  const padEmptyOnLeft = emptyKneelerGridPadOnLeft(section);
+  const rowUnits = rowDataColumnUnits(row, section);
+  let col = firstCol;
+  if (padEmptyOnLeft) {
+    const leftPad = maxUnits - rowUnits;
+    if (leftPad > 0) {
+      setEmptyPaddingRegion(ws, r, firstCol, firstCol + leftPad - 1);
+    }
+    col = firstCol + leftPad;
+  }
+  const segs = explicitPewRailSegments(row);
+  for (const seg of segs) {
+    const units = capacityToColumnUnits(seg.capacity);
+    const endCol = col + units - 1;
+    if (endCol > lastCol) {
+      throw new Error(
+        `Pew layout export: row ${row.id} overflow (span ends at ${endCol}, max ${lastCol})`,
+      );
+    }
+    if (col < endCol) {
+      ws.mergeCells(r, col, r, endCol);
+    }
+    const master = ws.getCell(r, col);
+    if (seg.variant === "gap") {
+      master.value = PILLAR_GAP_EXPORT_LABEL;
+      master.fill = pillarFill;
+      master.font = { ...emptyPaddingFont };
+      master.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
+    } else {
+      master.value = "";
+      master.fill = pewBenchOnlyFill;
+      master.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
+    }
+    col = endCol + 1;
+  }
+  if (!padEmptyOnLeft && col <= lastCol) {
+    setEmptyPaddingRegion(ws, r, col, lastCol);
+  }
 }
 
 function sanitizeSheetName(raw: string, used: Set<string>): string {
@@ -397,6 +465,10 @@ function writePewRowKneelersIntoGridColumns(
   const padEmptyOnLeft = emptyKneelerGridPadOnLeft(section);
 
   if (row.kneelers.length === 0) {
+    if (useExplicitPewRailLayoutForExport(row) && row.pewRailSegmentWidths?.length) {
+      writeExplicitPewRailGeometryOnlyCells(ws, r, firstCol, lastCol, section, row);
+      return;
+    }
     if (maxUnits >= 1) {
       setEmptyPaddingRegion(ws, r, firstCol, lastCol);
     }
@@ -444,14 +516,38 @@ function writePewRowKneelersIntoGridColumns(
             `Pew layout export: row ${row.id} overflow (span ends at ${endCol}, max ${lastCol})`,
           );
         }
-        if (col < endCol) {
-          ws.mergeCells(r, col, r, endCol);
+        const kAtGap = row.kneelers[kWalk.ki];
+        if (kAtGap && isPillarKneeler(kAtGap)) {
+          // Single pillar cell from kneeler data; do not also consume this kneeler in the next pew segment.
+          applyPendingBenchMerge(
+            ws,
+            r,
+            { kneeler: kAtGap, col0: col, col1: endCol },
+            section,
+            row,
+            partName,
+            statusOnRow,
+            benchPewIdShownKneelers,
+            applyPewMapStatusFill,
+          );
+          ws.getCell(r, col).alignment = {
+            horizontal: "center",
+            vertical: "middle",
+            wrapText: false,
+          };
+          kWalk.ki += 1;
+          kWalk.rem = row.kneelers[kWalk.ki]?.capacity ?? 0;
+        } else {
+          // Legacy rows: structural gap on the rail without a pillar kneeler — one synthetic pillar span.
+          if (col < endCol) {
+            ws.mergeCells(r, col, r, endCol);
+          }
+          const master = ws.getCell(r, col);
+          master.value = PILLAR_GAP_EXPORT_LABEL;
+          master.fill = pillarFill;
+          master.font = { ...emptyPaddingFont };
+          master.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
         }
-        const master = ws.getCell(r, col);
-        master.value = PILLAR_GAP_EXPORT_LABEL;
-        master.fill = pillarFill;
-        master.font = { ...emptyPaddingFont };
-        master.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
         col = endCol + 1;
       } else {
         let cLeft = seg.capacity;
@@ -519,7 +615,10 @@ function writePewRowKneelersIntoGridColumns(
       master.alignment = { wrapText: true, vertical: "top", horizontal: "center" };
       if (isPillarKneeler(kneeler)) {
         master.fill = pillarFill;
-        master.font = { size: 9, italic: true, color: { argb: "FF6B7280" } };
+        master.font = { ...emptyPaddingFont };
+      } else if (isPewOnlyKneeler(kneeler)) {
+        master.fill = pewBenchOnlyFill;
+        master.alignment = { horizontal: "center", vertical: "middle", wrapText: false };
       } else if (applyPewMapStatusFill) {
         master.fill = MAP_GRID_STATUS_FILL[kneelerStatusForPart(kneeler, partName)];
       }
@@ -849,17 +948,9 @@ function writeChurchAlignedGridToWorksheet(
     }
 
     if (isTranseptBand) {
+      // Grey the row-number column only; outer pew zones already got status tints from
+      // writePewRowKneelersIntoGridColumns and must not be washed out here.
       rowNumCell.fill = emptyPaddingFill;
-      if (includeWest && maxWo > 0) {
-        for (let cc = colWoStart; cc <= colWoEnd; cc++) {
-          ws.getCell(r, cc).fill = emptyPaddingFill;
-        }
-      }
-      if (includeEast && maxEo > 0) {
-        for (let cc = colEoStart; cc <= colEoEnd; cc++) {
-          ws.getCell(r, cc).fill = emptyPaddingFill;
-        }
-      }
     }
 
     ws.getRow(r).height = PEW_DATA_ROW_MIN_HEIGHT_PT;
@@ -938,9 +1029,16 @@ function writePewSectionBlockToWorksheet(
       let rowHeight = 48;
 
       if (row.kneelers.length === 0) {
-        a.value = `${rowLabelText(row)}${XlLf}(no kneelers; bench from pillar row)`;
-        if (maxUnits >= 1) {
-          setEmptyPaddingRegion(ws, r, 2, lastCol);
+        const hasRailGeometry =
+          Boolean(row.pewRailSegmentWidths?.length) && useExplicitPewRailLayoutForExport(row);
+        if (hasRailGeometry) {
+          a.value = trimTrailingNewlinesInCell(rowLabelText(row));
+          writePewRowKneelersIntoGridColumns(ws, r, 2, lastCol, section, row, partName, false, false);
+        } else {
+          a.value = `${rowLabelText(row)}${XlLf}(no kneelers; bench from pillar row)`;
+          if (maxUnits >= 1) {
+            setEmptyPaddingRegion(ws, r, 2, lastCol);
+          }
         }
       } else {
         const hoist = hoistedStatusForRow(row, partName);
