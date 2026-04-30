@@ -9,7 +9,7 @@ id = peg_od - tightness; // Inner diameter of the bumper, calculated for a snug 
 height = 23.8; // Total height of the bumper
 
 // Main module to create the rubber bumper
-module rubber_bumper() {
+module kneeler_bumper() {
     difference() {
         cylinder(h=height, d=od);
 
@@ -19,4 +19,4 @@ module rubber_bumper() {
     }
 }
 
-rubber_bumper();
+kneeler_bumper();
