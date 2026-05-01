@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
-  Watches foot-notes/ for JSON changes and auto-regenerates .gen.scad files.
+  Watches sole-prayers/ for JSON changes and auto-regenerates .gen.scad files.
 .DESCRIPTION
-  Uses FileSystemWatcher to monitor *.json files under foot-notes/.
+  Uses FileSystemWatcher to monitor *.json files under sole-prayers/.
   On any save, runs Convert-StampProfile.ps1 for the changed file.
   Press Ctrl+C to stop.
 .EXAMPLE
@@ -11,7 +11,7 @@
 
 $ErrorActionPreference = "Stop"
 $ModelDir = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
-$WatchDir = Join-Path $ModelDir "foot-notes"
+$WatchDir = Join-Path $ModelDir "sole-prayers"
 $ConvertScript = Join-Path $PSScriptRoot "Convert-StampProfile.ps1"
 
 if (-not (Test-Path -LiteralPath $WatchDir)) {
