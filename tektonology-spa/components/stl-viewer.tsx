@@ -5,6 +5,14 @@ import { Canvas, useLoader } from "@react-three/fiber";
 import { Edges, OrbitControls } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 
+// Three.js FileLoader fails on 304 responses (no body). Bust the cache so the
+// dev server always returns 200 with data. The stamp is module-level so it is
+// stable for the lifetime of the page and doesn't cause extra re-fetches.
+const CACHE_BUST = `?v=${Date.now()}`;
+function bustUrl(url: string) {
+  return url.includes("?") ? url : url + CACHE_BUST;
+}
+
 export interface StlPart {
   url: string;
   color?: string;
@@ -35,7 +43,7 @@ function StlEdges() {
 }
 
 function SingleModel({ url, color = "#9ca3af" }: { url: string; color?: string }) {
-  const geometry = useLoader(STLLoader, url);
+  const geometry = useLoader(STLLoader, bustUrl(url));
 
   const centered = useMemo(() => {
     geometry.computeBoundingBox();
@@ -59,7 +67,7 @@ function SingleModel({ url, color = "#9ca3af" }: { url: string; color?: string }
 }
 
 function AssemblyModel({ parts }: { parts: StlPart[] }) {
-  const geometries = useLoader(STLLoader, parts.map((p) => p.url));
+  const geometries = useLoader(STLLoader, parts.map((p) => bustUrl(p.url)));
   const geoArray = Array.isArray(geometries) ? geometries : [geometries];
 
   const { scale, center } = useMemo(() => {

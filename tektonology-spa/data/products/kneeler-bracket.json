@@ -1,0 +1,36 @@
+{
+  "id": "kneeler-bracket",
+  "name": "Kneeler Bracket (Atwood-Hamlin)",
+  "category": "Kneeler Replacement Parts",
+  "description": "The steel side brackets that attach the kneeler to the pew and carry the pivot stud and rubber-stop stud. Sold in pairs (left + right mirror). Atwood-Hamlin's Arm 4 pivots 3½\" off the floor; Arm 5 pivots 2\" off the floor — Arms 4 and 5 are the most common types. Supplied by Atwood-Hamlin Mfg. Co, Inc. (800-545-8964 · sales@atwood-hamlin.com). The STLs below are reference geometry only; order the steel originals from Atwood-Hamlin.",
+  "printSettings": {},
+  "assemblyGuide": [
+    "Identify your bracket number (4 or 5) by measuring the pivot height from the floor — 3½\" is Arm 4, 2\" is Arm 5.",
+    "Remove the old bracket by unscrewing the two mounting screws from the kneeler frame.",
+    "Align the new bracket and drive the mounting screws supplied with it.",
+    "Reinstall the kneeler bushing, spacer, pivot bolt, and bumper before re-hanging the kneeler.",
+    "Contact Atwood-Hamlin directly if unsure which bracket number you need: 800-545-8964 or sales@atwood-hamlin.com"
+  ],
+  "stlDownloadUrls": [
+    {
+      "label": "Left Bracket (reference)",
+      "url": "/stl/kneeler-bracket-left.stl",
+      "color": "#71717a"
+    },
+    {
+      "label": "Right Bracket (reference)",
+      "url": "/stl/kneeler-bracket-right.stl",
+      "color": "#71717a"
+    }
+  ],
+  "purchaseLinks": [
+    {
+      "label": "Atwood-Hamlin Kneeler Arms",
+      "url": "https://atwood-hamlin.com/kneeler-arms"
+    },
+    {
+      "label": "Atwood-Hamlin Hardware",
+      "url": "https://atwood-hamlin.com/hardware"
+    }
+  ]
+}

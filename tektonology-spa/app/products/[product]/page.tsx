@@ -70,6 +70,7 @@ export default async function ProductPage({
 
       <div className="grid gap-4 [&>*]:shadow-sm">
         {/* Print Settings */}
+        {Object.keys(product.printSettings).length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Print Settings</CardTitle>
@@ -87,6 +88,7 @@ export default async function ProductPage({
             </dl>
           </CardContent>
         </Card>
+        )}
 
         {/* Assembly Guide */}
         <Card>
