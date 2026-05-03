@@ -17,19 +17,11 @@ plate_w         = 34;       // overall width   (Y)
 plate_t         = 5;        // plate thickness (Z)
 corner_r        = 5;        // fillet radius on plate corners
 
-// Boss — raised collar at the base of each peg
-boss_od         = 16;       // boss outer diameter
-boss_h          = 3;        // boss height above plate surface
-
-// Peg 1 — pivot stud (near/left end)
-peg1_od         = 9.4;
-peg1_h          = 24;
-peg1_inset      = 18;       // centre from near end
-
-// Peg 2 — rubber bumper stud (far/right end) — matches bumper bore
-peg2_od         = 9.4;
-peg2_h          = 24;
-peg2_inset      = 18;       // centre from far end
+// Pegs — both identical, rise directly from the plate surface
+peg_od          = 9.4;
+peg_h           = 24;
+peg1_inset      = 18;       // centre of peg 1 from near end
+peg2_inset      = 18;       // centre of peg 2 from far end
 
 // Three countersunk screw holes, evenly spaced across the middle
 screw_d         = 5.2;      // shank clearance
@@ -54,13 +46,6 @@ module csunk_hole(shank_d, csink_d, csink_depth, depth) {
         cylinder(h=csink_depth + 1, d1=shank_d, d2=csink_d);
 }
 
-// Solid peg on a raised boss collar
-module pegged_boss(boss_od, boss_h, peg_od, peg_h) {
-    cylinder(h=boss_h, d=boss_od);
-    translate([0, 0, boss_h])
-        cylinder(h=peg_h, d=peg_od);
-}
-
 // ── Main module ───────────────────────────────────────────────────────────────
 module kneeler_bracket() {
     near_x = -plate_l/2 + peg1_inset;
@@ -78,11 +63,11 @@ module kneeler_bracket() {
 
     // Peg 1 — pivot stud (near end)
     translate([near_x, 0, plate_t])
-        pegged_boss(boss_od, boss_h, peg1_od, peg1_h);
+        cylinder(h=peg_h, d=peg_od);
 
     // Peg 2 — bumper stud (far end)
     translate([far_x, 0, plate_t])
-        pegged_boss(boss_od, boss_h, peg2_od, peg2_h);
+        cylinder(h=peg_h, d=peg_od);
 }
 
 // ── Instantiate ───────────────────────────────────────────────────────────────
