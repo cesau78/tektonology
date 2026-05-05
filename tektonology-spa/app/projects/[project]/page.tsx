@@ -7,6 +7,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PewMap } from "./pew-map";
 import { kneelerHardware } from "@/lib/pew-layout";
+import type { InventoryUpdatesData } from "./inventory-updates-card";
+import { InventoryUpdatesCard } from "./inventory-updates-card";
 
 export function generateStaticParams() {
   return listProjectJsonSlugs().map((project) => ({ project }));
@@ -56,6 +58,44 @@ function getInventorySummary(project: Project) {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function getInventoryUpdates(project: Project): InventoryUpdatesData {
+  const allHardware = project.layout.sections
+    .flatMap((s) => s.rows)
+    .flatMap((r) => r.kneelers)
+    .flatMap((k) => kneelerHardware(k));
+
+  const map = new Map<string, Map<string, Record<string, number>>>();
+  for (const h of allHardware) {
+    if (!h.date) continue;
+    const part = h.name;
+    let dateMap = map.get(part);
+    if (!dateMap) {
+      dateMap = new Map();
+      map.set(part, dateMap);
+    }
+    let counts = dateMap.get(h.date);
+    if (!counts) {
+      counts = { inspected: 0, needed: 0, upcoming: 0, installed: 0 };
+      dateMap.set(h.date, counts);
+    }
+    if (h.status in counts) counts[h.status] += h.quantity;
+  }
+
+  const result: InventoryUpdatesData = {};
+  for (const [part, dateMap] of map) {
+    result[part] = [...dateMap.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, counts]) => ({
+        date,
+        inspected: counts.inspected ?? 0,
+        needed: counts.needed ?? 0,
+        upcoming: counts.upcoming ?? 0,
+        installed: counts.installed ?? 0,
+      }));
+  }
+  return result;
+}
+
 export default async function ProjectDetailPage({
   params,
 }: {
@@ -66,6 +106,7 @@ export default async function ProjectDetailPage({
   if (!project) notFound();
 
   const inventory = getInventorySummary(project);
+  const updates = getInventoryUpdates(project);
   const { orientation, sections } = project.layout;
   const partNames = Array.from(
     new Set(
@@ -105,6 +146,10 @@ export default async function ProjectDetailPage({
           project={project}
           pewMapUseRowGrid={project.layout.pewMapUseRowGrid ?? false}
         />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <InventoryUpdatesCard updatesData={updates} partNames={partNames} />
       </Suspense>
 
       <Card className="mb-6 mt-6">

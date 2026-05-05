@@ -1582,4 +1582,110 @@ describe("PewMap", () => {
 
     vi.restoreAllMocks();
   });
+
+  it("shows duplicate-row warning when same row number in multiple groups on same side", () => {
+    const sections: PewSection[] = [
+      makeSection({
+        id: "west-main",
+        label: "West Main",
+        side: "west",
+        group: 0,
+        rows: [
+          { id: "r1", label: "Row 1", frontType: "pew", kneelers: [makeKneeler()] },
+          { id: "r5", label: "Row 5", frontType: "pew", kneelers: [makeKneeler()] },
+        ],
+      }),
+      makeSection({
+        id: "west-rear",
+        label: "West Rear",
+        side: "west",
+        group: 2,
+        rows: [
+          { id: "r5b", label: "Row 5", frontType: "pew", kneelers: [makeKneeler()] },
+        ],
+      }),
+      makeSection({
+        id: "east-main",
+        label: "East Main",
+        side: "east",
+        group: 0,
+        rows: [
+          { id: "r1e", label: "Row 1e", frontType: "pew", kneelers: [makeKneeler()] },
+        ],
+      }),
+      makeSection({
+        id: "east-rear",
+        label: "East Rear",
+        side: "east",
+        group: 2,
+        rows: [
+          { id: "r1er", label: "Row 1e", frontType: "pew", kneelers: [makeKneeler()] },
+        ],
+      }),
+    ];
+
+    const { container } = render(
+      <PewMap
+        churchName="Test"
+        orientation={orientation}
+        sections={sections}
+        partNames={["Prayer Sole"]}
+        showRails={false}
+        projectSlug="proj"
+        project={miniProject}
+        pewMapUseRowGrid={true}
+      />,
+    );
+
+    const alert = container.querySelector("[role='alert']");
+    expect(alert).toBeTruthy();
+    expect(alert).toHaveTextContent("Duplicate row data");
+  });
+
+  it("does not show duplicate-row warning when rows are unique per group", () => {
+    const sections: PewSection[] = [
+      makeSection({
+        id: "west-main",
+        label: "West Main",
+        side: "west",
+        group: 0,
+        rows: [
+          { id: "r1", label: "Row 1", frontType: "pew", kneelers: [makeKneeler()] },
+        ],
+      }),
+      makeSection({
+        id: "west-rear",
+        label: "West Rear",
+        side: "west",
+        group: 2,
+        rows: [
+          { id: "r5", label: "Row 5", frontType: "pew", kneelers: [makeKneeler()] },
+        ],
+      }),
+      makeSection({
+        id: "east-main",
+        label: "East Main",
+        side: "east",
+        group: 0,
+        rows: [
+          { id: "r1e", label: "Row 1e", frontType: "pew", kneelers: [makeKneeler()] },
+        ],
+      }),
+    ];
+
+    const { container } = render(
+      <PewMap
+        churchName="Test"
+        orientation={orientation}
+        sections={sections}
+        partNames={["Prayer Sole"]}
+        showRails={false}
+        projectSlug="proj"
+        project={miniProject}
+        pewMapUseRowGrid={true}
+      />,
+    );
+
+    expect(container.querySelector("[role='alert']")).toBeNull();
+  });
 });

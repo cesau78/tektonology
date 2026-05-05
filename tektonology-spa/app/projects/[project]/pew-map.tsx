@@ -461,6 +461,14 @@ function ChurchAlignedPewTable({
   const eastOuter = sections.find((s) => s.side === "eastOuter");
   const alignment = westAll[0]?.alignment ?? eastAll[0]?.alignment ?? "nave";
 
+  const duplicateRows: number[] = (() => {
+    const counts = new Map<number, number>();
+    for (const entry of tableRows) {
+      if (entry.kind === "pews") counts.set(entry.n, (counts.get(entry.n) ?? 0) + 1);
+    }
+    return [...counts.entries()].filter(([, c]) => c > 1).map(([n]) => n);
+  })();
+
   function pickOuter(section: PewSection | undefined, n: number) {
     if (!section) return undefined;
     const adj = n + (section.churchGridRowDelta ?? 0);
@@ -472,6 +480,22 @@ function ChurchAlignedPewTable({
   const firstRowN = rowNums[0] ?? 0;
 
   return (
+    <>
+    {duplicateRows.length > 0 && (
+      <div
+        className="mb-2 flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
+        role="alert"
+      >
+        <span className="shrink-0 text-base" aria-hidden>&#9888;</span>
+        <span>
+          <strong>Duplicate row data:</strong>{" "}
+          {duplicateRows.length === 1
+            ? `Row ${duplicateRows[0]} appears in multiple section groups.`
+            : `Rows ${duplicateRows.join(", ")} appear in multiple section groups.`}{" "}
+          This usually means a row was added to the wrong section — check the project JSON.
+        </span>
+      </div>
+    )}
     <table className="w-full border-collapse table-fixed text-left">
       <colgroup>
         <col className="w-7" />
@@ -604,6 +628,7 @@ function ChurchAlignedPewTable({
         })}
       </tbody>
     </table>
+    </>
   );
 }
 

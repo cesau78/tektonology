@@ -48,6 +48,22 @@ vi.mock("./pew-map", () => ({
   ),
 }));
 
+vi.mock("./inventory-updates-card", () => ({
+  InventoryUpdatesCard: ({
+    updatesData,
+    partNames,
+  }: {
+    updatesData: Record<string, unknown[]>;
+    partNames: string[];
+  }) => (
+    <div
+      data-testid="inventory-updates"
+      data-parts={partNames.join(",")}
+      data-updates={JSON.stringify(updatesData)}
+    />
+  ),
+}));
+
 function makeHardware(overrides: Partial<HardwareItem> = {}): HardwareItem {
   return { partId: "foot", name: "Prayer Sole", quantity: 3, status: "needed", ...overrides };
 }
@@ -489,6 +505,13 @@ describe("ProjectDetailPage", () => {
                         status: "inspected",
                         side: "right",
                       },
+                      {
+                        partId: "kneeler-pew-plate",
+                        name: "Kneeler Plate",
+                        quantity: 1,
+                        status: "installed",
+                        side: "middle",
+                      },
                     ],
                   }),
                 ],
@@ -506,14 +529,19 @@ describe("ProjectDetailPage", () => {
 
     expect(container).toHaveTextContent("Kneeler Plate (Left)");
     expect(container).toHaveTextContent("Kneeler Plate (Right)");
+    expect(container).toHaveTextContent("Kneeler Plate (Middle)");
     const leftRow = Array.from(container.querySelectorAll("tbody tr")).find((tr) =>
       tr.textContent?.includes("Kneeler Plate (Left)"),
     );
     const rightRow = Array.from(container.querySelectorAll("tbody tr")).find((tr) =>
       tr.textContent?.includes("Kneeler Plate (Right)"),
     );
+    const middleRow = Array.from(container.querySelectorAll("tbody tr")).find((tr) =>
+      tr.textContent?.includes("Kneeler Plate (Middle)"),
+    );
     expect(leftRow).toBeTruthy();
     expect(rightRow).toBeTruthy();
+    expect(middleRow).toBeTruthy();
     const leftCells = leftRow!.querySelectorAll("td");
     const rightCells = rightRow!.querySelectorAll("td");
     expect(leftCells[1].textContent).toBe("1");
@@ -910,5 +938,54 @@ describe("generateStaticParams", () => {
     const params = generateStaticParams();
 
     expect(params).toEqual([]);
+  });
+
+  it("passes inventory updates data with date-by-status grid to InventoryUpdatesCard", async () => {
+    const project = makeProject({
+      layout: {
+        orientation: { altar: "N", entrance: "S", left: "W", right: "E" },
+        aisles: [],
+        sections: [
+          makeSection({
+            id: "s1",
+            rows: [
+              {
+                id: "r1",
+                label: "Row 1",
+                frontType: "pew",
+                kneelers: [
+                  makeKneeler({
+                    hardware: [
+                      makeHardware({ name: "Prayer Sole", quantity: 3, status: "installed", date: "2028-05-03" }),
+                      makeHardware({ name: "Prayer Sole", quantity: 2, status: "needed", date: "2028-05-03" }),
+                      makeHardware({ name: "Spacer", quantity: 1, status: "installed", date: "2028-05-03" }),
+                      makeHardware({ name: "Spacer", quantity: 2, status: "installed", date: "2028-05-10" }),
+                      makeHardware({ name: "Collar", quantity: 1, status: "needed" }),
+                    ],
+                  }),
+                ],
+              },
+            ],
+          }),
+        ],
+      },
+    });
+    mockReadFileSync.mockReturnValue(JSON.stringify(project));
+    mockReaddirSync.mockReturnValue(["test-project.json"]);
+
+    const { default: Page } = await import("./page");
+    const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
+
+    const el = container.querySelector("[data-testid='inventory-updates']")!;
+    const updatesData = JSON.parse(el.getAttribute("data-updates")!);
+
+    expect(updatesData["Prayer Sole"]).toEqual([
+      { date: "2028-05-03", inspected: 0, needed: 2, upcoming: 0, installed: 3 },
+    ]);
+    expect(updatesData["Spacer"]).toEqual([
+      { date: "2028-05-03", inspected: 0, needed: 0, upcoming: 0, installed: 1 },
+      { date: "2028-05-10", inspected: 0, needed: 0, upcoming: 0, installed: 2 },
+    ]);
+    expect(updatesData["Collar"]).toBeUndefined();
   });
 });
