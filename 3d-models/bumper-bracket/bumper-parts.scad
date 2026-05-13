@@ -88,40 +88,37 @@ module slide_entrance_cut() {
         cube([wall + 8, groove_l + 6, groove_h + core_depth + bottom_socket_h], center=true);
 }
 
-// Hypotenuse on prism roof (+corner_r toward outer ε ridge); s ∈ [0,1] along roof line then +mount_leg tilt.
-function hyp_xz(s) = [
-    corner_r + mount_wedge_hyp_run_x * s,
-    mount_leg_mm * s,
-];
+// Z on sloped prism face (XZ hypotenuse) at given X along roof run (corner_r → width_outer − corner_r).
+function hyp_z_at_x(x) =
+    mount_leg_mm * (x - corner_r) / mount_wedge_hyp_run_x;
 
-// Axis ⟂ hypotenuse in XZ; hull in Y ⇒ through-holes across mount depth.
-module wood_hole_through(s) {
-    xz_plane = hyp_xz(s); // wedge local coords (roof z = 0)
-    xz_w = [ xz_plane[0], xz_plane[1] + height_outer ];
-    // Angle of hypotenuse in roof XZ (~atan2(+Z,+ΔX)).
+// Screw bores ⊥ hypotenuse: row at mid **X** on hypotenuse, **Y** from hole_y_frac; chamfer on exterior (−half of bore axis).
+module wood_mount_hole(y_frac) {
+    xw = corner_r + mount_wedge_hyp_run_x / 2;
+    zw = height_outer + hyp_z_at_x(xw);
+    y_w = corner_r + mount_wedge_depth_core * y_frac;
     psi_deg = atan2(mount_leg_mm, mount_wedge_hyp_run_x);
     ry_deg = psi_deg + 90;
-    hull() {
-        for (yi = [-1.5, depth_mm + 1.5])
-            translate([xz_w[0], yi, xz_w[1]])
-                rotate([0, ry_deg, 0])
-                    cylinder(
-                        h=wood_bored_axial_mm,
-                        d=wood_shank_clr,
-                        center=true,
-                        $fn=preview ? 28 : 64
-                    );
-    }
-}
+    half = wood_bored_axial_mm / 2;
+    $fn = preview ? 28 : 64;
 
-module wood_screw_pattern_primitive() {
-    for (s = hole_s_frac)
-        wood_hole_through(s);
+    translate([xw, y_w, zw])
+        rotate([0, ry_deg, 0])
+            union() {
+                cylinder(h = wood_bored_axial_mm, d = wood_shank_clr, center = true);
+                translate([0, 0, -half - wood_countersink_depth_mm - epsilon])
+                    cylinder(
+                        h = wood_countersink_depth_mm + epsilon * 3,
+                        r1 = wood_head_diameter / 2 + screw_chamfer_lip_mm,
+                        r2 = wood_shank_clr / 2 + epsilon,
+                        center = false
+                    );
+            }
 }
 
 module wood_screw_pattern() {
-    translate([0, 0, height_outer])
-        wood_screw_pattern_primitive();
+    for (yf = hole_y_frac)
+        wood_mount_hole(yf);
 }
 
 // 180° Rx on the tread cavity + slide slot only, pivot = geometric center of those voids

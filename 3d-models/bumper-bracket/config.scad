@@ -36,10 +36,10 @@ corner_r            = 1;
 epsilon             = 0.02;    // manifold + thin slabs (tread groove, etc.)
 
 // ── Roof mount prism (triangular wedge, XY slab matches shell inset core) ────────────────────
-mount_leg_mm        = 28;      // +Z vertical leg; horizontal roof run drives hyp_xz + plastic math below.
+mount_leg_mm        = 28;      // +Z vertical leg along prism hypotenuse; drives hyp tilt + plastic bore length math.
 
-// Three holes evenly along roof hypotenuse (s ∈ [0,1])
-hole_s_frac         = [1/6, 1/2, 5/6];
+// Three holes along prism +Y at these fractions of mount depth (inset from ends like 1/6…5/6).
+hole_y_frac         = [1/6, 1/2, 5/6];
 
 // ── Cap (single M3 BHCS) ─────────────────────────────────────────────────────
 cap_split_y         = 8;       // overlap depth (mm) engaging shell + lip
@@ -62,7 +62,7 @@ width_outer         = bracket_plate_t + bumper_h + (width_extra_half_tread ? tre
 depth_mm            = depth_in * 25.4;
 height_outer        = tread_z_span + 2 * side_margin_each_mm;
 
-// Prism pre-Minkowski: hull() inset roof slab → thin ε ridge tab at outer +width_outer (−X leg = core width).
+// Prism footprint: inset slab on roof (−X leg = roof run; +X rim = width_outer − corner_r).
 mount_wedge_width_core    = width_outer - 2 * corner_r;
 mount_wedge_depth_core    = depth_mm - 2 * corner_r;
 // Horizontal roof leg **corner_r → width_outer − corner_r** (matches flush wedge + shell inset).
@@ -85,6 +85,7 @@ wood_shank_nominal_mm    = 4.17;
 wood_shank_clr           = wood_shank_nominal_mm + 0.92;   // sliding fit + angled drive
 wood_head_diameter       = 10;                              // Ø for flat or trim‑washer head flare
 wood_countersink_depth_mm = 4.5;                            // model depth toward wood for head recess
+screw_chamfer_lip_mm     = 0.65;                             // flare added to Ø for printed chamfer clearance
 
 // Max solid printed path ⟂ angled bore (~ right triangle legs mount_wedge_hyp_run_x × mount_leg_mm).
 plastic_along_bore_mm =
