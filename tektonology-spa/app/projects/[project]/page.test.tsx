@@ -492,22 +492,22 @@ describe("ProjectDetailPage", () => {
                   makeKneeler({
                     hardware: [
                       {
-                        partId: "kneeler-pew-plate",
-                        name: "Kneeler Plate",
+                        partId: "kneeler-bracket",
+                        name: "Kneeler Bracket",
                         quantity: 1,
                         status: "needed",
                         side: "left",
                       },
                       {
-                        partId: "kneeler-pew-plate",
-                        name: "Kneeler Plate",
+                        partId: "kneeler-bracket",
+                        name: "Kneeler Bracket",
                         quantity: 1,
                         status: "inspected",
                         side: "right",
                       },
                       {
-                        partId: "kneeler-pew-plate",
-                        name: "Kneeler Plate",
+                        partId: "kneeler-bracket",
+                        name: "Kneeler Bracket",
                         quantity: 1,
                         status: "installed",
                         side: "middle",
@@ -527,17 +527,17 @@ describe("ProjectDetailPage", () => {
     const { default: Page } = await import("./page");
     const { container } = render(await Page({ params: Promise.resolve({ project: "test-project" }) }));
 
-    expect(container).toHaveTextContent("Kneeler Plate (Left)");
-    expect(container).toHaveTextContent("Kneeler Plate (Right)");
-    expect(container).toHaveTextContent("Kneeler Plate (Middle)");
+    expect(container).toHaveTextContent("Kneeler Bracket (Left)");
+    expect(container).toHaveTextContent("Kneeler Bracket (Right)");
+    expect(container).toHaveTextContent("Kneeler Bracket (Middle)");
     const leftRow = Array.from(container.querySelectorAll("tbody tr")).find((tr) =>
-      tr.textContent?.includes("Kneeler Plate (Left)"),
+      tr.textContent?.includes("Kneeler Bracket (Left)"),
     );
     const rightRow = Array.from(container.querySelectorAll("tbody tr")).find((tr) =>
-      tr.textContent?.includes("Kneeler Plate (Right)"),
+      tr.textContent?.includes("Kneeler Bracket (Right)"),
     );
     const middleRow = Array.from(container.querySelectorAll("tbody tr")).find((tr) =>
-      tr.textContent?.includes("Kneeler Plate (Middle)"),
+      tr.textContent?.includes("Kneeler Bracket (Middle)"),
     );
     expect(leftRow).toBeTruthy();
     expect(rightRow).toBeTruthy();

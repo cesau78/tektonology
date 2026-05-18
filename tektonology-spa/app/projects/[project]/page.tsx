@@ -16,9 +16,9 @@ export function generateStaticParams() {
 
 /** Display bucket for inventory table: kneeler pew plates with `side` split into Left / Right / Middle rows. */
 function inventoryRowLabel(h: HardwareItem): string {
-  if (h.partId === "kneeler-pew-plate" && h.side) {
+  if (h.partId === "kneeler-bracket" && h.side) {
     const sideLabel = h.side === "left" ? "Left" : h.side === "right" ? "Right" : "Middle";
-    return `Kneeler Plate (${sideLabel})`;
+    return `Kneeler Bracket (${sideLabel})`;
   }
   return h.name;
 }

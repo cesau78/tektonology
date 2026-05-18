@@ -10,12 +10,12 @@ const sampleData: InventoryUpdatesData = {
     { date: "2028-04-12", inspected: 0, needed: 3, upcoming: 0, installed: 0 },
     { date: "2028-05-03", inspected: 0, needed: 0, upcoming: 4, installed: 6 },
   ],
-  "Kneeler Plate": [
+  "Kneeler Bracket": [
     { date: "2028-05-03", inspected: 2, needed: 0, upcoming: 0, installed: 1 },
   ],
 };
 
-const partNames = ["Kneeler Plate", "Prayer Sole"];
+const partNames = ["Kneeler Bracket", "Prayer Sole"];
 
 describe("InventoryUpdatesCard", () => {
   it("renders title with first part when no URL param is set", () => {
@@ -28,7 +28,7 @@ describe("InventoryUpdatesCard", () => {
     );
 
     expect(container).toHaveTextContent("Inventory Updates");
-    expect(container).toHaveTextContent("Kneeler Plate");
+    expect(container).toHaveTextContent("Kneeler Bracket");
   });
 
   it("selects part from URL ?part= param by exact name", () => {
@@ -101,7 +101,7 @@ describe("InventoryUpdatesCard", () => {
 
   it("renders all four status column headers", () => {
     vi.spyOn(navigation, "useSearchParams").mockReturnValue(
-      new URLSearchParams("part=Kneeler Plate") as ReturnType<typeof navigation.useSearchParams>,
+      new URLSearchParams("part=Kneeler Bracket") as ReturnType<typeof navigation.useSearchParams>,
     );
 
     const { container } = render(
@@ -115,7 +115,7 @@ describe("InventoryUpdatesCard", () => {
 
   it("does not render badges for zero counts", () => {
     vi.spyOn(navigation, "useSearchParams").mockReturnValue(
-      new URLSearchParams("part=Kneeler Plate") as ReturnType<typeof navigation.useSearchParams>,
+      new URLSearchParams("part=Kneeler Bracket") as ReturnType<typeof navigation.useSearchParams>,
     );
 
     const { container } = render(
@@ -142,7 +142,7 @@ describe("InventoryUpdatesCard", () => {
       <InventoryUpdatesCard updatesData={sampleData} partNames={partNames} />,
     );
 
-    expect(container).toHaveTextContent("Kneeler Plate");
+    expect(container).toHaveTextContent("Kneeler Bracket");
     expect(container).toHaveTextContent("5/3/2028");
   });
 });
