@@ -192,6 +192,7 @@ module cap() {
                 cap_zone_side_walls();
                 // Side bosses — half-cylinders at cap Y edges
                 cap_side_bosses();
+                guide_pin_rods();
             }
             for (pos = bolt_positions)
                 bolt_hole(pos[0], pos[1]);

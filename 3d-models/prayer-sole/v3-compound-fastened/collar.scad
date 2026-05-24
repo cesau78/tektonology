@@ -82,6 +82,7 @@ module collar() {
             hex_nut_slot(bolt_z, cap_width / 2);
             bolt_channel(bolt_z, cap_width / 2);
         }
+        guide_pin_holes();
         // Re-cut top socket through lip
         if (enable_top_lip) top_socket_cut();
 

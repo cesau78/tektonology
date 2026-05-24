@@ -96,6 +96,43 @@ tongue_height    = 6;    // along Z
 tongue_depth     = 1.5;  // protrusion along X
 tongue_clearance = tolerance;
 
+// --- Cap/collar guide pins (press-fit alignment at split face) ---
+inch = 25.4;
+guide_pin_enable      = true;
+guide_pin_dia         = (1 / 8) * inch;   // 3.175 mm rod
+guide_pin_len         = 4;              // mm protrusion along −X into collar
+guide_pin_press_fit   = 0.10;             // collar hole dia = rod − this (mm interference)
+guide_pin_cap_overlap = 0.5;              // rod starts this far +X of split for shell fusion
+// Z: midway between bolt-hole bottom and shell exterior bottom
+bolt_hole_bottom_z = bolt_z - (bolt_dia / 2);
+shell_bottom_z     = -(total_h / 2);
+guide_pin_z        = (bolt_hole_bottom_z + shell_bottom_z) / 2;
+// Y: midway between tread groove outer edge (cap width) and coupler outer Y
+tread_slot_edge_y  = cap_width / 2;
+slipper_outer_y    = (sole_plate_w + (wall * 2) - (r * 2)) / 2 + r;
+guide_pin_y_inset  = 1;   // mm inward from midpoint toward center (+Y side)
+guide_pin_y        = (tread_slot_edge_y + slipper_outer_y) / 2 - guide_pin_y_inset;
+guide_pin_positions = [[guide_pin_z, guide_pin_y], [guide_pin_z, -guide_pin_y]];
+
+module guide_pin_rods() {
+    if (guide_pin_enable) {
+        for (pos = guide_pin_positions)
+            translate([split_x + guide_pin_cap_overlap, pos[1], pos[0]])
+                rotate([0, -90, 0])
+                    cylinder(h=guide_pin_len + guide_pin_cap_overlap, d=guide_pin_dia);
+    }
+}
+
+module guide_pin_holes() {
+    if (guide_pin_enable) {
+        hole_dia = guide_pin_dia - guide_pin_press_fit;
+        for (pos = guide_pin_positions)
+            translate([split_x + 1, pos[1], pos[0]])
+                rotate([0, -90, 0])
+                    cylinder(h=guide_pin_len + guide_pin_cap_overlap + 2, d=hole_dia);
+    }
+}
+
 // --- Big constant for half-space clipping ---
 big = 200;
 
