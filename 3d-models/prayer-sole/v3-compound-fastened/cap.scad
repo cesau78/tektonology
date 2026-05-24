@@ -36,7 +36,7 @@ module bolt_hole(z_pos, y_pos) {
 module cap_side_bosses() {
     boss_len = outer_extent - split_x; // full cap depth along X
     for (side = [1, -1])
-        translate([split_x + boss_len / 2 - tolerance, side * cap_width / 2, bolt_z])
+        translate([split_x + boss_len / 2, side * cap_width / 2, bolt_z])
             rotate([0, 90, 0])
                 cylinder(h=boss_len, d=boss_dia, center=true);
 }
@@ -176,8 +176,8 @@ module cap() {
                 intersection() {
                     coupler_shell();
                     cap_half_space();
-                    translate([-big, -(cap_width / 2) + tolerance, -big])
-                        cube([big * 2, cap_width - (tolerance * 2), big * 2]);
+                    translate([-big, -(cap_width / 2), -big])
+                        cube([big * 2, cap_width, big * 2]);
                 }
                 if (enable_top_lip) cap_lip();
                 // Lip piece that was cut from collar entrance
@@ -188,6 +188,8 @@ module cap() {
                         cube([sole_plate_l, sole_plate_w, 1.0], center=true);
                     cap_half_space();
                 }
+                // Side-wall strips beyond each boss (moved from collar)
+                cap_zone_side_walls();
                 // Side bosses — half-cylinders at cap Y edges
                 cap_side_bosses();
             }
@@ -197,7 +199,7 @@ module cap() {
             if (enable_top_lip) top_socket_cut();
             //alignment_groove();
         }
-        cap_boss_support_trees();
+        //cap_boss_support_trees();
     }
 }
 

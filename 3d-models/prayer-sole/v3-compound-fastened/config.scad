@@ -239,6 +239,24 @@ module side_bands() {
         cube([big * 2, big, big * 2]);
 }
 
+// Side-wall strips in the cap zone (+X of split): from each cap Y edge to the shell
+// outer edge.  The flat side_bands clip at Y = ±cap_width/2 only kisses the boss
+// cylinder at its equator; extend inward by boss_dia/2 so the band wraps the boss
+// arc and fuses above/below in Z.
+module cap_zone_side_walls() {
+    band_inset = boss_dia / 2;
+    intersection() {
+        coupler_shell();
+        cap_half_space();
+        union() {
+            translate([-big, cap_width / 2 - band_inset, -big])
+                cube([big * 2, big, big * 2]);
+            translate([-big, -big - cap_width / 2 + band_inset, -big])
+                cube([big * 2, big, big * 2]);
+        }
+    }
+}
+
 // Center Y band (material inside the socket footprint)
 module center_band() {
     translate([-big, -sole_plate_w / 2, -big])

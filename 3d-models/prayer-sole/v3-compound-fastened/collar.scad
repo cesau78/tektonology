@@ -61,16 +61,6 @@ module bolt_channel(z_pos, y_pos) {
             cylinder(h=channel_length, d=hole_dia);
 }
 
-// Matching cutouts in collar side walls for the cap bosses
-module cap_side_boss_holes() {
-    boss_len = outer_extent - split_x;
-    for (side = [1, -1])
-        translate([split_x + boss_len / 2, side * cap_width / 2, bolt_z])
-            rotate([0, 90, 0])
-                cylinder(h=boss_len + 0.2, d=boss_dia + (boss_clearance * 2), center=true);
-}
-
-
 // =====================================================================
 // COLLAR PIECE
 // =====================================================================
@@ -83,12 +73,6 @@ module collar() {
                 coupler_shell();
                 collar_half_space();
             }
-            // Side walls extend full length over the cap zone
-            intersection() {
-                coupler_shell();
-                cap_half_space();
-                side_bands();
-            }
             if (enable_top_lip) collar_lip();
         }
         // Hex nut pockets, slide-in slots, and bolt channels
@@ -98,8 +82,6 @@ module collar() {
             hex_nut_slot(bolt_z, cap_width / 2);
             bolt_channel(bolt_z, cap_width / 2);
         }
-        // Boss cutouts in collar side walls
-        cap_side_boss_holes();
         // Re-cut top socket through lip
         if (enable_top_lip) top_socket_cut();
 
