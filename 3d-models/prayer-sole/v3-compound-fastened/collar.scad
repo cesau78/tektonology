@@ -13,15 +13,15 @@ include <config.scad>
 module hex_nut_pocket(z_pos, y_pos) {
     nut_r = (nut_af + nut_clearance) / 2 / cos(30);
     pocket_depth = nut_thickness + tolerance;
+    pocket_x_len = pocket_depth + (2 * nut_pocket_x_extra);
 
-    translate([nut_x - pocket_depth / 2, y_pos, z_pos])
+    translate([nut_x - pocket_x_len / 2, y_pos, z_pos])
         rotate([0, 90, 0])
             rotate([0, 0, 15]) // align hex flat with 45° slot entry
-                cylinder(h=pocket_depth, r=nut_r, $fn=6);
+                cylinder(h=pocket_x_len, r=nut_r, $fn=6);
 }
 
 // Hex nut slide-in slot — 45° toward center from nut pocket through shell.
-// 30° flared entrance on X axis widens toward shell exit.
 module hex_nut_slot(z_pos, y_pos) {
     slot_width = nut_af + nut_clearance;
     pocket_depth = nut_thickness + tolerance;
@@ -30,35 +30,19 @@ module hex_nut_slot(z_pos, y_pos) {
     slot_h = (shell_y - abs(y_pos)) / sin(45) + 1;
     angle = (y_pos > 0) ? -45 : 45;
 
-    // Flare starts at nut pocket edge, not center
-    nut_r = (nut_af + nut_clearance) / 2 / cos(30);
-    flare_extra = (slot_h - nut_r) * tan(30);
-
     translate([nut_x, y_pos, z_pos])
-        rotate([angle, 0, 0]) {
-            // Straight slot from pocket center to pocket edge
-            translate([-pocket_depth / 2, -slot_width / 2, -nut_r])
-                cube([pocket_depth, slot_width, nut_r]);
-            // 30° flare from pocket edge to shell exit
-            hull() {
-                translate([-pocket_depth / 2, -slot_width / 2, -nut_r])
-                    cube([pocket_depth, slot_width, 0.01]);
-                translate([-(pocket_depth / 2 + flare_extra), -slot_width / 2, -slot_h])
-                    cube([pocket_depth + 2 * flare_extra, slot_width, 0.01]);
-            }
-        }
+        rotate([angle, 0, 0])
+            translate([-pocket_depth / 2, -slot_width / 2, -slot_h])
+                cube([pocket_depth, slot_width, slot_h]);
 }
 
 // Bolt channel through the collar — connects the split face to the nut pocket.
 module bolt_channel(z_pos, y_pos) {
     hole_dia = bolt_dia + bolt_clearance;
-    // From split face (+ 1mm overshoot) to past the nut pocket
-    channel_start = nut_x - nut_thickness / 2 - 1;
-    channel_length = split_x - channel_start + 1;
-
-    translate([channel_start, y_pos, z_pos])
+    // Fixed X span from nut_x_derived; independent of nut_x_cap_offset
+    translate([bolt_channel_start, y_pos, z_pos])
         rotate([0, 90, 0])
-            cylinder(h=channel_length, d=hole_dia);
+            cylinder(h=bolt_channel_length, d=hole_dia);
 }
 
 // =====================================================================

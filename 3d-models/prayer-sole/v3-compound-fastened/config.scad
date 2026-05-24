@@ -55,13 +55,19 @@ bolt_length     = 20;   // M3x20 — shaft length under head (very common size)
 nut_af          = 5.5;  // hex nut across-flats
 nut_clearance   = 0.2;  // clearance for nut pockets
 nut_thickness   = 2.4;  // typical M3 nut thickness, adjust if using thinner/heavier nuts
+nut_pocket_x_extra = 0.5; // hex pocket extends this far ±X beyond nut_thickness envelope; slot unchanged
 head_dia        = 6.0;  // M3 socket head cap screw head diameter
 head_clearance  = tolerance;
 head_height     = 3.5;   // M3 socket head height
 
 // Nut X position: derived so bolt tip fully engages the nut with 0.5mm margin
 // bolt shaft starts at outer_extent - head_height, tip = start - bolt_length
-nut_x = (outer_extent - head_height) - bolt_length + (nut_thickness / 2) + 0.5;
+nut_x_derived    = (outer_extent - head_height) - bolt_length + (nut_thickness / 2) + 0.5;
+nut_x_cap_offset = 2;  // shift pockets/slots toward cap (+X); bolt channel stays at nut_x_derived
+nut_x            = nut_x_derived + nut_x_cap_offset;
+// Collar bolt shaft bore — fixed span along X (does not follow nut_x_cap_offset)
+bolt_channel_start  = nut_x_derived - nut_thickness / 2 - 1;
+bolt_channel_length = split_x - bolt_channel_start + 1;
 
 // Bolt position: two screws aligned with cap side bosses (Y = ±cap_width/2)
 bolt_z = (bolt_dia / 2) + 0.5; // bottom of bolt hole 0.5mm above z=0
@@ -100,7 +106,7 @@ tongue_clearance = tolerance;
 inch = 25.4;
 guide_pin_enable      = true;
 guide_pin_dia         = (1 / 8) * inch;   // 3.175 mm rod
-guide_pin_len         = 4;              // mm protrusion along −X into collar
+guide_pin_len         = 4;                // mm rod protrusion from cap split (−X)
 guide_pin_press_fit   = 0.10;             // collar hole dia = rod − this (mm interference)
 guide_pin_cap_overlap = 0.5;              // rod starts this far +X of split for shell fusion
 // Z: midway between bolt-hole bottom and shell exterior bottom
