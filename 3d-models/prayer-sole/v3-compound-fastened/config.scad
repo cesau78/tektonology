@@ -59,6 +59,8 @@ nut_pocket_x_extra = 0.5; // hex pocket extends this far ±X beyond nut_thicknes
 head_dia        = 6.0;  // M3 socket head cap screw head diameter
 head_clearance  = tolerance;
 head_height     = 3.5;   // M3 socket head height
+head_pocket_bridge_dia = 5.2;  // hulled collar-side neck on head pocket (mm)
+head_pocket_bridge_len = 0.25; // length toward collar (−X) from pocket inner face
 
 // Nut X position: derived so bolt tip fully engages the nut with 0.5mm margin
 // bolt shaft starts at outer_extent - head_height, tip = start - bolt_length
@@ -115,9 +117,12 @@ inch = 25.4;
 guide_pin_enable      = true;
 guide_pin_radius      = 2;                // Ø 4.0 mm
 guide_pin_dia         = 2 * guide_pin_radius;
-guide_pin_len         = 4;                // mm rod protrusion from cap split (−X)
-guide_pin_hole_extra  = 0.5;              // collar bore depth beyond rod protrusion
+guide_pin_len         = 2.0;              // mm rod protrusion from cap split (−X)
+guide_pin_hole_depth  = 4.1;              // mm collar bore depth from split face
 guide_pin_cap_overlap = 0.5;              // rod starts this far +X of split for shell fusion
+guide_pin_dome_radius = 2;                // domed tip sphere at collar-facing end
+guide_pin_hole_clearance = 0.1;           // extra hole radius for easy peg fit
+guide_pin_hole_cap_extra = 0.1;             // bore extends +X past split for preview gap
 // Z: midway between bolt-hole bottom and shell exterior bottom
 bolt_hole_bottom_z = bolt_z - (bolt_dia / 2);
 shell_bottom_z     = -(total_h / 2);
@@ -131,19 +136,22 @@ guide_pin_positions = [[guide_pin_z, guide_pin_y], [guide_pin_z, -guide_pin_y]];
 
 module guide_pin_rods() {
     if (guide_pin_enable) {
-        for (pos = guide_pin_positions)
+        for (pos = guide_pin_positions) {
             translate([split_x + guide_pin_cap_overlap, pos[1], pos[0]])
                 rotate([0, -90, 0])
                     cylinder(h=guide_pin_len + guide_pin_cap_overlap, r=guide_pin_radius);
+            translate([split_x - guide_pin_len, pos[1], pos[0]])
+                sphere(r=guide_pin_dome_radius);
+        }
     }
 }
 
 module guide_pin_holes() {
     if (guide_pin_enable) {
         for (pos = guide_pin_positions)
-            translate([split_x + 1, pos[1], pos[0]])
+            translate([split_x + guide_pin_hole_cap_extra, pos[1], pos[0]])
                 rotate([0, -90, 0])
-                    cylinder(h=guide_pin_len + guide_pin_hole_extra, r=guide_pin_radius);
+                    cylinder(h=guide_pin_hole_depth + guide_pin_hole_cap_extra, r=guide_pin_radius + guide_pin_hole_clearance);
     }
 }
 

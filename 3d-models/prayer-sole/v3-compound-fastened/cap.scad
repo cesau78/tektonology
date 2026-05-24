@@ -19,11 +19,17 @@ module bolt_shaft_hole(z_pos, y_pos) {
             cylinder(h=outer_extent - split_x + 2, d=hole_dia);
 }
 
-// Socket-head pocket only (+X from outer face inward).
+// Socket-head pocket (+X from outer face inward), hulled collar-side neck.
 module bolt_head_pocket_hole(z_pos, y_pos) {
-    translate([outer_extent - head_height + tolerance, y_pos, z_pos])
-        rotate([0, 90, 0])
-            cylinder(h=head_height + 1, d=head_pocket_diameter);
+    pocket_collar_x = outer_extent - head_height + tolerance;
+    hull() {
+        translate([pocket_collar_x, y_pos, z_pos])
+            rotate([0, 90, 0])
+                cylinder(h=head_height + 1, d=head_pocket_diameter);
+        translate([pocket_collar_x, y_pos, z_pos])
+            rotate([0, -90, 0])
+                cylinder(h=head_pocket_bridge_len, d=head_pocket_bridge_dia);
+    }
 }
 
 // Bolt through-hole + socket head recess in the cap piece.
