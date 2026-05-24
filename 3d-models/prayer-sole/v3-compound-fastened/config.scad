@@ -73,6 +73,14 @@ bolt_channel_length = split_x - bolt_channel_start + 1;
 bolt_z = (bolt_dia / 2) + 0.5; // bottom of bolt hole 0.5mm above z=0
 bolt_positions = [[bolt_z, cap_width / 2], [bolt_z, -cap_width / 2]];
 
+// --- M3 retainer washer seat (cap split face) — matches m3-retainer-washer.scad ---
+washer_socket_enable    = true;
+washer_ring_od          = 5.5;
+washer_socket_depth          = 1.5;   // pocket depth along +X into cap from split (mm)
+washer_socket_split_overlap  = 0.1;   // extend −X past split face to clean surface edge
+washer_socket_clearance      = 0.15;
+washer_socket_od        = washer_ring_od + washer_socket_clearance;
+
 // --- Cap Side Bosses ---
 boss_dia       = head_dia;    // matches cap screw head diameter
 boss_height    = head_height; // adjust with screw availability
