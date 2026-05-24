@@ -73,7 +73,7 @@ bolt_channel_length = split_x - bolt_channel_start + 1;
 bolt_z = (bolt_dia / 2) + 0.5; // bottom of bolt hole 0.5mm above z=0
 bolt_positions = [[bolt_z, cap_width / 2], [bolt_z, -cap_width / 2]];
 
-// --- M3 retainer washer seat (cap split face) — matches m3-retainer-washer.scad ---
+// --- Bolt retainer seat (cap split face) — matches bolt-retainer.scad ---
 washer_socket_enable    = true;
 washer_ring_od          = 5.5;
 washer_socket_depth          = 1.5;   // pocket depth along +X into cap from split (mm)
@@ -110,12 +110,13 @@ tongue_height    = 6;    // along Z
 tongue_depth     = 1.5;  // protrusion along X
 tongue_clearance = tolerance;
 
-// --- Cap/collar guide pins (press-fit alignment at split face) ---
+// --- Cap/collar guide pins (alignment at split face) ---
 inch = 25.4;
 guide_pin_enable      = true;
-guide_pin_dia         = (1 / 8) * inch;   // 3.175 mm rod
+guide_pin_radius      = 2;                // Ø 4.0 mm
+guide_pin_dia         = 2 * guide_pin_radius;
 guide_pin_len         = 4;                // mm rod protrusion from cap split (−X)
-guide_pin_press_fit   = 0.10;             // collar hole dia = rod − this (mm interference)
+guide_pin_hole_extra  = 0.5;              // collar bore depth beyond rod protrusion
 guide_pin_cap_overlap = 0.5;              // rod starts this far +X of split for shell fusion
 // Z: midway between bolt-hole bottom and shell exterior bottom
 bolt_hole_bottom_z = bolt_z - (bolt_dia / 2);
@@ -133,17 +134,16 @@ module guide_pin_rods() {
         for (pos = guide_pin_positions)
             translate([split_x + guide_pin_cap_overlap, pos[1], pos[0]])
                 rotate([0, -90, 0])
-                    cylinder(h=guide_pin_len + guide_pin_cap_overlap, d=guide_pin_dia);
+                    cylinder(h=guide_pin_len + guide_pin_cap_overlap, r=guide_pin_radius);
     }
 }
 
 module guide_pin_holes() {
     if (guide_pin_enable) {
-        hole_dia = guide_pin_dia - guide_pin_press_fit;
         for (pos = guide_pin_positions)
             translate([split_x + 1, pos[1], pos[0]])
                 rotate([0, -90, 0])
-                    cylinder(h=guide_pin_len + guide_pin_cap_overlap + 2, d=hole_dia);
+                    cylinder(h=guide_pin_len + guide_pin_hole_extra, r=guide_pin_radius);
     }
 }
 

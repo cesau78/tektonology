@@ -1,4 +1,4 @@
-// --- TEKTONOLOGY M3 RETAINER WASHER ---
+// --- TEKTONOLOGY BOLT RETAINER ---
 // Push-on anti-loss clip for M3×0.5 socket-head cap screws (Prayer Sole cap).
 // Rigid outer ring seats against the cap wall; four flex prongs extend inward
 // from the ring bore and grip the shank (outlet-cover screw-retainer style).
@@ -12,10 +12,10 @@ thread_pitch = 0.5;
 // --- Outer seating ring (keep in sync with washer_ring_od in config.scad) ---
 ring_od      = 5.5;   // seats on cap boss / wall (cf. commercial panel retainer ≈ 4.3)
 ring_id      = 4.4;   // inner bore — prongs root on this wall
-ring_height  = 0.55;  // rigid seat flange (Z)
+ring_height  = 0.75;  // rigid seat flange (Z)
 
 // --- Flex prongs (fused to ring inner wall) ---
-prong_height = 0.35;  // thin grip only — cf. stamped panel retainers ≈ 0.4 mm
+prong_height = 0.5;  // thin grip only — cf. stamped panel retainers ≈ 0.4 mm
 grip_dia     = 2.65;  // engaged ID — slightly under major Ø for thread bite
 entry_dia    = 3.15;  // lead-in at prong tips (screw spreads prongs on install)
 prong_count  = 4;
@@ -23,16 +23,16 @@ slot_width   = 0.85;  // gap between prongs (mm) — narrower for four fingers
 // Prongs at cap-facing / seat side of ring
 prong_z      = -(ring_height / 2) + (prong_height / 2);
 
-// --- Mesh quality ---
-preview = false;
-$fn = preview ? 32 : 96;
-
 // --- Optional batch layout for printing ---
 print_qty = 1;        // set >1 to lay out a small plate
 print_pitch = ring_od + 1.5;
 
+// --- Mesh quality ---
+preview = false;
+$fn = preview ? 32 : 96;
+
 // =====================================================================
-// WASHER BODY
+// RETAINER BODY
 // =====================================================================
 
 module outer_ring() {
@@ -64,10 +64,20 @@ module flex_prongs() {
   }
 }
 
-module m3_retainer_washer() {
+module bolt_retainer() {
   union() {
     outer_ring();
     flex_prongs();
+  }
+}
+
+module bolt_retainer_plate(qty = print_qty) {
+  if (qty <= 1) {
+    bolt_retainer();
+  } else {
+    for (i = [0 : qty - 1])
+      translate([i * print_pitch, 0, 0])
+        bolt_retainer();
   }
 }
 
@@ -89,17 +99,7 @@ module debug_m3_shank(len = 12) {
 // RENDERING
 // =====================================================================
 
-module retainer_washer_plate(qty = print_qty) {
-  if (qty <= 1) {
-    m3_retainer_washer();
-  } else {
-    for (i = [0 : qty - 1])
-      translate([i * print_pitch, 0, 0])
-        m3_retainer_washer();
-  }
-}
+bolt_retainer_plate();
 
-retainer_washer_plate();
-
-// Uncomment to preview washer seated on shank:
+// Uncomment to preview retainer seated on shank:
 // %translate([0, 0, ring_height / 2]) debug_m3_shank();

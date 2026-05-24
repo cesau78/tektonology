@@ -85,7 +85,7 @@ module collar() {
         relief_cut_x = (relief_inner_x + relief_outer_x) / 2 ;
         relief_cut_w = relief_outer_x - relief_inner_x;
         if (enable_top_lip) translate([relief_cut_x, 0, relief_cut_z])
-            cube([relief_cut_w+2, cap_width, lip_height + tolerance], center=true);
+            cube([relief_cut_w+2, sole_plate_w + (wall * 2)  , lip_height + tolerance], center=true);
     }
 }
 

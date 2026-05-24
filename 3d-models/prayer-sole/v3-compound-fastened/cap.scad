@@ -32,7 +32,7 @@ module bolt_hole(z_pos, y_pos) {
     bolt_head_pocket_hole(z_pos, y_pos);
 }
 
-// Shallow pocket on split face for M3 retainer washer (collar / guide-rod side).
+// Shallow pocket on split face for bolt retainer (collar / guide-rod side).
 // Cuts +X into the cap from split_x (cap_half_space is x >= split_x).
 module cap_washer_sockets() {
     if (washer_socket_enable) {
