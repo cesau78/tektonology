@@ -19,9 +19,14 @@ corner_r        = 5;        // fillet radius on plate corners
 
 // Pegs — both identical, rise directly from the plate surface
 peg_od          = 9.4;
-peg_h           = 24;
+peg_top_from_base = 44.5;   // plate bottom → peg top
+peg_h           = peg_top_from_base - plate_t;
 peg1_inset      = 18;       // centre of peg 1 from near end
 peg2_inset      = 18;       // centre of peg 2 from far end
+
+// Boss around each peg: plate bottom (z = 0) to top at support_h
+support_h       = 19.5;
+support_od      = 16;
 
 // Three countersunk screw holes, evenly spaced across the middle
 screw_d         = 5.2;      // shank clearance
@@ -52,7 +57,12 @@ module kneeler_bracket() {
     far_x  =  plate_l/2 - peg2_inset;
 
     difference() {
-        rounded_plate(plate_l, plate_w, plate_t, corner_r);
+        union() {
+            rounded_plate(plate_l, plate_w, plate_t, corner_r);
+            for (px = [near_x, far_x])
+                translate([px, 0, 0])
+                    cylinder(h = support_h, d = support_od);
+        }
 
         for (frac = screw_x_frac) {
             sx = frac * plate_l - plate_l/2;
