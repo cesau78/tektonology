@@ -132,6 +132,17 @@ function tread_visual_z_bounds_local() = let (
 
 function tread_visual_z_span_mm() = let (b = tread_visual_z_bounds_local()) b[1] - b[0];
 
+// Debug face labels (assembly preview only) — bracket OpenSCAD axes (x, y, z):
+//   A = +X prism / wedge rim     B = −X opposite (narrow) rim
+//   C = +Z pew engagement        D = −Z tread slot
+//   E = +Y base (sizing lz → 0)  F = −Y roof / wedge apex
+bumper_bracket_debug_face_labels_enabled = true;
+bumper_bracket_debug_label_font = "Liberation Sans:style=Bold";
+bumper_bracket_debug_label_size_mm = 12;
+bumper_bracket_debug_label_offset_mm = 8;
+bumper_bracket_debug_label_thickness_mm = 3;
+bumper_bracket_debug_label_plate_mm = 16;
+
 // Cross-section clip (bracket coordinates). assembly.scad overrides for preview.
 bracket_cross_section = false;
 // "x" / "z": offset 0 = centered on footprint; "y": offset 0 = shell_midplane_y_mm.

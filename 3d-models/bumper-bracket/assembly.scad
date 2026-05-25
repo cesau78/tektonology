@@ -165,6 +165,7 @@ module assembly_preview() {
             if (show_pew_leg_in_assembly)
                 color([0.72, 0.58, 0.38, 0.88])
                     pew_leg_at_kneeler();
+            bumper_bracket_debug_face_labels();
         }
 }
 

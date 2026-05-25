@@ -193,8 +193,62 @@ module shell_body_difference_wedge_bores() {
 
 module bumper_bracket() {
     bracket_export_bed_lift()
-        bracket_cross_trim()
+        bracket_cross_trim() {
             shell_body_difference_wedge_bores();
+            bumper_bracket_debug_face_labels();
+        }
+}
+
+module _bumper_debug_label_plate() {
+    cube([bumper_bracket_debug_label_plate_mm, bumper_bracket_debug_label_plate_mm, 0.6], center = true);
+}
+
+module _bumper_debug_label_glyph(letter, plate_color, text_color) {
+    color(plate_color)
+        _bumper_debug_label_plate();
+    color(text_color)
+        linear_extrude(bumper_bracket_debug_label_thickness_mm)
+            offset(delta = 0.6, chamfer = 0.3)
+                text(
+                    letter,
+                    size = bumper_bracket_debug_label_size_mm,
+                    font = bumper_bracket_debug_label_font,
+                    halign = "center",
+                    valign = "center"
+                );
+}
+
+// Bracket-frame labels (assembly preview only; not in STL export root).
+module bumper_bracket_debug_face_labels() {
+    if (bumper_bracket_debug_face_labels_enabled) {
+        off = bumper_bracket_debug_label_offset_mm;
+        y_mid = shell_midplane_y_mm;
+        x_out = bracket_face_wedge_x_mm + off;
+        x_in = -bracket_face_wedge_x_mm - off;
+        z_pew = bracket_face_pew_z_mm + off;
+        z_tread = bracket_face_tread_slot_z_mm - off;
+        y_base = bracket_nat_y_mid_mm - corner_r + off;
+        y_roof_out = bracket_nat_y_mid_mm - shell_height_mm - shell_wedge_leg_mm - off
+            - bumper_bracket_debug_label_thickness_mm;
+        translate([x_out, y_mid, 0])
+            rotate([0, 90, 0])
+                _bumper_debug_label_glyph("A", [1, 0.2, 0.2], [1, 1, 1]);
+        translate([x_in, y_mid, 0])
+            rotate([0, -90, 0])
+                _bumper_debug_label_glyph("B", [0.2, 1, 0.2], [0, 0, 0]);
+        translate([0, y_mid, z_pew])
+            rotate([-90, 0, 0])
+                _bumper_debug_label_glyph("C", [0.2, 0.4, 1], [1, 1, 1]);
+        translate([0, y_mid, z_tread])
+            rotate([90, 0, 0])
+                _bumper_debug_label_glyph("D", [0.9, 0.85, 0.1], [0, 0, 0]);
+        translate([0, y_base, 0])
+            rotate([-90, 0, 0])
+                _bumper_debug_label_glyph("E", [0.2, 0.85, 0.4], [1, 1, 1]);
+        translate([0, y_roof_out, 0])
+            rotate([90, 0, 0])
+                _bumper_debug_label_glyph("F", [0.6, 0.2, 0.8], [1, 1, 1]);
+    }
 }
 
 if (bumper_emit_if_root_scad_tree)
