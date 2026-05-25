@@ -2,8 +2,37 @@
 preview = true;
 
 // ── Kneeler reference (defaults; override with -D) ───────────────────────────
-bracket_plate_t     = 5;       // kneeler-bracket.scad plate_t
+// kneeler-bracket.scad — keep in sync with kneeler-bracket-visual.scad
+bracket_plate_t                  = 5;       // kneeler-bracket plate_t
+kneeler_bracket_plate_l_mm       = 145;
+kneeler_bracket_plate_w_mm       = 34;
+kneeler_bracket_corner_r_mm      = 5;
+kneeler_bracket_peg_od_mm        = 9.4;
+kneeler_bracket_peg_top_from_base_mm = 44.5; // plate bottom (z = 0) → peg top
+kneeler_bracket_peg_h_mm         = kneeler_bracket_peg_top_from_base_mm - bracket_plate_t;
+kneeler_bracket_peg1_inset_mm    = 18;
+kneeler_bracket_peg2_inset_mm    = 18;    // far peg from +lx rim (bumper peg)
+kneeler_bracket_support_h_mm     = 19.5;  // plate bottom → top of peg boss
+kneeler_bracket_support_od_mm    = 16;
+kneeler_bracket_screw_d_mm       = 5.2;
+kneeler_bracket_csink_d_mm       = 10.5;
+kneeler_bracket_csink_depth_mm   = 2.5;
+kneeler_bracket_screw_x_frac     = [0.28, 0.5, 0.72];
+kneeler_bracket_mirror_side      = false; // false = left, true = right (Y mirror)
 bumper_h            = 23.8;    // kneeler-bumper.scad height
+
+// kneeler-bushing.scad — keep in sync with kneeler-bushing-visual.scad
+kneeler_bushing_total_height_mm = 24;
+kneeler_bushing_id_mm           = 10;
+kneeler_bushing_insert_od_mm    = 13.1;
+kneeler_bushing_collar_height_mm = 6.3;
+kneeler_bushing_collar_od_mm    = 16.2;
+
+// kneeler-bumper.scad — keep in sync with kneeler-bumper-visual.scad
+kneeler_bumper_od_mm        = 17.5;
+kneeler_bumper_peg_od_mm    = 9.7;
+kneeler_bumper_tightness_mm = 0.3;
+kneeler_bumper_id_mm        = kneeler_bumper_peg_od_mm - kneeler_bumper_tightness_mm;
 
 // ── Tread / sole (match prayer-sole v3-compound-fastened) ───────────────────
 tread_tightness     = 0.1;     // matches tolerance in tread.scad
@@ -34,32 +63,20 @@ corner_r            = 1;
 epsilon             = 0.02;    // manifold + thin slabs
 
 /*
-  Canonical bracket coordinates (before bracket_rotate_x_deg export rotation).
+  Bracket coordinate frame — OpenSCAD (x, y, z) is the design frame for bumper-bracket.scad.
+  The bracket body is never rotate()-reoriented. Optional bracket_lift_to_bed only translates
+  along +Z for STL export (min Z on build plate).
 
-  Nominal exterior corner at QR ∩ tread ∩ bottom (corner_r minkowski rounds afterward).
+  Origin: footprint center.
+  +X: QR / kneeler side (−X) toward wedge and sloped roof (+X rim).
+  +Y: shell height toward roof and wedge apex (lower Y = higher on the part).
+  +Z: pew engagement (+Z rim); tread slot opens toward −Z.
 
-  Axes:
-    +X : QR face (−X outward normal from solid) toward wedge outer façade (+X outward normal).
-    +Y : tread face (−Y outward) toward pew face (+Y outward).
-    +Z : bottom (−Z outward) toward insertion roof (+Z outward); shell_wedge attaches at z = shell_height_mm.
-
-  Exterior faces (outward normals):
-    shell_face_qr               −X   narrower envelope (QR label).
-    shell_face_wedge_outer       +X   vertical façade of shell_wedge prism (hypotenuse rises +Z along +X run).
-    shell_face_tread             −Y   tread / bumper side (Y-axis mate opposite pew).
-    shell_face_pew               +Y   pew contact (shell_extent_tread_pew_mm equals depth_in × 25.4).
-    shell_face_bottom            −Z   footprint before orientation lift.
-    shell_face_insertion_roof    +Z   roof plane before wedge tip; wedge footprint sits here.
-
-  Physical rectangles: ±Y faces span shell_extent_qr_wedge_mm × shell_height_mm (larger pair).
-                       ±X faces span shell_extent_tread_pew_mm × shell_height_mm (narrower pair).
-
-  Label check: larger pew vs tread mate uses the ±Y pair (shell_face_tread ↔ shell_face_pew).
-               narrower QR vs wedge façade uses ±X (shell_face_qr ↔ shell_face_wedge_outer).
-               If print labeling swapped axes versus this canonical frame, compare against bracket_rotate_x_deg export.
+  Sizing helpers (lx, ly, lz) use a corner-origin box aligned with extents below; bracket_pos()
+  maps those into the centered bracket frame (defined after shell extents).
 */
 
-// ── Shell wedge (roof prism + overlap slab); apex rises along +Z toward +X rim ────────────────────
+// ── Shell wedge (roof prism + overlap slab); apex rises toward +X rim and lower bracket Y ───────
 shell_wedge_leg_mm        = 28;      // apex height along prism hypotenuse; drives bore tilt + plastic path math.
 
 // Three wedge screw bores along +Y at these fractions of shell inset tread–pew span.
@@ -78,25 +95,26 @@ shell_extent_qr_wedge_mm =
 shell_extent_tread_pew_mm = depth_in * 25.4;
 shell_height_mm           = tread_z_span + 2 * side_margin_each_mm;
 
-// Midplane of shell_height_mm (tread flip pivot height & exploded vertical alignment reference).
-shell_midplane_z_mm = shell_height_mm / 2;
+// Mid lz of shell_height_mm (sizing axis up); bracket Y = bracket_nat_y_mid_mm − lz.
+shell_midplane_lz_mm = shell_height_mm / 2;
 
-// Exploded tread mate (canonical bracket coords): XY centers on inset core midplanes once those exist below.
-// Z: assembly_tread_slide_z is chosen after flange groove slabs exist so flange apex aligns with groove pocket slab top (see tread_groove_pocket_* + assembly_pose block below).
-function tread_visual_mean_z_local() = let (
-    pi = acos(-1),
-    ribs_n = 10,
-    z_core = socket_depth / 2,
-    vol_core = tread_l * tread_w * core_depth,
-    z_rib = -core_protrusion / 2,
-    vol_rib = pi * pow(radius, 2) * tread_w,
-    vol_ribs = ribs_n * vol_rib,
-    fl_l = sole_plate_l + groove_overhang * 2 - flange_clearance,
-    fl_w = sole_plate_w + groove_overhang * 2 - flange_clearance,
-    z_fl = socket_depth / 2 + core_depth / 2 - flange_depth / 2 - 1,
-    vol_fl = fl_l * fl_w * (flange_depth + 2),
-    vt = vol_core + vol_ribs + vol_fl
-) (vol_core * z_core + vol_ribs * z_rib + vol_fl * z_fl) / vt;
+bracket_nat_y_mid_mm = (shell_height_mm + shell_wedge_leg_mm + corner_r) / 2;
+shell_midplane_y_mm = bracket_nat_y_mid_mm - shell_midplane_lz_mm;
+
+bracket_face_tread_slot_z_mm = -shell_extent_tread_pew_mm / 2;
+bracket_face_pew_z_mm         = shell_extent_tread_pew_mm / 2;
+bracket_face_wedge_x_mm       = shell_extent_qr_wedge_mm / 2;
+
+// Corner-origin sizing (lx, ly, lz) → bracket OpenSCAD coordinates.
+function bracket_pos(lx, ly, lz) = [
+    lx - shell_extent_qr_wedge_mm / 2,
+    bracket_nat_y_mid_mm - lz,
+    ly - shell_extent_tread_pew_mm / 2,
+];
+
+// STL export: lift so lowest bracket Z sits on the build plate (translate only, not a rotation).
+bracket_lift_to_bed = true;
+shell_midplane_z_mm = shell_midplane_lz_mm; // alias for older scripts
 
 // Local Z extents of tread_visual_for_exploded_view() union (conservative bbox vs ribs/core/flange).
 function tread_visual_z_bounds_local() = let (
@@ -114,15 +132,11 @@ function tread_visual_z_bounds_local() = let (
 
 function tread_visual_z_span_mm() = let (b = tread_visual_z_bounds_local()) b[1] - b[0];
 
-// Whole bracket world rotation about X through bottom-face center `(shell_extent_qr_wedge_mm/2, shell_extent_tread_pew_mm/2, 0)`. 0 = legacy Z-up export.
-// After rotation, geometry is lifted along world +Z so min(Z) ≈ 0 (bounding-corner estimate for Rx spins).
-bracket_rotate_x_deg = 0;
-
-// Cross-section clip in canonical bracket coords (slice before bracket_rotate_x_deg). STL export normally keeps bracket_cross_section = false.
+// Cross-section clip (bracket coordinates). assembly.scad overrides for preview.
 bracket_cross_section = false;
-// "x" keeps X≥pos half; "y" keeps Y≥pos; "z" keeps Z≥pos (same convention as prayer-sole tread.scad crosssection_*).
+// "x" / "z": offset 0 = centered on footprint; "y": offset 0 = shell_midplane_y_mm.
 bracket_cross_axis = "y";
-bracket_cross_offset = 0;              // shifts cut plane along axis (mm); 0 centers on shell_extent_* / shell_height_mm midplanes per axis letter.
+bracket_cross_offset = 0;
 
 // Shell inset rectangular core (between rounded vertical edges): spans QR↔wedge and tread↔pew minus corner offsets.
 shell_inset_dim_qr_wedge_mm    = shell_extent_qr_wedge_mm - 2 * corner_r;
@@ -130,9 +144,9 @@ shell_inset_dim_tread_pew_mm   = shell_extent_tread_pew_mm - 2 * corner_r;
 // Horizontal roof leg along +X from inset QR corner toward wedge rim (hypotenuse ground projection).
 shell_wedge_hypotenuse_run_mm  = shell_inset_dim_qr_wedge_mm;
 
-// Tread ghost / flip pivot XY: center on inset shell core midplanes (tread↔pew and QR↔wedge); same numeric half as shell_extent_* / 2 when corner_r is symmetric.
-assembly_tread_center_qr_wedge_mm    = corner_r + shell_inset_dim_qr_wedge_mm / 2;
-assembly_tread_center_tread_pew_mm   = corner_r + shell_inset_dim_tread_pew_mm / 2;
+// Tread ghost XY: native frame centers on inset shell core midplanes (origin).
+assembly_tread_center_qr_wedge_mm    = 0;
+assembly_tread_center_tread_pew_mm   = 0;
 
 // Groove / flange metrics (tread.scad); pocket below uses groove_l / groove_w; assembly preview uses same for tread ghost.
 groove_h            = socket_depth / 4;
@@ -159,9 +173,7 @@ tread_groove_pocket_z0_mm =
 tread_groove_pocket_height_mm =
     flange_depth + 2 * tread_visual_flange_sphere_r + tread_groove_pocket_z_clear_mm;
 
-// Assembly pose (needs tread_groove_pocket_* + tread_visual_flange_sphere_r). Flip-chain bracket Z after apply_tread_cutout_flip satisfies
-//   bracket_z(flange apex) = 2*shell_midplane_z − slide_cz + z_fl_top_local + socket_depth/2
-// (see tread_mated_to_bracket_reference in assembly.scad). Mate flange apex flush with flange groove slab top (cuboid +Z ceiling).
+// Assembly pose (assembly.scad): flange apex ↔ groove pocket ceiling (bracket +Y / sizing lz).
 function assembly_tread_vertical_auto_mm() = 0;
 assembly_tread_z_trim_mm = 0;
 
@@ -171,13 +183,10 @@ function assembly_tread_flange_top_local_z_mm() =
 function assembly_bracket_flange_groove_top_z_mm() =
     tread_groove_pocket_z0_mm + tread_groove_pocket_height_mm;
 
-assembly_tread_slide_z =
-    2 * shell_midplane_z_mm
-    + assembly_tread_flange_top_local_z_mm()
-    + socket_depth / 2
-    - assembly_bracket_flange_groove_top_z_mm();
+function assembly_bracket_groove_ceiling_y_mm() =
+    bracket_nat_y_mid_mm - assembly_bracket_flange_groove_top_z_mm();
 
-// Pull-apart in canonical coords; [0,0,0] = mated overlap (groove flange Z keyed by slide_z above).
+// Pull-apart in bracket OpenSCAD coords [x, y, z]; [0,0,0] = mated overlap.
 exploded_tread_offset_pull = [0, 0, 0];
 
 // Smaller prism under flange slot for tread rigid core (footprint tread_l × tread_w).
@@ -190,14 +199,52 @@ tread_core_pocket_floor_z_mm   = -4 * epsilon;
 tread_core_pocket_ceiling_z_mm = tread_groove_pocket_z0_mm;
 tread_core_pocket_depth_z_mm =
     tread_core_pocket_ceiling_z_mm - tread_core_pocket_floor_z_mm;
-// Deprecated names — same as floor / depth_z (legacy references in previews or forks).
-tread_core_pocket_z0_mm           = tread_core_pocket_floor_z_mm;
-tread_core_pocket_height_z_mm      = tread_core_pocket_depth_z_mm;
 
-// ── Pew leg + hypoten-mount wood fasteners (after shell extents exist) ────────
-// Stock the screws bite into — here 1½" nominal leg thickness (face grain).
-pew_leg_thickness_in     = 1.5;
+// ── Assembly: pew leg, kneeler stack, kneeler arm (assembly.scad) ─────────────
+pew_leg_thickness_in     = 1.5; // 1½" nominal pew leg (face grain for wood screws below)
 pew_leg_thickness_mm     = pew_leg_thickness_in * 25.4;
+// Assembly pew-leg-visual.scad plan size (square top).
+pew_leg_visual_plan_in   = 18;
+pew_leg_visual_plan_mm   = pew_leg_visual_plan_in * 25.4;
+// Lateral offset past plastic bracket +X rim; 0 = pew flush to kneeler-bracket pew face.
+assembly_pew_leg_side_gap_mm = 0;
+// Fraction of pew-leg span (along bracket Y after Ry(90)) that lies in +Y; rest is −Y.
+assembly_pew_leg_positive_y_fraction = 1 / 8;
+function assembly_pew_leg_center_y_mm() =
+    pew_leg_visual_plan_mm * (assembly_pew_leg_positive_y_fraction - 0.5);
+
+// Pew-leg face toward kneeler bracket (+X face of steel bracket after assembly pose).
+function assembly_pew_leg_inner_face_x_mm() =
+    bracket_face_wedge_x_mm + assembly_pew_leg_side_gap_mm + pew_leg_visual_plan_mm / 2
+    - pew_leg_thickness_mm / 2;
+
+function assembly_pew_leg_center_x_mm() =
+    assembly_pew_leg_inner_face_x_mm() + pew_leg_thickness_mm / 2;
+
+// Kneeler-bracket visual tilt inside assembly_kneeler_pose (degrees, kneeler +X).
+assembly_kneeler_bracket_rotate_x_deg = 45;
+// Peg support boss top (kneeler local Z); bushing/bumper bases sit here.
+assembly_kneeler_support_top_lz_mm = kneeler_bracket_support_h_mm;
+
+function assembly_kneeler_near_peg_x_mm() =
+    -kneeler_bracket_plate_l_mm / 2 + kneeler_bracket_peg1_inset_mm;
+function assembly_kneeler_far_peg_x_mm() =
+    kneeler_bracket_plate_l_mm / 2 - kneeler_bracket_peg2_inset_mm;
+function assembly_kneeler_bushing_collar_top_lz_mm() =
+    assembly_kneeler_support_top_lz_mm + kneeler_bushing_collar_height_mm;
+
+// kneeler-arm-visual.scad
+kneeler_arm_length_mm     = 108;
+kneeler_arm_h1_mm         = 34;
+kneeler_arm_h2_mm         = 20;
+kneeler_arm_thickness_mm  = 18.6;
+kneeler_arm_peg_d_mm      = 20;
+kneeler_arm_peg_hole_d_mm = 13.8;
+
+function assembly_kneeler_arm_hole_center_lz_mm() =
+    assembly_kneeler_bushing_collar_top_lz_mm() + kneeler_arm_thickness_mm / 2;
+// Bracket-frame spin about bracket +X at hole (see assembly.scad); Y/Z only, not kneeler-local Ry.
+assembly_kneeler_arm_rotate_x_deg = -13.5;
 
 // #8 wood / structural trim screws (nominal major Ø ~0.164"); clearance in print.
 wood_screw_gauge         = 8;

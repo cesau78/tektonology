@@ -1,37 +1,171 @@
-// Assembly preview: bumper bracket + prayer-sole v3 tread ghost (mated Z: flange apex ↔ groove slab top).
-// Liquid bait v2 has no tread part; open this folder for kneeler+tread pairing.
-// Optional pull-apart: exploded_tread_offset_pull in config (+ assembly_tread_vertical_auto_mm / trim in bumper-bracket.scad).
+// Assembly preview — bumper bracket (native frame) + reference ghosts.
+//
+// Bracket body has no rotate(); ghosts are placed with translate/rotate only.
+// Kneeler stack uses assembly_kneeler_pose() (Ry −90°, Rx 45°) then bracket-frame arm spin.
+//
+// Improvements (future):
+//   • Auto-compute assembly_kneeler_arm_rotate_x_deg from bumper top vs arm underside.
+//   • Share peg x helpers with kneeler-bracket-visual.scad (duplicate near_x/far_x today).
+//   • Optional pew/kneeler X placement from transformed steel face, not wedge + plan offset.
 
 render_standalone_export = false;
 include <bumper-bracket.scad>
 include <tread-visual.scad>
+include <kneeler-bracket-visual.scad>
+include <kneeler-bushing-visual.scad>
+include <kneeler-bumper-visual.scad>
+include <pew-leg-visual.scad>
+include <kneeler-arm-visual.scad>
 
-// Cross-section: half-cut in canonical coords then bracket_rotate_x_deg (shell envelope + wedge). Override axis/offset in config.scad.
+// ── Preview toggles (assembly only; STL export uses bumper-bracket.scad) ─────
 bracket_cross_section = false;
 bracket_cross_axis = "x";
 
 show_tread_in_assembly = true;
+show_kneeler_bracket_in_assembly = true;
+show_kneeler_bushing_in_assembly = true;
+show_kneeler_bumper_in_assembly = true;
+show_pew_leg_in_assembly = true;
+show_kneeler_arm_in_assembly = true;
 
-module tread_mated_to_bracket_reference() {
-    // XY at inset shell core midplanes; flip pivot shell_midplane_z_mm; slide_z mates tread flange apex ↔ bracket groove slab top (+Z cuboid ceiling).
-    cx = assembly_tread_center_qr_wedge_mm;
-    cy = assembly_tread_center_tread_pew_mm;
-    slide_cz = assembly_tread_slide_z;
+// ── Tread ghost (bracket −Z slot) ────────────────────────────────────────────
+function assembly_tread_groove_pocket_center_ly() =
+    -tread_groove_pocket_break_tread_face_mm
+    + (tread_groove_pocket_inward_y_mm + tread_groove_pocket_break_tread_face_mm) / 2;
 
-    apply_tread_cutout_flip()
-        translate([cx, cy, slide_cz])
-            rotate([0, 0, 90])
-                translate([0, 0, -socket_depth / 2])
-                    rotate([180, 0, 0])
-                        tread_visual_for_exploded_view();
+function assembly_tread_groove_ceiling_pos() = bracket_pos(
+    shell_extent_qr_wedge_mm / 2,
+    assembly_tread_groove_pocket_center_ly(),
+    assembly_bracket_flange_groove_top_z_mm()
+);
+
+module tread_mated_to_bracket() {
+    p = assembly_tread_groove_ceiling_pos();
+    translate(p)
+        rotate([0, 0, 90])
+            translate([0, 0, -assembly_tread_flange_top_local_z_mm()])
+                tread_visual_for_exploded_view();
 }
 
-apply_bracket_orientation()
-    bracket_cross_trim() {
-        color([1, 0.85, 0.12])
-            shell_body_difference_wedge_bores();
-        if (show_tread_in_assembly)
-            color([0.25, 0.25, 0.25, 0.9])
-                translate(exploded_tread_offset_vec())
-                    tread_mated_to_bracket_reference();
-    }
+// ── Kneeler stack (kneeler-bracket local: +X length, +Y width, +Z peg up) ───
+function assembly_kneeler_bracket_origin_bracket() = [
+    assembly_pew_leg_inner_face_x_mm(),
+    0,
+    0,
+];
+
+// Same transform chain as assembly_kneeler_pose(): o + Rx(kneeler tilt) * Ry(−90°) * p.
+function assembly_kneeler_local_to_bracket(p) =
+    let(
+        o = assembly_kneeler_bracket_origin_bracket(),
+        cs = cos(assembly_kneeler_bracket_rotate_x_deg),
+        sn = sin(assembly_kneeler_bracket_rotate_x_deg),
+        after_ry = [-p[2], p[1], p[0]],
+        after_rx = [
+            after_ry[0],
+            after_ry[1] * cs - after_ry[2] * sn,
+            after_ry[1] * sn + after_ry[2] * cs,
+        ]
+    )
+    o + after_rx;
+
+function assembly_kneeler_near_peg_center_local() = [
+    assembly_kneeler_near_peg_x_mm(),
+    0,
+    assembly_kneeler_support_top_lz_mm,
+];
+
+function assembly_kneeler_far_peg_center_local() = [
+    assembly_kneeler_far_peg_x_mm(),
+    0,
+    assembly_kneeler_support_top_lz_mm,
+];
+
+module assembly_kneeler_pose() {
+    translate(assembly_kneeler_bracket_origin_bracket())
+        rotate([assembly_kneeler_bracket_rotate_x_deg, 0, 0])
+            rotate([0, -90, 0])
+                children();
+}
+
+module kneeler_bracket_at_pew() {
+    assembly_kneeler_pose()
+        kneeler_bracket_visual_mirrored_for_exploded_view();
+}
+
+module kneeler_bushing_at_near_peg() {
+    assembly_kneeler_pose()
+        translate(assembly_kneeler_near_peg_center_local())
+            kneeler_bushing_visual_for_exploded_view();
+}
+
+module kneeler_bumper_at_far_peg() {
+    assembly_kneeler_pose()
+        translate(assembly_kneeler_far_peg_center_local())
+            kneeler_bumper_visual_for_exploded_view();
+}
+
+// Hole at near peg; arm length ∥ kneeler +X (rotate 180° Y on arm model).
+module kneeler_arm_mated_in_kneeler_local() {
+    peg_x = assembly_kneeler_near_peg_x_mm();
+    z_hole = assembly_kneeler_arm_hole_center_lz_mm();
+    assembly_kneeler_pose()
+        translate([peg_x + kneeler_arm_length_mm / 2, 0, z_hole])
+            rotate([0, 180, 0])
+                kneeler_arm_visual_for_exploded_view();
+}
+
+// Spin about bracket +X through hole (Y/Z only). Do not rotate inside kneeler_pose.
+module kneeler_arm_at_kneeler_pegs() {
+    peg_x = assembly_kneeler_near_peg_x_mm();
+    pivot_bracket = assembly_kneeler_local_to_bracket([
+        peg_x,
+        0,
+        assembly_kneeler_arm_hole_center_lz_mm(),
+    ]);
+    translate(pivot_bracket)
+        rotate([assembly_kneeler_arm_rotate_x_deg, 0, 0])
+            translate(-pivot_bracket)
+                kneeler_arm_mated_in_kneeler_local();
+}
+
+// ── Pew leg ghost (Ry 90°: plan ∥ bracket Y, thickness ∥ bracket X) ─────────
+module pew_leg_at_kneeler() {
+    translate([
+        assembly_pew_leg_center_x_mm(),
+        assembly_pew_leg_center_y_mm(),
+        bracket_face_pew_z_mm + pew_leg_thickness_mm / 2 + epsilon,
+    ])
+        rotate([0, 90, 0])
+            pew_leg_visual_for_exploded_view();
+}
+
+// ── Root preview ─────────────────────────────────────────────────────────────
+module assembly_preview() {
+    bracket_export_bed_lift()
+        bracket_cross_trim() {
+            color([1, 0.85, 0.12])
+                shell_body_difference_wedge_bores();
+            if (show_tread_in_assembly)
+                color([0.25, 0.25, 0.25, 0.9])
+                    translate(exploded_tread_offset_vec())
+                        tread_mated_to_bracket();
+            if (show_kneeler_bracket_in_assembly)
+                color([0.55, 0.55, 0.58, 0.92])
+                    kneeler_bracket_at_pew();
+            if (show_kneeler_bushing_in_assembly)
+                color([0.45, 0.55, 0.85, 0.92])
+                    kneeler_bushing_at_near_peg();
+            if (show_kneeler_bumper_in_assembly)
+                color([0.15, 0.15, 0.15, 0.95])
+                    kneeler_bumper_at_far_peg();
+            if (show_kneeler_arm_in_assembly)
+                color([0.62, 0.48, 0.32, 0.9])
+                    kneeler_arm_at_kneeler_pegs();
+            if (show_pew_leg_in_assembly)
+                color([0.72, 0.58, 0.38, 0.88])
+                    pew_leg_at_kneeler();
+        }
+}
+
+assembly_preview();

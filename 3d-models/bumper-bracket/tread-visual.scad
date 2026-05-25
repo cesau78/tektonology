@@ -1,5 +1,5 @@
-// Assembly preview only: mirrors prayer-sole v3-compound-fastened/tread.scad tread_positive().
-// Sync with that file if the printed tread changes.
+// Assembly ghost — prayer-sole v3-compound-fastened/tread.scad tread_positive().
+// Update if the printed tread geometry changes.
 
 module tread_visual_for_exploded_view() {
     ribs = 10;
