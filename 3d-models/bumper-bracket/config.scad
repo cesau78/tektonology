@@ -58,9 +58,16 @@ width_extra_half_tread = true;
 depth_in            = 3;
 
 // ── Shell ────────────────────────────────────────────────────────────────────
-wall                = 3;
+wall                = 3;     // solid infill inset (former hollow-shell cavity in bumper-parts.scad)
+shell_solid_fill_enabled = true;  // union interior cube so the bracket prints solid, not as a thin wall
+shell_hollow_walls_enabled = false; // true = legacy 3 mm wall cavity (difference inner cube)
 corner_r            = 1;
 epsilon             = 0.02;    // manifold + thin slabs
+
+// Shell body (bumper-bracket.scad): simple box = rule envelope only; production adds minkowski fillet + roof prism.
+shell_use_simple_rule_box = true;
+shell_roof_prism_enabled  = false;
+wood_screw_holes_enabled  = false;
 
 /*
   Bracket coordinate frame — OpenSCAD (x, y, z) is the design frame for bumper-bracket.scad.
@@ -132,13 +139,12 @@ function tread_visual_z_bounds_local() = let (
 
 function tread_visual_z_span_mm() = let (b = tread_visual_z_bounds_local()) b[1] - b[0];
 
-// Side D (−Z tread slot): narrows 12.8 mm along +Y at the E rim; D∩F stays 90°, D∩E = 90° + 9.8°.
-// Bevel is subtracted mostly from face E (+Y base): 0 at C∩E, tread_face_d_e_side_y_narrow_mm at D∩E,
-// full span along E from bracket_face_pew_z_mm (C) to bracket_face_tread_slot_z_mm (D).
-tread_face_d_e_side_y_narrow_mm = 12.8;
-tread_face_de_extra_angle_deg     = 9.8;
-function tread_face_de_cut_slope_deg() =
-    atan(tread_face_d_e_side_y_narrow_mm / shell_extent_tread_pew_mm);
+// Side D (−Z tread slot): E bevel 9.8° (C∩E flush, D∩E inset); D∩F stays 90°.
+tread_face_de_extra_angle_deg = 9.8;
+function tread_face_e_bevel_slope_k() = tan(tread_face_de_extra_angle_deg);
+// Y inset at D∩E for the nominal C↔D span (≈12.8 mm at default shell_extent_tread_pew_mm).
+tread_face_d_e_side_y_narrow_mm = tread_face_e_bevel_slope_k() * shell_extent_tread_pew_mm;
+function tread_face_de_cut_slope_deg() = tread_face_de_extra_angle_deg;
 
 // Debug face labels (assembly preview only) — bracket OpenSCAD axes (x, y, z):
 //   A = +X prism / wedge rim     B = −X opposite (narrow) rim

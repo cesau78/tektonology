@@ -94,25 +94,42 @@ module bracket_cross_trim() {
     }
 }
 
+// Full exterior rule box (lx × lz × ly → bracket x, y, z).
+module shell_envelope_solid_rule_box() {
+    translate(bracket_pos(
+        shell_extent_qr_wedge_mm / 2,
+        shell_extent_tread_pew_mm / 2,
+        shell_height_mm / 2))
+        cube(
+            [shell_extent_qr_wedge_mm, shell_height_mm, shell_extent_tread_pew_mm],
+            center = true
+        );
+}
+
 module shell_envelope_minkowski_union() {
-    core_leg = [
-        shell_extent_qr_wedge_mm - 2 * corner_r,
-        shell_extent_tread_pew_mm - 2 * corner_r,
-        shell_height_mm - corner_r,
-    ];
-    sz = [core_leg[0], core_leg[2], core_leg[1]];
-    c = bracket_pos(
-        corner_r + core_leg[0] / 2,
-        corner_r + core_leg[1] / 2,
-        corner_r + core_leg[2] / 2
-    );
-    minkowski() {
-        union() {
-            translate(c)
-                cube(sz, center = true);
-            shell_wedge_primitive();
+    if (shell_use_simple_rule_box) {
+        shell_envelope_solid_rule_box();
+    } else {
+        core_leg = [
+            shell_extent_qr_wedge_mm - 2 * corner_r,
+            shell_extent_tread_pew_mm - 2 * corner_r,
+            shell_height_mm - corner_r,
+        ];
+        sz = [core_leg[0], core_leg[2], core_leg[1]];
+        c = bracket_pos(
+            corner_r + core_leg[0] / 2,
+            corner_r + core_leg[1] / 2,
+            corner_r + core_leg[2] / 2
+        );
+        minkowski() {
+            union() {
+                translate(c)
+                    cube(sz, center = true);
+                if (shell_roof_prism_enabled)
+                    shell_wedge_primitive();
+            }
+            sphere(r = corner_r, $fn = preview ? 16 : 24);
         }
-        sphere(r = corner_r, $fn = preview ? 16 : 24);
     }
 }
 
@@ -126,8 +143,7 @@ module shell_tread_face_de_bevel_cut() {
     y_hi = y_e + shell_wedge_leg_mm + 40;
     x_h = shell_extent_qr_wedge_mm / 2 + shell_wedge_leg_mm + 20;
 
-    function y_cut(z) =
-        y_e - tread_face_d_e_side_y_narrow_mm * (z_c - z) / z_span;
+    function y_cut(z) = y_e - tread_face_e_bevel_slope_k() * (z_c - z);
 
     y_d = y_cut(z_d);
     y_c = y_cut(z_c);
@@ -187,6 +203,64 @@ module wood_screw_pattern() {
         wood_mount_hole(yf);
 }
 
+// Pocket in bracket [x,y,z]: sloped ceiling; floor parallel below by depth_y. ceiling_drop_mm lowers ceiling below y_cut (core under flange).
+// Span along bracket Z (tread face D through pew); breaks past D when ly_center includes tread-face break.
+module shell_tread_pocket_cutter_to_e(
+    lx_center,
+    ly_center,
+    lz_center,
+    pocket_w,
+    pocket_h_lz,
+    pocket_len_ly,
+    ceiling_drop_mm = 0
+) {
+    z_c = bracket_face_pew_z_mm;
+    z_d = bracket_face_tread_slot_z_mm;
+    y_e = bracket_nat_y_mid_mm;
+    k = tread_face_e_bevel_slope_k();
+    depth_y = pocket_h_lz;
+
+    function y_cut(z) = y_e - k * (z_c - z);
+    function y_ceiling(z) = y_cut(z) - ceiling_drop_mm;
+    function y_floor_at(z) = y_ceiling(z) - depth_y;
+
+    ly_lo = ly_center - pocket_len_ly / 2;
+    ly_hi = ly_center + pocket_len_ly / 2;
+    z_lo = min(ly_lo - shell_extent_tread_pew_mm / 2, z_d - epsilon * 4);
+    z_hi = ly_hi - shell_extent_tread_pew_mm / 2;
+
+    x_lo = lx_center - shell_extent_qr_wedge_mm / 2 - pocket_w / 2;
+    x_hi = x_lo + pocket_w;
+    pad = epsilon * 4;
+
+    y_e_lo = y_ceiling(z_lo) - epsilon;
+    y_e_hi = y_ceiling(z_hi) - epsilon;
+    y_f_lo = y_floor_at(z_lo) - pad;
+    y_f_hi = y_floor_at(z_hi) - pad;
+
+    polyhedron(
+        points = [
+            [x_lo - pad, y_f_lo, z_lo - pad],
+            [x_hi + pad, y_f_lo, z_lo - pad],
+            [x_lo - pad, y_f_hi, z_hi + pad],
+            [x_hi + pad, y_f_hi, z_hi + pad],
+            [x_lo - pad, y_e_lo, z_lo - pad],
+            [x_hi + pad, y_e_lo, z_lo - pad],
+            [x_lo - pad, y_e_hi, z_hi + pad],
+            [x_hi + pad, y_e_hi, z_hi + pad],
+        ],
+        faces = [
+            [0, 1, 3, 2],
+            [4, 5, 7, 6],
+            [0, 4, 5, 1],
+            [2, 3, 7, 6],
+            [0, 2, 6, 4],
+            [1, 5, 7, 3],
+        ],
+        convexity = 2
+    );
+}
+
 module shell_tread_groove_pocket_cube() {
     margin_x = (shell_extent_qr_wedge_mm - groove_w) / 2;
     x_hi = shell_extent_qr_wedge_mm - margin_x;
@@ -194,13 +268,17 @@ module shell_tread_groove_pocket_cube() {
     y_br = tread_groove_pocket_break_tread_face_mm;
     y_len = tread_groove_pocket_inward_y_mm + y_br;
     zh = tread_groove_pocket_height_mm + epsilon * 4;
-    c = bracket_pos(
+    core_zh = tread_core_pocket_depth_z_mm + epsilon * 4;
+    // Flange groove (wider): behind tread core, toward F — not flush with E.
+    shell_tread_pocket_cutter_to_e(
         (x_lo + x_hi) / 2,
         -y_br + y_len / 2,
-        tread_groove_pocket_z0_mm + zh / 2
+        tread_groove_pocket_z0_mm + zh / 2,
+        groove_w,
+        zh,
+        y_len,
+        core_zh
     );
-    translate(c)
-        cube([groove_w, zh, y_len], center = true);
 }
 
 module shell_tread_core_pocket_cube() {
@@ -210,13 +288,16 @@ module shell_tread_core_pocket_cube() {
     y_br = tread_groove_pocket_break_tread_face_mm;
     y_len = tread_core_pocket_inward_y_mm + y_br;
     zh = tread_core_pocket_depth_z_mm + epsilon * 4;
-    c = bracket_pos(
+    // Tread rigid core (narrower): ceiling flush on tapered E (y_cut).
+    shell_tread_pocket_cutter_to_e(
         (x_lo + x_hi) / 2,
         -y_br + y_len / 2,
-        tread_core_pocket_floor_z_mm + zh / 2
+        tread_core_pocket_floor_z_mm + zh / 2,
+        tread_w,
+        zh,
+        y_len,
+        0
     );
-    translate(c)
-        cube([tread_w, zh, y_len], center = true);
 }
 
 module shell_body_difference_wedge_bores() {
@@ -227,7 +308,8 @@ module shell_body_difference_wedge_bores() {
             shell_tread_groove_pocket_cube();
         if (tread_core_shell_pocket_enabled)
             shell_tread_core_pocket_cube();
-        wood_screw_pattern();
+        if (wood_screw_holes_enabled)
+            wood_screw_pattern();
     }
 }
 
