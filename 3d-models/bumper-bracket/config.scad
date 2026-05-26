@@ -132,6 +132,14 @@ function tread_visual_z_bounds_local() = let (
 
 function tread_visual_z_span_mm() = let (b = tread_visual_z_bounds_local()) b[1] - b[0];
 
+// Side D (−Z tread slot): narrows 12.8 mm along +Y at the E rim; D∩F stays 90°, D∩E = 90° + 9.8°.
+// Bevel is subtracted mostly from face E (+Y base): 0 at C∩E, tread_face_d_e_side_y_narrow_mm at D∩E,
+// full span along E from bracket_face_pew_z_mm (C) to bracket_face_tread_slot_z_mm (D).
+tread_face_d_e_side_y_narrow_mm = 12.8;
+tread_face_de_extra_angle_deg     = 9.8;
+function tread_face_de_cut_slope_deg() =
+    atan(tread_face_d_e_side_y_narrow_mm / shell_extent_tread_pew_mm);
+
 // Debug face labels (assembly preview only) — bracket OpenSCAD axes (x, y, z):
 //   A = +X prism / wedge rim     B = −X opposite (narrow) rim
 //   C = +Z pew engagement        D = −Z tread slot

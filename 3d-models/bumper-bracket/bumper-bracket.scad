@@ -116,6 +116,45 @@ module shell_envelope_minkowski_union() {
     }
 }
 
+// Side D (−Z tread) narrows 12.8 mm along +Y at E; D∩F stays 90°; D∩E = 90° + tread_face_de_extra_angle_deg.
+// Material removed from face E only: 0 at C∩E, tread_face_d_e_side_y_narrow_mm at D∩E (depth taken from D side), full ±X span. F + prism unchanged.
+module shell_tread_face_de_bevel_cut() {
+    z_d = bracket_face_tread_slot_z_mm;
+    z_c = bracket_face_pew_z_mm;
+    z_span = z_c - z_d;
+    y_e = bracket_nat_y_mid_mm;
+    y_hi = y_e + shell_wedge_leg_mm + 40;
+    x_h = shell_extent_qr_wedge_mm / 2 + shell_wedge_leg_mm + 20;
+
+    function y_cut(z) =
+        y_e - tread_face_d_e_side_y_narrow_mm * (z_c - z) / z_span;
+
+    y_d = y_cut(z_d);
+    y_c = y_cut(z_c);
+
+    polyhedron(
+        points = [
+            [-x_h, y_hi, z_d],
+            [x_h, y_hi, z_d],
+            [-x_h, y_hi, z_c],
+            [x_h, y_hi, z_c],
+            [-x_h, y_d, z_d],
+            [x_h, y_d, z_d],
+            [-x_h, y_c, z_c],
+            [x_h, y_c, z_c],
+        ],
+        faces = [
+            [0, 1, 3, 2],
+            [4, 5, 7, 6],
+            [0, 4, 5, 1],
+            [2, 3, 7, 6],
+            [0, 2, 6, 4],
+            [1, 5, 7, 3],
+        ],
+        convexity = 2
+    );
+}
+
 function hyp_z_at_x(x) =
     shell_wedge_leg_mm * (x - corner_r) / shell_wedge_hypotenuse_run_mm;
 
@@ -183,6 +222,7 @@ module shell_tread_core_pocket_cube() {
 module shell_body_difference_wedge_bores() {
     difference() {
         shell_envelope_minkowski_union();
+        shell_tread_face_de_bevel_cut();
         if (tread_groove_shell_pocket_enabled)
             shell_tread_groove_pocket_cube();
         if (tread_core_shell_pocket_enabled)
