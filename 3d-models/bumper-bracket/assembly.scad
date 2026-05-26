@@ -10,6 +10,7 @@
 
 render_standalone_export = false;
 include <bumper-bracket.scad>
+bumper_bracket_debug_face_labels_enabled = false;
 include <tread-visual.scad>
 include <kneeler-bracket-visual.scad>
 include <kneeler-bushing-visual.scad>

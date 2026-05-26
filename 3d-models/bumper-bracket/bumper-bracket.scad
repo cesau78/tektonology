@@ -133,41 +133,48 @@ module shell_envelope_minkowski_union() {
     }
 }
 
-// Side D (−Z tread) narrows 12.8 mm along +Y at E; D∩F stays 90°; D∩E = 90° + tread_face_de_extra_angle_deg.
-// Material removed from face E only: 0 at C∩E, tread_face_d_e_side_y_narrow_mm at D∩E (depth taken from D side), full ±X span. F + prism unchanged.
+// Solid rule cube minus three rectangular hull(CUBE) cutters on the 9.8° E-bevel plane (no polyhedron).
+HULL_VERTEX_CUBE_MM = 0.5;
+
+function y_on_e_bevel_plane(z) =
+    bracket_nat_y_mid_mm - tread_face_e_bevel_slope_k() * (bracket_face_pew_z_mm - z);
+
+// Frustum with sloped top/bottom at y_top(z) and y_bot(z); sides vertical in Y (parallel to bevel normal stack).
+module hull_rect_on_e_slope(x_lo, x_hi, z_lo, z_hi, y_top_lo, y_top_hi, y_bot_lo, y_bot_hi) {
+    c = HULL_VERTEX_CUBE_MM;
+    hull() {
+        for (p = [
+            [x_lo, y_bot_lo, z_lo],
+            [x_hi, y_bot_lo, z_lo],
+            [x_lo, y_bot_hi, z_hi],
+            [x_hi, y_bot_hi, z_hi],
+            [x_lo, y_top_lo, z_lo],
+            [x_hi, y_top_lo, z_lo],
+            [x_lo, y_top_hi, z_hi],
+            [x_hi, y_top_hi, z_hi],
+        ])
+            translate(p)
+                cube(c, center = true);
+    }
+}
+
+// Cutter 1: E-bevel wedge above y_on_e_bevel_plane (0 at C∩E, tread_face_d_e_side_y_narrow_mm at D∩E).
 module shell_tread_face_de_bevel_cut() {
     z_d = bracket_face_tread_slot_z_mm;
     z_c = bracket_face_pew_z_mm;
-    z_span = z_c - z_d;
     y_e = bracket_nat_y_mid_mm;
     y_hi = y_e + shell_wedge_leg_mm + 40;
     x_h = shell_extent_qr_wedge_mm / 2 + shell_wedge_leg_mm + 20;
 
-    function y_cut(z) = y_e - tread_face_e_bevel_slope_k() * (z_c - z);
-
-    y_d = y_cut(z_d);
-    y_c = y_cut(z_c);
-
-    polyhedron(
-        points = [
-            [-x_h, y_hi, z_d],
-            [x_h, y_hi, z_d],
-            [-x_h, y_hi, z_c],
-            [x_h, y_hi, z_c],
-            [-x_h, y_d, z_d],
-            [x_h, y_d, z_d],
-            [-x_h, y_c, z_c],
-            [x_h, y_c, z_c],
-        ],
-        faces = [
-            [0, 1, 3, 2],
-            [4, 5, 7, 6],
-            [0, 4, 5, 1],
-            [2, 3, 7, 6],
-            [0, 2, 6, 4],
-            [1, 5, 7, 3],
-        ],
-        convexity = 2
+    hull_rect_on_e_slope(
+        -x_h,
+        x_h,
+        z_d,
+        z_c,
+        y_hi,
+        y_hi,
+        y_on_e_bevel_plane(z_d),
+        y_on_e_bevel_plane(z_c)
     );
 }
 
@@ -203,62 +210,34 @@ module wood_screw_pattern() {
         wood_mount_hole(yf);
 }
 
-// Pocket in bracket [x,y,z]: sloped ceiling; floor parallel below by depth_y. ceiling_drop_mm lowers ceiling below y_cut (core under flange).
-// Span along bracket Z (tread face D through pew); breaks past D when ly_center includes tread-face break.
-module shell_tread_pocket_cutter_to_e(
-    lx_center,
-    ly_center,
-    lz_center,
-    pocket_w,
-    pocket_h_lz,
-    pocket_len_ly,
-    ceiling_drop_mm = 0
-) {
-    z_c = bracket_face_pew_z_mm;
+// Cutter 2/3: rectangular pocket; ceiling on y_on_e_bevel_plane − ceiling_drop; floor parallel below by depth_y.
+module shell_tread_pocket_sloped_hull(lx_center, ly_center, pocket_w, pocket_len_ly, depth_y, ceiling_drop_mm) {
     z_d = bracket_face_tread_slot_z_mm;
-    y_e = bracket_nat_y_mid_mm;
-    k = tread_face_e_bevel_slope_k();
-    depth_y = pocket_h_lz;
-
-    function y_cut(z) = y_e - k * (z_c - z);
-    function y_ceiling(z) = y_cut(z) - ceiling_drop_mm;
-    function y_floor_at(z) = y_ceiling(z) - depth_y;
-
     ly_lo = ly_center - pocket_len_ly / 2;
     ly_hi = ly_center + pocket_len_ly / 2;
     z_lo = min(ly_lo - shell_extent_tread_pew_mm / 2, z_d - epsilon * 4);
     z_hi = ly_hi - shell_extent_tread_pew_mm / 2;
+    z_pad = epsilon * 4;
 
     x_lo = lx_center - shell_extent_qr_wedge_mm / 2 - pocket_w / 2;
     x_hi = x_lo + pocket_w;
-    pad = epsilon * 4;
 
-    y_e_lo = y_ceiling(z_lo) - epsilon;
-    y_e_hi = y_ceiling(z_hi) - epsilon;
-    y_f_lo = y_floor_at(z_lo) - pad;
-    y_f_hi = y_floor_at(z_hi) - pad;
+    y_top_lo = y_on_e_bevel_plane(z_lo) - ceiling_drop_mm - epsilon;
+    y_top_hi = y_on_e_bevel_plane(z_hi) - ceiling_drop_mm - epsilon;
+    y_bot_lo = y_top_lo - depth_y - z_pad;
+    y_bot_hi = y_top_hi - depth_y - z_pad;
 
-    polyhedron(
-        points = [
-            [x_lo - pad, y_f_lo, z_lo - pad],
-            [x_hi + pad, y_f_lo, z_lo - pad],
-            [x_lo - pad, y_f_hi, z_hi + pad],
-            [x_hi + pad, y_f_hi, z_hi + pad],
-            [x_lo - pad, y_e_lo, z_lo - pad],
-            [x_hi + pad, y_e_lo, z_lo - pad],
-            [x_lo - pad, y_e_hi, z_hi + pad],
-            [x_hi + pad, y_e_hi, z_hi + pad],
-        ],
-        faces = [
-            [0, 1, 3, 2],
-            [4, 5, 7, 6],
-            [0, 4, 5, 1],
-            [2, 3, 7, 6],
-            [0, 2, 6, 4],
-            [1, 5, 7, 3],
-        ],
-        convexity = 2
-    );
+    if (z_lo + 0.2 < z_hi && y_top_lo > y_bot_lo + 0.2 && y_top_hi > y_bot_hi + 0.2)
+        hull_rect_on_e_slope(
+            x_lo,
+            x_hi,
+            z_lo - z_pad,
+            z_hi + z_pad,
+            y_top_lo,
+            y_top_hi,
+            y_bot_lo,
+            y_bot_hi
+        );
 }
 
 module shell_tread_groove_pocket_cube() {
@@ -269,14 +248,13 @@ module shell_tread_groove_pocket_cube() {
     y_len = tread_groove_pocket_inward_y_mm + y_br;
     zh = tread_groove_pocket_height_mm + epsilon * 4;
     core_zh = tread_core_pocket_depth_z_mm + epsilon * 4;
-    // Flange groove (wider): behind tread core, toward F — not flush with E.
-    shell_tread_pocket_cutter_to_e(
+    // Cutter 2: flange groove (wider), behind tread core toward F.
+    shell_tread_pocket_sloped_hull(
         (x_lo + x_hi) / 2,
         -y_br + y_len / 2,
-        tread_groove_pocket_z0_mm + zh / 2,
         groove_w,
-        zh,
         y_len,
+        zh,
         core_zh
     );
 }
@@ -288,19 +266,19 @@ module shell_tread_core_pocket_cube() {
     y_br = tread_groove_pocket_break_tread_face_mm;
     y_len = tread_core_pocket_inward_y_mm + y_br;
     zh = tread_core_pocket_depth_z_mm + epsilon * 4;
-    // Tread rigid core (narrower): ceiling flush on tapered E (y_cut).
-    shell_tread_pocket_cutter_to_e(
+    // Cutter 3: tread core (narrower), ceiling flush on E bevel.
+    shell_tread_pocket_sloped_hull(
         (x_lo + x_hi) / 2,
         -y_br + y_len / 2,
-        tread_core_pocket_floor_z_mm + zh / 2,
         tread_w,
-        zh,
         y_len,
+        zh,
         0
     );
 }
 
 module shell_body_difference_wedge_bores() {
+    // One solid cube minus three sloped rectangular hull cutters (bevel + flange + tread).
     difference() {
         shell_envelope_minkowski_union();
         shell_tread_face_de_bevel_cut();
