@@ -94,42 +94,27 @@ module bracket_cross_trim() {
     }
 }
 
-// Full exterior rule box (lx × lz × ly → bracket x, y, z).
-module shell_envelope_solid_rule_box() {
-    translate(bracket_pos(
-        shell_extent_qr_wedge_mm / 2,
-        shell_extent_tread_pew_mm / 2,
-        shell_height_mm / 2))
-        cube(
-            [shell_extent_qr_wedge_mm, shell_height_mm, shell_extent_tread_pew_mm],
-            center = true
-        );
-}
-
 module shell_envelope_minkowski_union() {
-    if (shell_use_simple_rule_box) {
-        shell_envelope_solid_rule_box();
-    } else {
-        core_leg = [
-            shell_extent_qr_wedge_mm - 2 * corner_r,
-            shell_extent_tread_pew_mm - 2 * corner_r,
-            shell_height_mm - corner_r,
-        ];
-        sz = [core_leg[0], core_leg[2], core_leg[1]];
-        c = bracket_pos(
-            corner_r + core_leg[0] / 2,
-            corner_r + core_leg[1] / 2,
-            corner_r + core_leg[2] / 2
-        );
-        minkowski() {
-            union() {
-                translate(c)
-                    cube(sz, center = true);
-                if (shell_roof_prism_enabled)
-                    shell_wedge_primitive();
-            }
-            sphere(r = corner_r, $fn = preview ? 16 : 24);
+    core_leg = [
+        shell_extent_qr_wedge_mm - 2 * corner_r,
+        shell_extent_tread_pew_mm - 2 * corner_r,
+        shell_height_mm - corner_r,
+    ];
+    sz = [core_leg[0], core_leg[2], core_leg[1]];
+    c = bracket_pos(
+        corner_r + core_leg[0] / 2,
+        corner_r + core_leg[1] / 2,
+        corner_r + core_leg[2] / 2
+    );
+    // Union prism onto core first, then fillet the combined solid.
+    minkowski() {
+        union() {
+            translate(c)
+                cube(sz, center = true);
+            if (shell_roof_prism_enabled)
+                shell_wedge_primitive();
         }
+        sphere(r = corner_r, $fn = preview ? 16 : 24);
     }
 }
 
@@ -278,7 +263,7 @@ module shell_tread_core_pocket_cube() {
 }
 
 module shell_body_difference_wedge_bores() {
-    // One solid cube minus three sloped rectangular hull cutters (bevel + flange + tread).
+    // Filleted core+prism envelope minus three sloped hull cutters (bevel + flange + tread).
     difference() {
         shell_envelope_minkowski_union();
         shell_tread_face_de_bevel_cut();

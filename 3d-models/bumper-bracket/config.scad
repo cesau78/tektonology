@@ -64,10 +64,9 @@ shell_hollow_walls_enabled = false; // true = legacy 3 mm wall cavity (differenc
 corner_r            = 1;
 epsilon             = 0.02;    // manifold + thin slabs
 
-// Shell body (bumper-bracket.scad): simple box = rule envelope only; production adds minkowski fillet + roof prism.
-shell_use_simple_rule_box = true;
-shell_roof_prism_enabled  = false;
-wood_screw_holes_enabled  = false;
+// Shell body (bumper-bracket.scad): inset core + roof prism, then minkowski fillet; hull cutters subtract after.
+shell_roof_prism_enabled  = true;
+wood_screw_holes_enabled  = true;
 
 /*
   Bracket coordinate frame — OpenSCAD (x, y, z) is the design frame for bumper-bracket.scad.
