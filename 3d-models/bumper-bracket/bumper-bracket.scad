@@ -40,6 +40,31 @@ module shell_wedge_primitive(overlap_below = corner_r) {
     );
 }
 
+module shell_core_pre_mink() {
+    core_leg = [
+        shell_extent_qr_wedge_mm - 2 * corner_r,
+        shell_extent_tread_pew_mm - 2 * corner_r,
+        shell_height_mm - corner_r,
+    ];
+    sz = [core_leg[0], core_leg[2], core_leg[1]];
+    c = bracket_pos(
+        corner_r + core_leg[0] / 2,
+        corner_r + core_leg[1] / 2,
+        corner_r + core_leg[2] / 2
+    );
+    translate(c)
+        cube(sz, center = true);
+}
+
+// Core + roof prism (mount pad unions afterward, before minkowski).
+module shell_core_and_wedge_union() {
+    union() {
+        shell_core_pre_mink();
+        if (shell_roof_prism_enabled)
+            shell_wedge_primitive();
+    }
+}
+
 function bracket_world_z_min() = bracket_face_tread_slot_z_mm;
 
 // Export-only Z translate (not a design-frame rotation).
@@ -94,26 +119,35 @@ module bracket_cross_trim() {
     }
 }
 
+module shell_pew_mount_block() {
+    if (pew_mount_block_enabled && pew_mount_block_y_len_mm() > 0.2)
+        translate([
+            pew_mount_block_x_center_mm(),
+            pew_mount_block_y_center_mm(),
+            pew_mount_block_z_center_mm(),
+        ])
+            cube(
+                [
+                    pew_mount_block_thickness_x_mm,
+                    pew_mount_block_y_len_mm(),
+                    pew_mount_block_z_len_mm(),
+                ],
+                center = true
+            );
+}
+
+// Core + prism, then mount pad — one union, one minkowski fillet (no nested/per-part minkowski).
+module shell_envelope_raw_union() {
+    union() {
+        shell_core_and_wedge_union();
+        shell_pew_mount_block();
+    }
+}
+
 module shell_envelope_minkowski_union() {
-    core_leg = [
-        shell_extent_qr_wedge_mm - 2 * corner_r,
-        shell_extent_tread_pew_mm - 2 * corner_r,
-        shell_height_mm - corner_r,
-    ];
-    sz = [core_leg[0], core_leg[2], core_leg[1]];
-    c = bracket_pos(
-        corner_r + core_leg[0] / 2,
-        corner_r + core_leg[1] / 2,
-        corner_r + core_leg[2] / 2
-    );
-    // Union prism onto core first, then fillet the combined solid.
+    // Sole fillet pass for the printable shell (tread ghost uses its own minkowski separately).
     minkowski() {
-        union() {
-            translate(c)
-                cube(sz, center = true);
-            if (shell_roof_prism_enabled)
-                shell_wedge_primitive();
-        }
+        shell_envelope_raw_union();
         sphere(r = corner_r, $fn = preview ? 16 : 24);
     }
 }
@@ -263,7 +297,7 @@ module shell_tread_core_pocket_cube() {
 }
 
 module shell_body_difference_wedge_bores() {
-    // Filleted core+prism envelope minus three sloped hull cutters (bevel + flange + tread).
+    // Filleted core+prism+mount pad minus three sloped hull cutters (bevel + flange + tread).
     difference() {
         shell_envelope_minkowski_union();
         shell_tread_face_de_bevel_cut();

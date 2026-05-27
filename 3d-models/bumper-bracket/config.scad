@@ -64,7 +64,7 @@ shell_hollow_walls_enabled = false; // true = legacy 3 mm wall cavity (differenc
 corner_r            = 1;
 epsilon             = 0.02;    // manifold + thin slabs
 
-// Shell body (bumper-bracket.scad): inset core + roof prism, then minkowski fillet; hull cutters subtract after.
+// Core + roof prism + pew mount pad unioned, then minkowski fillet; hull cutters subtract after.
 shell_roof_prism_enabled  = true;
 wood_screw_holes_enabled  = true;
 
@@ -197,6 +197,32 @@ tread_groove_pocket_z0_mm =
 tread_groove_pocket_height_mm =
     flange_depth + 2 * tread_visual_flange_sphere_r + tread_groove_pocket_z_clear_mm;
 
+// Pew-side mounting pad (+X): post-mink exterior datums in functions below.
+pew_mount_block_enabled           = true;
+pew_mount_block_thickness_x_mm    = 20;
+function pew_mount_block_x_center_mm() =
+    bracket_face_wedge_x_mm + pew_mount_block_thickness_x_mm / 2;
+// −Y face pinned at prism apex (F-side start at lz = shell_height + wedge_leg).
+function pew_mount_block_y_lo_mm() =
+    bracket_nat_y_mid_mm - shell_height_mm - shell_wedge_leg_mm;
+// +Y datum: flange groove floor on E-bevel (shell_tread_pocket_sloped_hull y_bot).
+function pew_mount_block_flange_groove_floor_y_mm(z_bracket = pew_mount_block_z_center_mm()) =
+    assembly_y_on_e_bevel_plane_bracket_z(z_bracket)
+    - tread_core_pocket_depth_z_mm
+    - tread_groove_pocket_height_mm
+    - epsilon;
+// Shorten +Y extent toward F; y_lo unchanged (prism pin).
+pew_mount_block_y_hi_shorten_from_groove_floor_mm = 7;
+function pew_mount_block_y_hi_mm() =
+    pew_mount_block_flange_groove_floor_y_mm()
+    - pew_mount_block_y_hi_shorten_from_groove_floor_mm;
+function pew_mount_block_y_len_mm() =
+    pew_mount_block_y_hi_mm() - pew_mount_block_y_lo_mm();
+function pew_mount_block_y_center_mm() =
+    (pew_mount_block_y_lo_mm() + pew_mount_block_y_hi_mm()) / 2;
+function pew_mount_block_z_len_mm() = shell_extent_tread_pew_mm;
+function pew_mount_block_z_center_mm() = 0;
+
 // Assembly pose (assembly.scad): Rx(−bevel) · Rx(90°) · Rz(90°); tread bbox centered on bracket Z (= 0).
 function assembly_tread_vertical_auto_mm() = 0;
 assembly_tread_z_trim_mm = 0;
@@ -304,11 +330,11 @@ assembly_pew_leg_positive_y_fraction = 1 / 8;
 function assembly_pew_leg_center_y_mm() =
     pew_leg_visual_plan_mm * (assembly_pew_leg_positive_y_fraction - 0.5);
 
-// +X bumper half-width + kneeler plate width − tread width (pew sits tread_w closer to bumper).
+// +X bumper half-width + kneeler plate width − 3/4 tread width (pew on +X).
 function assembly_pew_leg_inner_face_x_mm() =
     bracket_face_wedge_x_mm
     + kneeler_bracket_plate_w_mm
-    - tread_w
+    - 3 * tread_w / 4
     + assembly_pew_leg_side_gap_mm;
 
 function assembly_pew_leg_center_x_mm() =
