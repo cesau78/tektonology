@@ -1,6 +1,7 @@
 // Assembly preview — bumper bracket (native frame) + reference ghosts.
 //
-// Bracket body has no rotate(); ghosts are placed with translate/rotate only.
+// shell_body_difference_wedge_bores() + tread ghost share assembly_bumper_bracket_group().
+// Bracket STL body has no rotate() in bumper-bracket.scad; preview tilts/moves the bumper unit only.
 // Kneeler stack uses assembly_kneeler_pose() (Ry −90°, Rx 45°) then bracket-frame arm spin.
 //
 // Improvements (future):
@@ -40,12 +41,26 @@ function assembly_tread_groove_ceiling_pos() = bracket_pos(
     assembly_bracket_flange_groove_top_z_mm()
 );
 
+function assembly_tread_mate_pos() =
+    let (z = assembly_tread_mate_bracket_z_mm())
+    [0, assembly_tread_mate_bracket_y_mm(z), z];
+
 module tread_mated_to_bracket() {
-    p = assembly_tread_groove_ceiling_pos();
+    p = assembly_tread_mate_pos();
     translate(p)
-        rotate([0, 0, 90])
-            translate([0, 0, -assembly_tread_flange_top_local_z_mm()])
-                tread_visual_for_exploded_view();
+        // E-bevel (side D): outer Rx in bracket frame (Y–Z slope), after base Rx 90° + Rz 90° mate.
+        rotate([-tread_face_de_extra_angle_deg, 0, 0])
+            rotate([90, 0, 0])
+                rotate([0, 0, 90])
+                    translate([0, 0, -assembly_tread_flange_top_local_z_mm()])
+                        tread_visual_for_exploded_view();
+}
+
+// Shell, screw bores, tread pockets, and tread ghost — one translate/rotate for preview orientation.
+module assembly_bumper_bracket_group() {
+    translate(assembly_bumper_group_offset)
+        rotate(assembly_bumper_group_rotate_deg)
+            children();
 }
 
 // ── Kneeler stack (kneeler-bracket local: +X length, +Y width, +Z peg up) ───
@@ -145,12 +160,15 @@ module pew_leg_at_kneeler() {
 module assembly_preview() {
     bracket_export_bed_lift()
         bracket_cross_trim() {
-            color([1, 0.85, 0.12])
-                shell_body_difference_wedge_bores();
-            if (show_tread_in_assembly)
-                color([0.25, 0.25, 0.25, 0.9])
-                    translate(exploded_tread_offset_vec())
-                        tread_mated_to_bracket();
+            assembly_bumper_bracket_group() {
+                color([1, 0.85, 0.12])
+                    shell_body_difference_wedge_bores();
+                if (show_tread_in_assembly)
+                    color([0.25, 0.25, 0.25, 0.9])
+                        translate(exploded_tread_offset_vec())
+                            tread_mated_to_bracket();
+                bumper_bracket_debug_face_labels();
+            }
             if (show_kneeler_bracket_in_assembly)
                 color([0.55, 0.55, 0.58, 0.92])
                     kneeler_bracket_at_pew();
@@ -166,7 +184,6 @@ module assembly_preview() {
             if (show_pew_leg_in_assembly)
                 color([0.72, 0.58, 0.38, 0.88])
                     pew_leg_at_kneeler();
-            bumper_bracket_debug_face_labels();
         }
 }
 

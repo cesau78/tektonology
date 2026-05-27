@@ -197,12 +197,65 @@ tread_groove_pocket_z0_mm =
 tread_groove_pocket_height_mm =
     flange_depth + 2 * tread_visual_flange_sphere_r + tread_groove_pocket_z_clear_mm;
 
-// Assembly pose (assembly.scad): flange apex ↔ groove pocket ceiling (bracket +Y / sizing lz).
+// Assembly pose (assembly.scad): Rx(−bevel) · Rx(90°) · Rz(90°); tread bbox centered on bracket Z (= 0).
 function assembly_tread_vertical_auto_mm() = 0;
 assembly_tread_z_trim_mm = 0;
 
 function assembly_tread_flange_top_local_z_mm() =
     socket_depth / 2 + core_depth / 2 - 1 + tread_visual_flange_sphere_r;
+
+// Tread local → bracket delta after flange-top anchor (matches assembly.scad rotate chain).
+function assembly_tread_local_to_bracket_delta(q_local) =
+    let (
+        d = q_local - [0, 0, assembly_tread_flange_top_local_z_mm()],
+        after_rz = [-d[1], d[0], d[2]],
+        after_rx = [after_rz[0], -after_rz[2], after_rz[1]],
+        b = tread_face_de_extra_angle_deg,
+        cb = cos(b),
+        sb = sin(b)
+    )
+    [
+        after_rx[0],
+        after_rx[1] * cb + after_rx[2] * sb,
+        -after_rx[1] * sb + after_rx[2] * cb,
+    ];
+
+function assembly_tread_bracket_z_min_max_at_flange_anchor() =
+    let (
+        zb = tread_visual_z_bounds_local(),
+        xs = [-tread_l / 2, tread_l / 2],
+        ys = [-tread_w / 2, tread_w / 2],
+        zs = [zb[0], zb[1]],
+        z_vals = [
+            for (x = xs, y = ys, z = zs)
+            assembly_tread_local_to_bracket_delta([x, y, z])[2],
+        ]
+    )
+    [min(z_vals), max(z_vals)];
+
+function assembly_tread_mate_bracket_z_mm() =
+    let (z_mm = assembly_tread_bracket_z_min_max_at_flange_anchor())
+    -(z_mm[0] + z_mm[1]) / 2 + assembly_tread_z_trim_mm;
+
+// Sloped E-bevel plane (bracket coords); matches bumper-bracket.scad y_on_e_bevel_plane().
+function assembly_y_on_e_bevel_plane_bracket_z(z) =
+    bracket_nat_y_mid_mm - tread_face_e_bevel_slope_k() * (bracket_face_pew_z_mm - z);
+
+// Flange groove mate: pocket ceiling on E bevel, then inward past the groove hull lip (~flange_depth).
+function assembly_tread_flange_groove_hull_inset_mm() = flange_depth;
+
+function assembly_tread_flange_groove_ceiling_y_mm(z_bracket) =
+    assembly_y_on_e_bevel_plane_bracket_z(z_bracket)
+    - tread_core_pocket_depth_z_mm
+    - assembly_tread_flange_groove_hull_inset_mm()
+    - epsilon;
+
+// Fine-tune flange ↔ groove ceiling (+ = toward face E / +Y).
+assembly_tread_flange_groove_y_trim_mm = -2;
+
+function assembly_tread_mate_bracket_y_mm(z_bracket) =
+    assembly_tread_flange_groove_ceiling_y_mm(z_bracket)
+    + assembly_tread_flange_groove_y_trim_mm;
 
 function assembly_bracket_flange_groove_top_z_mm() =
     tread_groove_pocket_z0_mm + tread_groove_pocket_height_mm;
@@ -212,6 +265,10 @@ function assembly_bracket_groove_ceiling_y_mm() =
 
 // Pull-apart in bracket OpenSCAD coords [x, y, z]; [0,0,0] = mated overlap.
 exploded_tread_offset_pull = [0, 0, 0];
+
+// Preview-only: shell + wood bores + tread pockets + tread ghost as one rigid unit.
+assembly_bumper_group_offset = [0, 0, 0];
+assembly_bumper_group_rotate_deg = [0, 0, 0];
 
 // Smaller prism under flange slot for tread rigid core (footprint tread_l × tread_w).
 tread_core_shell_pocket_enabled = true;
