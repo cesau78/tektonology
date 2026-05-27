@@ -268,7 +268,17 @@ exploded_tread_offset_pull = [0, 0, 0];
 
 // Preview-only: shell + wood bores + tread pockets + tread ghost as one rigid unit.
 assembly_bumper_group_offset = [0, 0, 0];
-assembly_bumper_group_rotate_deg = [0, 0, 0];
+assembly_bumper_group_rotate_deg = [45, 0, 0];
+// Nudge bumper group in bracket OpenSCAD coords (−Y = toward F/roof, −Z = toward tread slot).
+assembly_bumper_group_nudge_x_mm = 0;
+assembly_bumper_group_nudge_y_mm = -22;
+assembly_bumper_group_nudge_z_mm = -22;
+
+function assembly_bumper_group_offset_vec() = [
+    assembly_bumper_group_offset[0] + assembly_bumper_group_nudge_x_mm,
+    assembly_bumper_group_offset[1] + assembly_bumper_group_nudge_y_mm,
+    assembly_bumper_group_offset[2] + assembly_bumper_group_nudge_z_mm,
+];
 
 // Smaller prism under flange slot for tread rigid core (footprint tread_l × tread_w).
 tread_core_shell_pocket_enabled = true;
@@ -287,17 +297,19 @@ pew_leg_thickness_mm     = pew_leg_thickness_in * 25.4;
 // Assembly pew-leg-visual.scad plan size (square top).
 pew_leg_visual_plan_in   = 18;
 pew_leg_visual_plan_mm   = pew_leg_visual_plan_in * 25.4;
-// Lateral offset past plastic bracket +X rim; 0 = pew flush to kneeler-bracket pew face.
+// Lateral trim past computed pew inner face (+X); 0 = flush to kneeler stack.
 assembly_pew_leg_side_gap_mm = 0;
 // Fraction of pew-leg span (along bracket Y after Ry(90)) that lies in +Y; rest is −Y.
 assembly_pew_leg_positive_y_fraction = 1 / 8;
 function assembly_pew_leg_center_y_mm() =
     pew_leg_visual_plan_mm * (assembly_pew_leg_positive_y_fraction - 0.5);
 
-// Pew-leg face toward kneeler bracket (+X face of steel bracket after assembly pose).
+// +X bumper half-width + kneeler plate width − tread width (pew sits tread_w closer to bumper).
 function assembly_pew_leg_inner_face_x_mm() =
-    bracket_face_wedge_x_mm + assembly_pew_leg_side_gap_mm + pew_leg_visual_plan_mm / 2
-    - pew_leg_thickness_mm / 2;
+    bracket_face_wedge_x_mm
+    + kneeler_bracket_plate_w_mm
+    - tread_w
+    + assembly_pew_leg_side_gap_mm;
 
 function assembly_pew_leg_center_x_mm() =
     assembly_pew_leg_inner_face_x_mm() + pew_leg_thickness_mm / 2;

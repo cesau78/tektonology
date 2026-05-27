@@ -58,7 +58,7 @@ module tread_mated_to_bracket() {
 
 // Shell, screw bores, tread pockets, and tread ghost — one translate/rotate for preview orientation.
 module assembly_bumper_bracket_group() {
-    translate(assembly_bumper_group_offset)
+    translate(assembly_bumper_group_offset_vec())
         rotate(assembly_bumper_group_rotate_deg)
             children();
 }
