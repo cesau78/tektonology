@@ -1,4 +1,4 @@
-// Bumper bracket body: shell rectangular core + shell_wedge on insertion roof.
+// Bumper bracket body: shell envelope (core + roof wedge + pew pad) pre-mink, then fillet + cutters.
 // Drawn in bracket coordinates (see config.scad). No rotate() reorients the bracket body.
 
 include <config.scad>
@@ -7,27 +7,34 @@ bumper_emit_if_root_scad_tree = is_undef(render_standalone_export) ? true : rend
 
 $fn = preview ? 32 : 64;
 
-module shell_wedge_primitive(overlap_below = corner_r) {
-    Dc = shell_inset_dim_tread_pew_mm;
-    run = shell_inset_dim_qr_wedge_mm;
-    Zr = shell_wedge_leg_mm;
-    H = shell_height_mm;
-    bx = corner_r;
-    by = corner_r;
-    xr = bx + run;
+// Core, roof overlap + prism, and pew pad — shared envelope anchors, no per-part minkowski.
+module shell_envelope_pre_mink(overlap_below = corner_r) {
+    core_c = shell_envelope_core_center_lxlz();
+    wedge_xr = shell_envelope_wedge_xr_lx_mm();
+    wedge_run = shell_inset_dim_qr_wedge_mm;
+    wedge_depth = shell_inset_dim_tread_pew_mm;
 
-    overlap_c = bracket_pos(bx + run / 2, by + Dc / 2, H - overlap_below / 2);
-    translate(overlap_c)
-        cube([run, overlap_below, Dc], center = true);
+    translate(bracket_pos(core_c[0], core_c[1], core_c[2]))
+        cube(
+            [shell_envelope_core_lx_mm, shell_envelope_core_lz_mm, shell_envelope_core_ly_mm],
+            center = true
+        );
+
+    translate(bracket_pos(
+        shell_envelope_inset_lx_mm + wedge_run / 2,
+        shell_envelope_inset_ly_mm + wedge_depth / 2,
+        shell_envelope_roof_lz_mm - overlap_below / 2
+    ))
+        cube([wedge_run, overlap_below, wedge_depth], center = true);
 
     polyhedron(
         points = [
-            bracket_pos(bx, by, H),
-            bracket_pos(xr, by, H),
-            bracket_pos(xr, by, H + Zr),
-            bracket_pos(bx, by + Dc, H),
-            bracket_pos(xr, by + Dc, H),
-            bracket_pos(xr, by + Dc, H + Zr),
+            bracket_pos(shell_envelope_inset_lx_mm, shell_envelope_inset_ly_mm, shell_envelope_roof_lz_mm),
+            bracket_pos(wedge_xr, shell_envelope_inset_ly_mm, shell_envelope_roof_lz_mm),
+            bracket_pos(wedge_xr, shell_envelope_inset_ly_mm, shell_envelope_apex_lz_mm),
+            bracket_pos(shell_envelope_inset_lx_mm, shell_envelope_inset_ly_mm + wedge_depth, shell_envelope_roof_lz_mm),
+            bracket_pos(wedge_xr, shell_envelope_inset_ly_mm + wedge_depth, shell_envelope_roof_lz_mm),
+            bracket_pos(wedge_xr, shell_envelope_inset_ly_mm + wedge_depth, shell_envelope_apex_lz_mm),
         ],
         faces = [
             [0, 1, 4, 3],
@@ -38,31 +45,21 @@ module shell_wedge_primitive(overlap_below = corner_r) {
         ],
         convexity = 4
     );
-}
 
-module shell_core_pre_mink() {
-    core_leg = [
-        shell_extent_qr_wedge_mm - 2 * corner_r,
-        shell_extent_tread_pew_mm - 2 * corner_r,
-        shell_height_mm - corner_r,
-    ];
-    sz = [core_leg[0], core_leg[2], core_leg[1]];
-    c = bracket_pos(
-        corner_r + core_leg[0] / 2,
-        corner_r + core_leg[1] / 2,
-        corner_r + core_leg[2] / 2
-    );
-    translate(c)
-        cube(sz, center = true);
-}
-
-// Core + roof prism (mount pad unions afterward, before minkowski).
-module shell_core_and_wedge_union() {
-    union() {
-        shell_core_pre_mink();
-        if (shell_roof_prism_enabled)
-            shell_wedge_primitive();
-    }
+    if (pew_mount_block_enabled && pew_mount_block_y_len_mm() > 0.2)
+        translate([
+            pew_mount_block_x_center_mm(),
+            pew_mount_block_y_center_mm(),
+            pew_mount_block_z_center_mm(),
+        ])
+            cube(
+                [
+                    pew_mount_block_thickness_x_mm,
+                    pew_mount_block_y_len_mm(),
+                    pew_mount_block_z_len_mm(),
+                ],
+                center = true
+            );
 }
 
 function bracket_world_z_min() = bracket_face_tread_slot_z_mm;
@@ -119,35 +116,10 @@ module bracket_cross_trim() {
     }
 }
 
-module shell_pew_mount_block() {
-    if (pew_mount_block_enabled && pew_mount_block_y_len_mm() > 0.2)
-        translate([
-            pew_mount_block_x_center_mm(),
-            pew_mount_block_y_center_mm(),
-            pew_mount_block_z_center_mm(),
-        ])
-            cube(
-                [
-                    pew_mount_block_thickness_x_mm,
-                    pew_mount_block_y_len_mm(),
-                    pew_mount_block_z_len_mm(),
-                ],
-                center = true
-            );
-}
-
-// Core + prism, then mount pad — one union, one minkowski fillet (no nested/per-part minkowski).
-module shell_envelope_raw_union() {
-    union() {
-        shell_core_and_wedge_union();
-        shell_pew_mount_block();
-    }
-}
-
+// One minkowski fillet over the pre-mink envelope union (tread ghost uses its own minkowski separately).
 module shell_envelope_minkowski_union() {
-    // Sole fillet pass for the printable shell (tread ghost uses its own minkowski separately).
     minkowski() {
-        shell_envelope_raw_union();
+        shell_envelope_pre_mink();
         sphere(r = corner_r, $fn = preview ? 16 : 24);
     }
 }

@@ -65,7 +65,6 @@ corner_r            = 1;
 epsilon             = 0.02;    // manifold + thin slabs
 
 // Core + roof prism + pew mount pad unioned, then minkowski fillet; hull cutters subtract after.
-shell_roof_prism_enabled  = true;
 wood_screw_holes_enabled  = true;
 
 /*
@@ -168,6 +167,30 @@ shell_inset_dim_tread_pew_mm   = shell_extent_tread_pew_mm - 2 * corner_r;
 // Horizontal roof leg along +X from inset QR corner toward wedge rim (hypotenuse ground projection).
 shell_wedge_hypotenuse_run_mm  = shell_inset_dim_qr_wedge_mm;
 
+// Pre-mink shell union anchors (core + roof wedge + pew pad; one minkowski fillet after).
+shell_envelope_inset_lx_mm     = corner_r;
+shell_envelope_inset_ly_mm     = corner_r;
+shell_envelope_roof_lz_mm      = shell_height_mm;
+shell_envelope_apex_lz_mm      = shell_height_mm + shell_wedge_leg_mm;
+shell_envelope_core_lx_mm      = shell_inset_dim_qr_wedge_mm;
+shell_envelope_core_ly_mm      = shell_inset_dim_tread_pew_mm;
+shell_envelope_core_lz_mm      = shell_height_mm - corner_r;
+function shell_envelope_core_center_lxlz() = [
+    shell_envelope_inset_lx_mm + shell_envelope_core_lx_mm / 2,
+    shell_envelope_inset_ly_mm + shell_envelope_core_ly_mm / 2,
+    corner_r + shell_envelope_core_lz_mm / 2,
+];
+function shell_envelope_core_ly_center_mm() =
+    shell_envelope_inset_ly_mm + shell_envelope_core_ly_mm / 2;
+function shell_envelope_core_z_center_mm() =
+    bracket_pos(0, shell_envelope_core_ly_center_mm(), 0)[2];
+function shell_envelope_wedge_xr_lx_mm() =
+    shell_envelope_inset_lx_mm + shell_inset_dim_qr_wedge_mm;
+function shell_envelope_wedge_rim_x_mm() =
+    bracket_pos(shell_envelope_wedge_xr_lx_mm(), 0, 0)[0];
+function shell_envelope_prism_apex_y_mm() =
+    bracket_nat_y_mid_mm - shell_envelope_apex_lz_mm;
+
 // Tread ghost XY: native frame centers on inset shell core midplanes (origin).
 assembly_tread_center_qr_wedge_mm    = 0;
 assembly_tread_center_tread_pew_mm   = 0;
@@ -197,14 +220,13 @@ tread_groove_pocket_z0_mm =
 tread_groove_pocket_height_mm =
     flange_depth + 2 * tread_visual_flange_sphere_r + tread_groove_pocket_z_clear_mm;
 
-// Pew-side mounting pad (+X): post-mink exterior datums in functions below.
+// Pew-side mounting pad (+X): −X face flush with pre-mink shell/wedge rim (shell_envelope_wedge_rim_x_mm).
 pew_mount_block_enabled           = true;
 pew_mount_block_thickness_x_mm    = 20;
 function pew_mount_block_x_center_mm() =
-    bracket_face_wedge_x_mm + pew_mount_block_thickness_x_mm / 2;
-// −Y face pinned at prism apex (F-side start at lz = shell_height + wedge_leg).
-function pew_mount_block_y_lo_mm() =
-    bracket_nat_y_mid_mm - shell_height_mm - shell_wedge_leg_mm;
+    shell_envelope_wedge_rim_x_mm() + pew_mount_block_thickness_x_mm / 2;
+// −Y face pinned at prism apex (F-side; lz = shell_envelope_apex_lz_mm).
+function pew_mount_block_y_lo_mm() = shell_envelope_prism_apex_y_mm();
 // +Y datum: flange groove floor on E-bevel (shell_tread_pocket_sloped_hull y_bot).
 function pew_mount_block_flange_groove_floor_y_mm(z_bracket = pew_mount_block_z_center_mm()) =
     assembly_y_on_e_bevel_plane_bracket_z(z_bracket)
@@ -220,8 +242,8 @@ function pew_mount_block_y_len_mm() =
     pew_mount_block_y_hi_mm() - pew_mount_block_y_lo_mm();
 function pew_mount_block_y_center_mm() =
     (pew_mount_block_y_lo_mm() + pew_mount_block_y_hi_mm()) / 2;
-function pew_mount_block_z_len_mm() = shell_extent_tread_pew_mm;
-function pew_mount_block_z_center_mm() = 0;
+function pew_mount_block_z_len_mm() = shell_envelope_core_ly_mm;
+function pew_mount_block_z_center_mm() = shell_envelope_core_z_center_mm();
 
 // Assembly pose (assembly.scad): Rx(−bevel) · Rx(90°) · Rz(90°); tread bbox centered on bracket Z (= 0).
 function assembly_tread_vertical_auto_mm() = 0;
