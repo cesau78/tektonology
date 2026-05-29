@@ -173,15 +173,16 @@ function hyp_z_at_x(x) =
     shell_wedge_leg_mm * (x - corner_r) / shell_wedge_hypotenuse_run_mm;
 
 module wood_mount_hole(y_frac) {
-    xw = corner_r + shell_wedge_hypotenuse_run_mm / 2;
-    zw = shell_height_mm + hyp_z_at_x(xw);
-    y_w = corner_r + shell_inset_dim_tread_pew_mm * y_frac;
     psi_deg = atan2(shell_wedge_leg_mm, shell_wedge_hypotenuse_run_mm);
     half = wood_bored_axial_mm / 2;
     $fn = preview ? 28 : 64;
 
-    // Bore axis in bracket X–Y (slant plane); local rotate only — bracket frame unchanged.
-    translate(bracket_pos(xw, y_w, zw))
+    // Axis ⊥ roof-prism hypotenuse (ψ = atan2(leg, run)); spaced along bracket +Z.
+    translate(bracket_pos(
+        wood_screw_hole_lx_mm(),
+        wood_screw_hole_ly_mm(y_frac),
+        wood_screw_hole_lz_mm()
+    ))
         rotate([0, 0, -psi_deg])
             rotate([90, 0, 0])
                 union() {

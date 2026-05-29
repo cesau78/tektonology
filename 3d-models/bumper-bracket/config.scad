@@ -82,10 +82,22 @@ wood_screw_holes_enabled  = true;
 */
 
 // ── Shell wedge (roof prism + overlap slab); apex rises toward +X rim and lower bracket Y ───────
-shell_wedge_leg_mm        = 28;      // apex height along prism hypotenuse; drives bore tilt + plastic path math.
+// Right triangle on roof–rim section: 90° at inset corner, 60° at roof, 30° at rim.
+shell_wedge_prism_roof_angle_deg = 60;
 
-// Three wedge screw bores along +Y at these fractions of shell inset tread–pew span.
+// Three bores on roof-prism hypotenuse (face 0–2–1); spaced along tread↔pew (bracket +Z).
 hole_y_frac         = [1/6, 1/2, 5/6];
+
+// On sloped face: lx from inset corner → rim; lz = roof + rise (sizing lx–lz plane).
+function wood_screw_hole_lx_mm() =
+    corner_r + shell_wedge_hypotenuse_run_mm / 2;
+function wood_screw_hole_ly_mm(y_frac) =
+    corner_r + shell_inset_dim_tread_pew_mm * y_frac;
+function wood_screw_hole_lz_mm() =
+    shell_height_mm
+    + shell_wedge_leg_mm
+      * (wood_screw_hole_lx_mm() - corner_r)
+      / shell_wedge_hypotenuse_run_mm;
 
 // ── Computed overall box (exterior rule box before minkowski; wedge adds above roof) ─────────────────────
 tread_l             = sole_plate_l + tread_tightness;
@@ -99,6 +111,13 @@ shell_extent_qr_wedge_mm =
     bracket_plate_t + bumper_h + (width_extra_half_tread ? tread_w / 2 : 0);
 shell_extent_tread_pew_mm = depth_in * 25.4;
 shell_height_mm           = tread_z_span + 2 * side_margin_each_mm;
+
+// Wedge run/leg (needed before bracket_nat_y_mid_mm); leg from bore angle, not a fixed height.
+shell_inset_dim_qr_wedge_mm    = shell_extent_qr_wedge_mm - 2 * corner_r;
+shell_inset_dim_tread_pew_mm   = shell_extent_tread_pew_mm - 2 * corner_r;
+shell_wedge_hypotenuse_run_mm  = shell_inset_dim_qr_wedge_mm;
+shell_wedge_leg_mm =
+    shell_wedge_hypotenuse_run_mm * tan(shell_wedge_prism_roof_angle_deg);
 
 // Mid lz of shell_height_mm (sizing axis up); bracket Y = bracket_nat_y_mid_mm − lz.
 shell_midplane_lz_mm = shell_height_mm / 2;
@@ -160,12 +179,6 @@ bracket_cross_section = false;
 // "x" / "z": offset 0 = centered on footprint; "y": offset 0 = shell_midplane_y_mm.
 bracket_cross_axis = "y";
 bracket_cross_offset = 0;
-
-// Shell inset rectangular core (between rounded vertical edges): spans QR↔wedge and tread↔pew minus corner offsets.
-shell_inset_dim_qr_wedge_mm    = shell_extent_qr_wedge_mm - 2 * corner_r;
-shell_inset_dim_tread_pew_mm   = shell_extent_tread_pew_mm - 2 * corner_r;
-// Horizontal roof leg along +X from inset QR corner toward wedge rim (hypotenuse ground projection).
-shell_wedge_hypotenuse_run_mm  = shell_inset_dim_qr_wedge_mm;
 
 // Pre-mink shell union anchors (core + roof wedge + pew pad; one minkowski fillet after).
 shell_envelope_inset_lx_mm     = corner_r;
@@ -233,15 +246,22 @@ function pew_mount_block_flange_groove_floor_y_mm(z_bracket = pew_mount_block_z_
     - tread_core_pocket_depth_z_mm
     - tread_groove_pocket_height_mm
     - epsilon;
-// Shorten +Y extent toward F; y_lo unchanged (prism pin).
-pew_mount_block_y_hi_shorten_from_groove_floor_mm = 7;
-function pew_mount_block_y_hi_mm() =
+// Shorten +Y extent toward F (auto length only); y_lo unchanged (prism pin).
+pew_mount_block_y_hi_shorten_from_groove_floor_mm = 9;
+// Length along bracket +Y; 0 = auto from apex → groove floor − shorten above.
+pew_mount_block_y_len_user_mm = 0;
+function pew_mount_block_y_len_auto_mm() =
     pew_mount_block_flange_groove_floor_y_mm()
-    - pew_mount_block_y_hi_shorten_from_groove_floor_mm;
+    - pew_mount_block_y_hi_shorten_from_groove_floor_mm
+    - pew_mount_block_y_lo_mm();
 function pew_mount_block_y_len_mm() =
-    pew_mount_block_y_hi_mm() - pew_mount_block_y_lo_mm();
+    pew_mount_block_y_len_user_mm > 0
+        ? pew_mount_block_y_len_user_mm
+        : pew_mount_block_y_len_auto_mm();
+function pew_mount_block_y_hi_mm() =
+    pew_mount_block_y_lo_mm() + pew_mount_block_y_len_mm();
 function pew_mount_block_y_center_mm() =
-    (pew_mount_block_y_lo_mm() + pew_mount_block_y_hi_mm()) / 2;
+    pew_mount_block_y_lo_mm() + pew_mount_block_y_len_mm() / 2;
 function pew_mount_block_z_len_mm() = shell_envelope_core_ly_mm;
 function pew_mount_block_z_center_mm() = shell_envelope_core_z_center_mm();
 
@@ -319,8 +339,8 @@ assembly_bumper_group_offset = [0, 0, 0];
 assembly_bumper_group_rotate_deg = [45, 0, 0];
 // Nudge bumper group in bracket OpenSCAD coords (−Y = toward F/roof, −Z = toward tread slot).
 assembly_bumper_group_nudge_x_mm = 0;
-assembly_bumper_group_nudge_y_mm = -22;
-assembly_bumper_group_nudge_z_mm = -22;
+assembly_bumper_group_nudge_y_mm = -39;
+assembly_bumper_group_nudge_z_mm = -28;
 
 function assembly_bumper_group_offset_vec() = [
     assembly_bumper_group_offset[0] + assembly_bumper_group_nudge_x_mm,
@@ -412,9 +432,14 @@ recommended_screw_length_mm = ceil(
     plastic_along_bore_mm + target_thread_in_wood_mm +
     wood_countersink_depth_mm + 2);
 
-// Modeled axial hole (plastic + pew + fudge) — through bore for STL / slicing.
-wood_bored_axial_mm =
-    ceil(plastic_along_bore_mm + pew_leg_thickness_mm + plastic_along_bore_mm / 5 + 8);
+// Through wedge (⊥ hypotenuse) + mount block + pew along bore; |u_x| = sin ψ.
+wood_bore_sin_axial_x_mm = sin(atan2(shell_wedge_leg_mm, shell_wedge_hypotenuse_run_mm));
+wood_bored_axial_mm = ceil(
+    plastic_along_bore_mm
+    + pew_mount_block_thickness_x_mm / wood_bore_sin_axial_x_mm
+    + pew_leg_thickness_mm / wood_bore_sin_axial_x_mm
+    + wood_countersink_depth_mm
+    + 8);
 
 /*
   Length advice (manual install):
