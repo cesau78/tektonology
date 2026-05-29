@@ -175,21 +175,20 @@ function hyp_z_at_x(x) =
 module wood_mount_hole(y_frac) {
     psi_deg = atan2(shell_wedge_leg_mm, shell_wedge_hypotenuse_run_mm);
     half = wood_bored_axial_mm / 2;
+    csink_h = wood_countersink_depth_mm + epsilon * 3;
     $fn = preview ? 28 : 64;
 
-    // Axis ⊥ roof-prism hypotenuse (ψ = atan2(leg, run)); spaced along bracket +Z.
-    translate(bracket_pos(
-        wood_screw_hole_lx_mm(),
-        wood_screw_hole_ly_mm(y_frac),
-        wood_screw_hole_lz_mm()
-    ))
+    // rotate([-90,0,0]): local +Z = hypotenuse outward normal (leg, run) in bracket X–Y.
+    // Anchor on minkowski exterior; shank centered through part; countersink wide at wedge face.
+    translate(wood_screw_hole_exterior_bracket_pos(y_frac))
         rotate([0, 0, -psi_deg])
-            rotate([90, 0, 0])
+            rotate([-90, 0, 0])
                 union() {
                     cylinder(h = wood_bored_axial_mm, d = wood_shank_clr, center = true);
-                    translate([0, 0, -half - wood_countersink_depth_mm - epsilon])
+                    // Head recess: wide at z = 0 (exterior), tapers inward along −Z.
+                    translate([0, 0, -csink_h])
                         cylinder(
-                            h = wood_countersink_depth_mm + epsilon * 3,
+                            h = csink_h,
                             r1 = wood_head_diameter / 2 + screw_chamfer_lip_mm,
                             r2 = wood_shank_clr / 2 + epsilon,
                             center = false

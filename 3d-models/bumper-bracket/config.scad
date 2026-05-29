@@ -99,6 +99,23 @@ function wood_screw_hole_lz_mm() =
       * (wood_screw_hole_lx_mm() - corner_r)
       / shell_wedge_hypotenuse_run_mm;
 
+// Hypotenuse outward normal (bracket X–Y); pairs with rotate([-90,0,0]) in wood_mount_hole.
+// Offset by corner_r to minkowski exterior skin (head recess at local z = 0).
+function wood_screw_hyp_outward_bracket_unit() =
+    let (
+        run = shell_wedge_hypotenuse_run_mm,
+        leg = shell_wedge_leg_mm,
+        hyp = sqrt(run * run + leg * leg)
+    )
+    [leg / hyp, run / hyp, 0];
+
+function wood_screw_hole_exterior_bracket_pos(y_frac) =
+    bracket_pos(
+        wood_screw_hole_lx_mm(),
+        wood_screw_hole_ly_mm(y_frac),
+        wood_screw_hole_lz_mm()
+    ) + wood_screw_hyp_outward_bracket_unit() * corner_r;
+
 // ── Computed overall box (exterior rule box before minkowski; wedge adds above roof) ─────────────────────
 tread_l             = sole_plate_l + tread_tightness;
 tread_w             = sole_plate_w + tread_tightness;
