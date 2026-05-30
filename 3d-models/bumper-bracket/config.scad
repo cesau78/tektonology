@@ -204,6 +204,17 @@ pew_mount_block_thickness_x_mm = 20;
 // Width along +Y. Default ≈ the former flange-derived auto length so prints match.
 pew_mount_block_y_len_mm       = 80;
 
+// ── QR-code sticker pocket (face B, −X, opposite the pew / wedge mount side) ──
+// Shallow rounded-square ("hull") recess so a 1" printed QR sticker seats flush in
+// the flat −X rim. Cuts qr_pocket_depth_mm inward (+X); centered on face B by
+// default (offsets shift it along the face).
+qr_pocket_enabled     = true;
+qr_pocket_size_mm     = 25.4;  // 1" square (overall, including the rounded corners)
+qr_pocket_depth_mm    = 0.1;   // sticker recess depth (into +X)
+qr_pocket_corner_r_mm = 2;     // hull corner rounding
+qr_pocket_y_offset_mm = -3;     // + toward the base (face E, bracket +Y)
+qr_pocket_z_offset_mm = 20;     // + toward the pew (face C, bracket +Z)
+
 // ── Tread retention cap (−Z mouth, face D) + single central M3×20 fastener ───
 // A separate printed cap closes the tread-slot mouth so the back-to-back treads
 // cannot slide out. The cap is a flush plug recessed into a rectangular "cube
