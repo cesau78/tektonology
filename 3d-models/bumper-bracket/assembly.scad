@@ -53,7 +53,7 @@ module tread_mated_to_bracket() {
             rotate([90, 0, 0])
                 rotate([0, 0, 90])
                     translate([0, 0, -assembly_tread_flange_top_local_z_mm()])
-                        tread_visual_for_exploded_view();
+                        double_tread_group();
 }
 
 // Shell, screw bores, tread pockets, and tread ghost — one translate/rotate for preview orientation.

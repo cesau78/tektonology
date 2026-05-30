@@ -241,14 +241,18 @@ tread_groove_pocket_inward_y_mm =
     shell_extent_tread_pew_mm - (shell_extent_tread_pew_mm - groove_l) / 2;
 // Break through exterior rounding so the mouth is visibly open from shell_face_tread (nominal y ≈ 0 region).
 tread_groove_pocket_break_tread_face_mm = corner_r + 1;
-tread_groove_pocket_z_clear_mm = 0;  // extra on tread_flange_envelope_z_mm (0 → pocket depth 3.4 mm)
+tread_groove_pocket_z_clear_mm = 0;  // extra on (count × tread_flange_envelope_z_mm)
+// Treads stacked flange-to-flange in one slot. 1 → single 3.4 mm flange slot;
+// 2 → 6.8 mm slot for two treads back-to-back (double_tread_group). The groove
+// ceiling stays pinned under the existing core pocket; the extra depth grows toward F.
+flange_slot_tread_count = 2;
 // Global +Z pocket floor. Pre-minkowski shell core bottom lies at z = corner_r (see shell_envelope_minkowski_union).
 // Stack 2× flange_depth above shell core floor so bracket corner minkowski does not eat the flange pocket floor margin.
 tread_groove_pocket_z_above_shell_core_floor_mm = 2 * flange_depth;
 tread_groove_pocket_z0_mm =
     corner_r + tread_groove_pocket_z_above_shell_core_floor_mm;
 tread_groove_pocket_height_mm =
-    tread_flange_envelope_z_mm + tread_groove_pocket_z_clear_mm;
+    flange_slot_tread_count * tread_flange_envelope_z_mm + tread_groove_pocket_z_clear_mm;
 
 // Pew-side mounting pad (+X): −X face flush with pre-mink shell/wedge rim (shell_envelope_wedge_rim_x_mm).
 pew_mount_block_enabled           = true;
@@ -356,8 +360,8 @@ assembly_bumper_group_offset = [0, 0, 0];
 assembly_bumper_group_rotate_deg = [45, 0, 0];
 // Nudge bumper group in bracket OpenSCAD coords (−Y = toward F/roof, −Z = toward tread slot).
 assembly_bumper_group_nudge_x_mm = 0;
-assembly_bumper_group_nudge_y_mm = -39;
-assembly_bumper_group_nudge_z_mm = -28;
+assembly_bumper_group_nudge_y_mm = -38.8;
+assembly_bumper_group_nudge_z_mm = -27.8;
 
 function assembly_bumper_group_offset_vec() = [
     assembly_bumper_group_offset[0] + assembly_bumper_group_nudge_x_mm,
@@ -375,6 +379,17 @@ tread_core_pocket_floor_z_mm   = -4 * epsilon;
 tread_core_pocket_ceiling_z_mm = tread_groove_pocket_z0_mm;
 tread_core_pocket_depth_z_mm =
     tread_core_pocket_ceiling_z_mm - tread_core_pocket_floor_z_mm;
+
+// Second tread core pocket (double_tread_group): rigid body of the back-to-back
+// tread. It mirrors the existing core pocket across the flange groove, sitting on
+// the far (F) side — its ceiling drops past core pocket 1 plus the full flange slot.
+tread_core_shell_pocket_2_enabled = true;
+tread_core_pocket_2_ceiling_drop_mm =
+    tread_core_pocket_depth_z_mm + tread_groove_pocket_height_mm;
+// The inner tread is fully buried (it cannot protrude into open air like the outer
+// one), so its pocket must clear the full tread height standing proud of the flange:
+// flange-envelope back-face → rib tips ≈ 6.1 mm. Use 6.2 mm for a hair of clearance.
+tread_core_pocket_2_depth_z_mm = 6.2;
 
 // ── Assembly: pew leg, kneeler stack, kneeler arm (assembly.scad) ─────────────
 pew_leg_thickness_in     = 1.5; // 1½" nominal pew leg (face grain for wood screws below)

@@ -250,21 +250,25 @@ module shell_tread_groove_pocket_cube() {
     );
 }
 
-module shell_tread_core_pocket_cube() {
+// ceiling_drop_mm = 0 → ceiling flush on E bevel (tread 1, near side). A positive
+// drop sinks the pocket past the flange groove for the back-to-back tread (tread 2).
+// depth_z_mm sets how far the pocket runs along the bevel normal (the tread height
+// proud of the flange); the buried inner tread needs more than the outer one.
+module shell_tread_core_pocket_cube(ceiling_drop_mm = 0, depth_z_mm = tread_core_pocket_depth_z_mm) {
     margin_x = (shell_extent_qr_wedge_mm - tread_w) / 2;
     x_hi = shell_extent_qr_wedge_mm - margin_x;
     x_lo = x_hi - tread_w;
     y_br = tread_groove_pocket_break_tread_face_mm;
     y_len = tread_core_pocket_inward_y_mm + y_br;
-    zh = tread_core_pocket_depth_z_mm + epsilon * 4;
-    // Cutter 3: tread core (narrower), ceiling flush on E bevel.
+    zh = depth_z_mm + epsilon * 4;
+    // Cutter 3: tread core (narrower), ceiling flush on E bevel (or dropped for tread 2).
     shell_tread_pocket_sloped_hull(
         (x_lo + x_hi) / 2,
         -y_br + y_len / 2,
         tread_w,
         y_len,
         zh,
-        0
+        ceiling_drop_mm
     );
 }
 
@@ -277,6 +281,11 @@ module shell_body_difference_wedge_bores() {
             shell_tread_groove_pocket_cube();
         if (tread_core_shell_pocket_enabled)
             shell_tread_core_pocket_cube();
+        if (tread_core_shell_pocket_2_enabled)
+            shell_tread_core_pocket_cube(
+                tread_core_pocket_2_ceiling_drop_mm,
+                tread_core_pocket_2_depth_z_mm
+            );
         if (wood_screw_holes_enabled)
             wood_screw_pattern();
     }

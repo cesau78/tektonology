@@ -24,3 +24,19 @@ module tread_visual_for_exploded_view() {
         }
     }
 }
+
+// Two treads stacked flange-to-flange (back-to-back): the second is the first
+// mirrored across the flange-top plane, so their flange faces meet and the cores
+// point in opposite local-Z directions (combined flange envelope = 2× single).
+// The group keeps the single-tread anchor (flange top at z = flange-top plane), so
+// mating the group leaves tread 1 exactly where the single tread sat; tread 2 only
+// extends past the shared flange face.
+module double_tread_group() {
+    flange_top = assembly_tread_flange_top_local_z_mm();
+    // Tread 1 — unchanged from the single-tread placement.
+    tread_visual_for_exploded_view();
+    // Tread 2 — reflected about z = flange_top (flange faces meet, core points opposite).
+    translate([0, 0, 2 * flange_top])
+        mirror([0, 0, 1])
+            tread_visual_for_exploded_view();
+}
