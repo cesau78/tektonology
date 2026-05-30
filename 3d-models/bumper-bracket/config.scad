@@ -40,11 +40,14 @@ sole_plate_l        = 53;
 sole_plate_w        = 18.5;
 groove_overhang     = 2;
 
-// Tread core / flange (from tread.scad)
+// Tread core / flange (keep in sync with prayer-sole v3-compound-fastened/tread.scad)
 socket_depth        = 5;
 core_protrusion     = 2;
 flange_clearance    = 0.2;
-flange_depth        = socket_depth / 4;
+// Minkowski flange height (tread local Z): cube + 2×sphere — matches tread_groove_pocket_height_mm when clear = 0.
+tread_flange_envelope_z_mm = 3.4;
+tread_visual_flange_sphere_r  = 1.0;
+flange_depth = tread_flange_envelope_z_mm - 2 * tread_visual_flange_sphere_r;  // 1.4 mm cube → 3.4 mm envelope
 
 // ── User exterior rules ─────────────────────────────────────────────────────
 // Height: tread bounding Z + 1/2" on each side (25.4 mm total added)
@@ -226,13 +229,10 @@ assembly_tread_center_qr_wedge_mm    = 0;
 assembly_tread_center_tread_pew_mm   = 0;
 
 // Groove / flange metrics (tread.scad); pocket below uses groove_l / groove_w; assembly preview uses same for tread ghost.
-groove_h            = socket_depth / 4;
+groove_h            = flange_depth;  // tread slide-in cube (before minkowski); envelope = tread_flange_envelope_z_mm
 groove_l            = sole_plate_l + (groove_overhang * 2) - flange_clearance;
 groove_w            = sole_plate_w + (groove_overhang * 2) - flange_clearance;
 bottom_socket_h     = socket_depth;
-
-// Sphere on slide-in flange matches prayer-sole tread_positive() / tread_visual (keep in sync).
-tread_visual_flange_sphere_r  = 1.0;
 
 // Rectangular pocket into shell (shell_face_tread −Y) for sole groove/flange; X uses groove_w / shell_extent_qr_wedge_mm; Y uses tread_groove_pocket_inward_y_mm.
 tread_groove_shell_pocket_enabled = true;
@@ -241,14 +241,14 @@ tread_groove_pocket_inward_y_mm =
     shell_extent_tread_pew_mm - (shell_extent_tread_pew_mm - groove_l) / 2;
 // Break through exterior rounding so the mouth is visibly open from shell_face_tread (nominal y ≈ 0 region).
 tread_groove_pocket_break_tread_face_mm = corner_r + 1;
-tread_groove_pocket_z_clear_mm = 0.25;
+tread_groove_pocket_z_clear_mm = 0;  // extra on tread_flange_envelope_z_mm (0 → pocket depth 3.4 mm)
 // Global +Z pocket floor. Pre-minkowski shell core bottom lies at z = corner_r (see shell_envelope_minkowski_union).
-// Stack 2× flange_depth (2.5 mm at default socket_depth = 5) *above that plane* so bottom minkowski (sphere corner_r) doesn’t consume the intended margin from the physical bed face at z ≈ 0.
+// Stack 2× flange_depth above shell core floor so bracket corner minkowski does not eat the flange pocket floor margin.
 tread_groove_pocket_z_above_shell_core_floor_mm = 2 * flange_depth;
 tread_groove_pocket_z0_mm =
     corner_r + tread_groove_pocket_z_above_shell_core_floor_mm;
 tread_groove_pocket_height_mm =
-    flange_depth + 2 * tread_visual_flange_sphere_r + tread_groove_pocket_z_clear_mm;
+    tread_flange_envelope_z_mm + tread_groove_pocket_z_clear_mm;
 
 // Pew-side mounting pad (+X): −X face flush with pre-mink shell/wedge rim (shell_envelope_wedge_rim_x_mm).
 pew_mount_block_enabled           = true;

@@ -12,7 +12,7 @@ module tread_visual_for_exploded_view() {
         translate([0, 0, socket_depth / 2 + core_depth / 2 - flange_depth / 2 - 1])
             minkowski() {
                 cube([groove_l - 2, groove_w - 2, flange_depth], center = true);
-                sphere(r = 1.0, $fn = preview ? 12 : 24);
+                sphere(r = tread_visual_flange_sphere_r, $fn = preview ? 12 : 24);
             }
 
         for (i = [0 : ribs - 1]) {

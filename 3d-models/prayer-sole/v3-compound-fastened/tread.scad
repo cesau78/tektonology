@@ -15,7 +15,9 @@ radius = socket_depth / 2; // Radius of semi-cylinders
 
 // --- Slide-in Flange (matches coupler's bottom groove) ---
 flange_clearance = 0.2;  // clearance for smooth slide fit
-flange_depth = socket_depth / 4;  // matches coupler's groove_h (1/4 socket depth)
+flange_sphere_r = 1.0;
+tread_flange_envelope_z_mm = 3.4;  // sync with bumper-bracket/config.scad
+flange_depth = tread_flange_envelope_z_mm - 2 * flange_sphere_r;  // 1.4 mm cube → 3.4 mm envelope
 flange_l = sole_plate_l + (groove_overhang * 2) - flange_clearance;
 flange_w = sole_plate_w + (groove_overhang * 2) - flange_clearance;
 
@@ -35,7 +37,7 @@ module tread_positive() {
         translate([0, 0, socket_depth/2 + core_depth/2 - flange_depth/2 - 1])
             minkowski() {
                 cube([flange_l - 2, flange_w - 2, flange_depth], center=true);
-                sphere(r=1.0);
+                sphere(r=flange_sphere_r);
             }
 
         for (i = [0 : ribs - 1]) {
