@@ -272,6 +272,90 @@ module shell_tread_core_pocket_cube(ceiling_drop_mm = 0, depth_z_mm = tread_core
     );
 }
 
+// ── Tread retention cap fastener (body side) ────────────────────────────────
+// Bolt channel: shaft bore running +Z from the mouth past the nut, on the
+// central axis just behind the inner tread.
+module tread_cap_bolt_channel() {
+    d = cap_bolt_dia + cap_bolt_clearance;
+    z0 = tread_cap_mouth_z_mm() - epsilon * 4;
+    z1 = cap_bolt_tip_z_mm() + 0.5;
+    translate([cap_bolt_x_mm, cap_bolt_y_mm(), z0])
+        cylinder(h = z1 - z0, d = d, $fn = preview ? 24 : 48);
+}
+
+// Hex nut pocket — axis along Z (coaxial with the bolt); flats face ±X so the
+// nut slides in along +Y (from the tread cavity) and keys against rotation.
+module tread_cap_nut_pocket() {
+    nut_r = (cap_nut_af + cap_nut_clearance) / 2 / cos(30);
+    h = cap_nut_thickness + cap_nut_clearance + 2 * cap_nut_pocket_z_extra;
+    translate([cap_bolt_x_mm, cap_bolt_y_mm(), cap_nut_center_z_mm() - h / 2])
+        rotate([0, 0, 30])
+            cylinder(h = h, r = nut_r, $fn = 6);
+}
+
+// Nut slide-in slot — channel running +Y from the hex pocket up into the tread-
+// slot cavity (behind the inner tread). The nut drops in through the slot and
+// slides −Y to seat; no exterior bracket face is broken.
+module tread_cap_nut_slot() {
+    w = cap_nut_af + cap_nut_clearance;   // X width (across flats; keys rotation)
+    h = cap_nut_thickness + cap_nut_clearance + 2 * cap_nut_pocket_z_extra;  // Z height
+    y_start = cap_bolt_y_mm();
+    y_end = cap_nut_slot_exit_y_mm();
+    len = abs(y_end - y_start);
+    translate([cap_bolt_x_mm - w / 2, min(y_start, y_end), cap_nut_center_z_mm() - h / 2])
+        cube([w, len, h]);
+}
+
+// Cap recess ("cube hull"): a rectangular pocket in the −Z mouth, below the
+// seated treads, that the flush cap plugs into. Cut from the body at inset = 0;
+// the cap is built from the same volume shrunk by the fit clearance. The −Z face
+// runs proud of the mouth and the top runs above E (the bevel/envelope clip the
+// real faces), so only the −Y floor (wedge start), ±X sides, and +Z face matter.
+module tread_cap_recess_volume(inset = 0) {
+    x_lo = -tread_cap_recess_x_half_mm() + inset;
+    x_hi =  tread_cap_recess_x_half_mm() - inset;
+    y_lo = tread_cap_recess_y_lo_mm() + inset;
+    y_hi = tread_cap_recess_y_hi_mm();
+    z_lo = tread_cap_recess_z_lo_mm() - epsilon * 4;
+    z_hi = tread_cap_recess_z_hi_mm() - inset;
+    translate([x_lo, y_lo, z_lo])
+        cube([x_hi - x_lo, y_hi - y_lo, z_hi - z_lo]);
+}
+
+// Body envelope with the E-bevel only (no tread pockets) — used to carve the cap
+// so the plug is solid across the slot opening (stops the treads) yet still
+// follows the bracket's beveled top and rounded mouth faces.
+module shell_solid_no_tread_pockets() {
+    difference() {
+        shell_envelope_minkowski_union();
+        shell_tread_face_de_bevel_cut();
+    }
+}
+
+module tread_cap_fastener_cuts() {
+    if (tread_cap_enabled) {
+        tread_cap_bolt_channel();
+        tread_cap_nut_pocket();
+        tread_cap_nut_slot();
+    }
+}
+
+// Preview hardware (assembly only): silver bolt seated in the cap + green nut.
+module tread_cap_hardware_debug() {
+    head_top_z = tread_cap_outer_z_mm();
+    color("silver", 0.85) {
+        translate([cap_bolt_x_mm, cap_bolt_y_mm(), head_top_z])
+            cylinder(h = cap_head_height, d = cap_head_dia, $fn = 40);
+        translate([cap_bolt_x_mm, cap_bolt_y_mm(), cap_bolt_head_end_z_mm()])
+            cylinder(h = cap_bolt_length, d = cap_bolt_dia, $fn = 28);
+    }
+    nut_r = cap_nut_af / 2 / cos(30);
+    color("green", 0.7)
+        translate([cap_bolt_x_mm, cap_bolt_y_mm(), cap_nut_center_z_mm() - cap_nut_thickness / 2])
+            rotate([0, 0, 30])
+                cylinder(h = cap_nut_thickness, r = nut_r, $fn = 6);
+}
+
 module shell_body_difference_wedge_bores() {
     // Filleted core+prism+mount pad minus three sloped hull cutters (bevel + flange + tread).
     difference() {
@@ -288,6 +372,9 @@ module shell_body_difference_wedge_bores() {
             );
         if (wood_screw_holes_enabled)
             wood_screw_pattern();
+        if (tread_cap_enabled)
+            tread_cap_recess_volume();
+        tread_cap_fastener_cuts();
     }
 }
 

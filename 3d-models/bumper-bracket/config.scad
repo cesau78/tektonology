@@ -340,6 +340,10 @@ function assembly_bracket_groove_ceiling_y_mm() =
 // Pull-apart in bracket OpenSCAD coords [x, y, z]; [0,0,0] = mated overlap.
 exploded_tread_offset_pull = [0, 0, 0];
 
+// Retention-cap pull-apart (bracket coords); [0,0,0] = mated. −Z lifts the cap
+// (and its hardware) off the mouth for exploded previews.
+exploded_cap_offset_pull = [0, 0, 0];
+
 // Preview-only: shell + wood bores + tread pockets + tread ghost as one rigid unit.
 assembly_bumper_group_offset = [0, 0, 0];
 assembly_bumper_group_rotate_deg = [45, 0, 0];
@@ -375,6 +379,84 @@ tread_core_pocket_2_ceiling_drop_mm =
 // one), so its pocket must clear the full tread height standing proud of the flange:
 // flange-envelope back-face → rib tips ≈ 6.1 mm. Use 6.2 mm for a hair of clearance.
 tread_core_pocket_2_depth_z_mm = 6.2;
+
+// ── Tread retention cap (−Z mouth, face D) + single central M3×20 fastener ───
+// A separate printed cap closes the tread-slot mouth so the back-to-back treads
+// cannot slide out. One socket-head cap screw runs along +Z (the slide axis),
+// centered on the tread X (= 0) and tucked just behind the inner tread (toward
+// F / −Y) into solid wedge stock. Its head seats in the cap; the shaft threads
+// into an M3 hex nut held in a pocket fed by a perpendicular slide-in slot. This
+// mirrors the prayer-sole v3 cap/collar fastener, but with a single central bolt
+// instead of the two that straddled the treads there.
+tread_cap_enabled = true;
+
+// M3×20 socket-head cap screw + M3 hex nut (keep in sync with prayer-sole config).
+cap_bolt_dia        = 3.0;
+cap_bolt_clearance  = 0.3;   // shaft hole clearance (sliding fit)
+cap_bolt_length     = 20;    // M3×20 shaft length under the head
+cap_head_dia        = 6.0;   // socket head Ø
+cap_head_clearance  = 0.1;
+cap_head_height     = 3.5;   // socket head height
+cap_nut_af          = 5.5;   // hex nut across-flats
+cap_nut_clearance   = 0.2;
+cap_nut_thickness   = 2.4;
+cap_nut_pocket_z_extra = 0.5;  // hex pocket grows ±Z beyond the nut envelope
+cap_nut_seat_margin_mm = 0.5;  // gap from bolt tip to far face of nut pocket
+
+// The cap is a flush plug recessed into the −Z mouth (not a protruding slab). The
+// bracket gets a rectangular "cube hull" recess in the gap below the seated treads
+// and the cap fills it flush with the existing bracket profile. The cap's +Z face
+// butts the tread/flange −Z ends; its −Y floor stops where the roof wedge starts
+// (so it never dips into the wedge); its top is clipped by the E-bevel like the
+// rest of the body.
+cap_fit_clearance_mm = 0.15;   // cap shrink on the recess mating faces (slip fit)
+cap_tread_gap_mm     = 0.3;    // +Z gap left between the cap face and the tread ends
+
+// Seated tread −Z end (bracket frame): assembly.scad centers the tread bbox on
+// z = 0, so its −Z extent is −½·span (+ any z trim). The cap face sits just shy.
+function tread_seated_bracket_z_min_mm() =
+    let (z = assembly_tread_bracket_z_min_max_at_flange_anchor())
+    -(z[1] - z[0]) / 2 + assembly_tread_z_trim_mm;
+
+// Recess ("cube hull") extents — bracket frame.
+function tread_cap_recess_z_lo_mm() = bracket_face_tread_slot_z_mm;            // mouth / flush face
+function tread_cap_recess_z_hi_mm() = tread_seated_bracket_z_min_mm() - cap_tread_gap_mm;  // butts the treads
+function tread_cap_recess_y_lo_mm() = bracket_nat_y_mid_mm - shell_height_mm;  // wedge start (core/wedge seam)
+function tread_cap_recess_y_hi_mm() = bracket_nat_y_mid_mm + corner_r + 2;     // above E; bevel clips the real top
+function tread_cap_recess_x_half_mm() = shell_extent_qr_wedge_mm / 2;          // core half-width (excludes +X mount block)
+
+// Bolt centerline: X centered on the tread; Y a fixed drop behind the inner-tread
+// back face. The worst case is taken at the mouth (where the bevel — and thus the
+// tread — sits lowest), so the channel stays clear of the tread pocket for its
+// whole +Z run into the body.
+cap_bolt_x_mm = 0;
+inner_tread_depth_below_bevel_mm =
+    tread_core_pocket_2_ceiling_drop_mm + tread_core_pocket_2_depth_z_mm;
+cap_bolt_behind_tread_drop_mm = 6;   // inner-tread back face → bolt centerline (−Y)
+
+function cap_bolt_y_mm() =
+    assembly_y_on_e_bevel_plane_bracket_z(bracket_face_tread_slot_z_mm)
+    - inner_tread_depth_below_bevel_mm
+    - cap_bolt_behind_tread_drop_mm;
+
+// Z stations along the bolt axis (bracket frame; +Z = into the part). The cap's
+// outer face is flush with the mouth, so the head seats from the mouth plane.
+function tread_cap_mouth_z_mm()   = bracket_face_tread_slot_z_mm;
+function tread_cap_outer_z_mm()   = bracket_face_tread_slot_z_mm;
+function cap_bolt_head_end_z_mm() = tread_cap_outer_z_mm() + cap_head_height;
+function cap_bolt_tip_z_mm()      = cap_bolt_head_end_z_mm() + cap_bolt_length;
+function cap_nut_center_z_mm()    =
+    cap_bolt_tip_z_mm() - cap_nut_thickness / 2 - cap_nut_seat_margin_mm;
+
+// Nut slide-in slot: opens into the tread-slot cavity (+Y, just behind the inner
+// tread) so the nut is dropped in from the slot — never from a bracket exterior
+// face. Centered on the tread X (= 0); the nut keys flats-to-±X and slides −Y to
+// seat in the hex pocket.
+cap_nut_slot_breakthrough_mm = 2;  // +Y overshoot past the inner-tread back into the cavity
+function cap_nut_slot_exit_y_mm() =
+    assembly_y_on_e_bevel_plane_bracket_z(cap_nut_center_z_mm())
+    - inner_tread_depth_below_bevel_mm
+    + cap_nut_slot_breakthrough_mm;
 
 // ── Assembly: pew leg, kneeler stack, kneeler arm (assembly.scad) ─────────────
 pew_leg_thickness_in     = 1.5; // 1½" nominal pew leg (face grain for wood screws below)

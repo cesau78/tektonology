@@ -12,6 +12,8 @@
 render_standalone_export = false;
 include <bumper-bracket.scad>
 bumper_bracket_debug_face_labels_enabled = false;
+cap_suppress_root = true;   // draw the cap in-tree below, not at cap.scad root
+include <cap.scad>
 include <tread-visual.scad>
 include <kneeler-bracket-visual.scad>
 include <kneeler-bushing-visual.scad>
@@ -24,6 +26,8 @@ bracket_cross_section = false;
 bracket_cross_axis = "x";
 
 show_tread_in_assembly = true;
+show_tread_cap_in_assembly = true;
+show_tread_cap_hardware_in_assembly = true;
 show_kneeler_bracket_in_assembly = true;
 show_kneeler_bushing_in_assembly = true;
 show_kneeler_bumper_in_assembly = true;
@@ -167,6 +171,13 @@ module assembly_preview() {
                     color([0.25, 0.25, 0.25, 0.9])
                         translate(exploded_tread_offset_vec())
                             tread_mated_to_bracket();
+                if (tread_cap_enabled && show_tread_cap_in_assembly)
+                    translate(exploded_cap_offset_pull)
+                        color([0.20, 0.55, 0.95, 0.95])
+                            tread_cap();
+                if (tread_cap_enabled && show_tread_cap_hardware_in_assembly)
+                    translate(exploded_cap_offset_pull)
+                        tread_cap_hardware_debug();
                 bumper_bracket_debug_face_labels();
             }
             if (show_kneeler_bracket_in_assembly)
