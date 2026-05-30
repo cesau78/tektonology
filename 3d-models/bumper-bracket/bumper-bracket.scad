@@ -46,7 +46,7 @@ module shell_envelope_pre_mink(overlap_below = corner_r) {
         convexity = 4
     );
 
-    if (pew_mount_block_enabled && pew_mount_block_y_len_mm() > 0.2)
+    if (pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
         translate([
             pew_mount_block_x_center_mm(),
             pew_mount_block_y_center_mm(),
@@ -55,7 +55,7 @@ module shell_envelope_pre_mink(overlap_below = corner_r) {
             cube(
                 [
                     pew_mount_block_thickness_x_mm,
-                    pew_mount_block_y_len_mm(),
+                    pew_mount_block_y_len_mm,
                     pew_mount_block_z_len_mm(),
                 ],
                 center = true

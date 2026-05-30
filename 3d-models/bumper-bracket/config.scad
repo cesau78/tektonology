@@ -259,30 +259,15 @@ pew_mount_block_enabled           = true;
 pew_mount_block_thickness_x_mm    = 20;
 function pew_mount_block_x_center_mm() =
     shell_envelope_wedge_rim_x_mm() + pew_mount_block_thickness_x_mm / 2;
-// −Y face pinned at prism apex (F-side; lz = shell_envelope_apex_lz_mm).
+// −Y face pinned at prism apex (F-side; lz = shell_envelope_apex_lz_mm) — start stays even with the wedge.
 function pew_mount_block_y_lo_mm() = shell_envelope_prism_apex_y_mm();
-// +Y datum: flange groove floor on E-bevel (shell_tread_pocket_sloped_hull y_bot).
-function pew_mount_block_flange_groove_floor_y_mm(z_bracket = pew_mount_block_z_center_mm()) =
-    assembly_y_on_e_bevel_plane_bracket_z(z_bracket)
-    - tread_core_pocket_depth_z_mm
-    - tread_groove_pocket_height_mm
-    - epsilon;
-// Shorten +Y extent toward F (auto length only); y_lo unchanged (prism pin).
-pew_mount_block_y_hi_shorten_from_groove_floor_mm = 9;
-// Length along bracket +Y; 0 = auto from apex → groove floor − shorten above.
-pew_mount_block_y_len_user_mm = 0;
-function pew_mount_block_y_len_auto_mm() =
-    pew_mount_block_flange_groove_floor_y_mm()
-    - pew_mount_block_y_hi_shorten_from_groove_floor_mm
-    - pew_mount_block_y_lo_mm();
-function pew_mount_block_y_len_mm() =
-    pew_mount_block_y_len_user_mm > 0
-        ? pew_mount_block_y_len_user_mm
-        : pew_mount_block_y_len_auto_mm();
+// Width along bracket +Y. Directly configurable and independent of the flange/tread-groove geometry.
+// Default ≈ the former flange-derived auto length (apex → E-bevel groove floor − 9 mm) so existing prints are unchanged.
+pew_mount_block_y_len_mm = 80;
 function pew_mount_block_y_hi_mm() =
-    pew_mount_block_y_lo_mm() + pew_mount_block_y_len_mm();
+    pew_mount_block_y_lo_mm() + pew_mount_block_y_len_mm;
 function pew_mount_block_y_center_mm() =
-    pew_mount_block_y_lo_mm() + pew_mount_block_y_len_mm() / 2;
+    pew_mount_block_y_lo_mm() + pew_mount_block_y_len_mm / 2;
 function pew_mount_block_z_len_mm() = shell_envelope_core_ly_mm;
 function pew_mount_block_z_center_mm() = shell_envelope_core_z_center_mm();
 
