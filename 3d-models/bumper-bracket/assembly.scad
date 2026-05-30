@@ -9,9 +9,11 @@
 //   • Share peg x helpers with kneeler-bracket-visual.scad (duplicate near_x/far_x today).
 //   • Optional pew/kneeler X placement from transformed steel face, not wedge + plan offset.
 
-render_standalone_export = false;
-include <bumper-bracket.scad>
-bumper_bracket_debug_face_labels_enabled = false;
+// cap.scad already includes bumper-bracket.scad (→ config.scad) and sets
+// render_standalone_export to suppress the bracket's root emit, so we include it
+// once here instead of pulling bumper-bracket.scad in a second time (a duplicate
+// include re-runs those files and trips OpenSCAD's cross-file override warnings).
+// The debug-label flag defaults to false in config.scad.
 cap_suppress_root = true;   // draw the cap in-tree below, not at cap.scad root
 include <cap.scad>
 include <tread-visual.scad>

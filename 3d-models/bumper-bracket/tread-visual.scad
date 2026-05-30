@@ -3,7 +3,7 @@
 
 module tread_visual_for_exploded_view() {
     ribs = 10;
-    pitch = (tread_l - (2 * radius)) / (ribs - 1);
+    pitch = (tread_l - (2 * tread_rib_radius_mm)) / (ribs - 1);
 
     union() {
         translate([0, 0, socket_depth / 2])
@@ -16,11 +16,11 @@ module tread_visual_for_exploded_view() {
             }
 
         for (i = [0 : ribs - 1]) {
-            x_pos = (i * pitch) - (tread_l / 2) + radius;
+            x_pos = (i * pitch) - (tread_l / 2) + tread_rib_radius_mm;
             z_axis = -1 * (core_protrusion / 2);
             translate([x_pos, 0, z_axis])
                 rotate([90, 0, 0])
-                    cylinder(h = tread_w, r = radius, center = true);
+                    cylinder(h = tread_w, r = tread_rib_radius_mm, center = true);
         }
     }
 }

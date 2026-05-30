@@ -197,7 +197,7 @@ module wood_mount_hole(y_frac) {
 }
 
 module wood_screw_pattern() {
-    for (yf = hole_y_frac)
+    for (yf = wood_screw_hole_y_fractions)
         wood_mount_hole(yf);
 }
 

@@ -25,7 +25,7 @@ module kneeler_bracket_visual_for_exploded_view() {
             _kneeler_bracket_visual_rounded_plate(
                 kneeler_bracket_plate_l_mm,
                 kneeler_bracket_plate_w_mm,
-                bracket_plate_t,
+                kneeler_bracket_plate_thickness_mm,
                 kneeler_bracket_corner_r_mm
             );
             for (px = [near_x, far_x])
@@ -39,14 +39,14 @@ module kneeler_bracket_visual_for_exploded_view() {
                     kneeler_bracket_screw_d_mm,
                     kneeler_bracket_csink_d_mm,
                     kneeler_bracket_csink_depth_mm,
-                    bracket_plate_t
+                    kneeler_bracket_plate_thickness_mm
                 );
         }
     }
 
-    translate([near_x, 0, bracket_plate_t])
+    translate([near_x, 0, kneeler_bracket_plate_thickness_mm])
         cylinder(h = kneeler_bracket_peg_h_mm, d = kneeler_bracket_peg_od_mm);
-    translate([far_x, 0, bracket_plate_t])
+    translate([far_x, 0, kneeler_bracket_plate_thickness_mm])
         cylinder(h = kneeler_bracket_peg_h_mm, d = kneeler_bracket_peg_od_mm);
 }
 
