@@ -38,11 +38,11 @@ function stlSurfaceMaterial(color: string) {
 }
 
 /** Crease outlines so form reads clearly while avoiding every STL triangle edge. */
-function StlEdges() {
-  return <Edges threshold={28} color="#27272a" lineWidth={1.25} />;
+function StlEdges({ color = "#27272a" }: { color?: string }) {
+  return <Edges threshold={28} color={color} lineWidth={1.25} />;
 }
 
-function SingleModel({ url, color = "#9ca3af" }: { url: string; color?: string }) {
+function SingleModel({ url, color = "#9ca3af", edgeColor }: { url: string; color?: string; edgeColor?: string }) {
   const geometry = useLoader(STLLoader, bustUrl(url));
 
   const centered = useMemo(() => {
@@ -61,7 +61,7 @@ function SingleModel({ url, color = "#9ca3af" }: { url: string; color?: string }
   return (
     <mesh geometry={centered} scale={scale}>
       {stlSurfaceMaterial(color)}
-      <StlEdges />
+      <StlEdges color={edgeColor} />
     </mesh>
   );
 }
@@ -110,7 +110,7 @@ function AssemblyModel({ parts }: { parts: StlPart[] }) {
   );
 }
 
-export function StlViewer({ url, label, color, compact, rotation }: { url: string; label: string; color?: string; compact?: boolean; rotation?: [number, number, number] }) {
+export function StlViewer({ url, label, color, edgeColor, compact, rotation }: { url: string; label: string; color?: string; edgeColor?: string; compact?: boolean; rotation?: [number, number, number] }) {
   const rot = rotation ? rotation.map((deg) => (deg * Math.PI) / 180) as [number, number, number] : undefined;
   return (
     <div className={compact ? "h-full" : "border border-border rounded-lg overflow-hidden bg-transparent"}>
@@ -119,7 +119,7 @@ export function StlViewer({ url, label, color, compact, rotation }: { url: strin
           <Lights />
           <Suspense fallback={null}>
             <group rotation={rot}>
-              <SingleModel url={url} color={color} />
+              <SingleModel url={url} color={color} edgeColor={edgeColor} />
             </group>
           </Suspense>
           <OrbitControls autoRotate autoRotateSpeed={2} enablePan={false} enableZoom={!compact} />

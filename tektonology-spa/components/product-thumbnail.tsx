@@ -17,7 +17,7 @@ export function ProductThumbnail({ product }: { product: Product }) {
 
   return (
     <div className="w-24 h-24 shrink-0 rounded overflow-hidden bg-transparent">
-      <StlViewer url={stl.url} label="" color={stl.color} compact />
+      <StlViewer url={stl.url} label="" color={stl.color} edgeColor={stl.edgeColor} compact />
     </div>
   );
 }

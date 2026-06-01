@@ -120,7 +120,7 @@ export default async function ProductPage({
                 <div key={dl.url} className="flex flex-col">
                   {dl.url.endsWith(".stl") && (
                     <div className="mb-2">
-                      <StlViewer url={dl.url} label={dl.label} color={dl.color} rotation={dl.rotation} />
+                      <StlViewer url={dl.url} label={dl.label} color={dl.color} edgeColor={dl.edgeColor} rotation={dl.rotation} />
                     </div>
                   )}
                   <Button asChild size="sm">

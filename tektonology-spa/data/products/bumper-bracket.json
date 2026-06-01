@@ -16,12 +16,14 @@
     {
       "label": "Left Bumper Bracket",
       "url": "/stl/bumper-bracket-left.stl",
-      "color": "#C8B89A"
+      "color": "#1c1c1c",
+      "edgeColor": "#6b7280"
     },
     {
       "label": "Right Bumper Bracket",
       "url": "/stl/bumper-bracket-right.stl",
-      "color": "#C8B89A"
+      "color": "#1c1c1c",
+      "edgeColor": "#6b7280"
     }
   ],
   "purchaseLinks": []

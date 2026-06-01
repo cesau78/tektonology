@@ -4,6 +4,7 @@ export interface DownloadLink {
   label: string;
   url: string;
   color?: string;
+  edgeColor?: string;
   rotation?: [number, number, number];
 }
 
