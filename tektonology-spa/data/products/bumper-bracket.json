@@ -1,0 +1,28 @@
+{
+  "id": "bumper-bracket",
+  "name": "Bumper Bracket",
+  "category": "Kneeler Replacement Parts",
+  "description": "A 3D-printed bracket that mounts to the kneeler bracket plate, providing a structured shell envelope (core, roof wedge, and pew mount pad) with #8 wood-screw bores through the roof wedge. Sold in mirrored left and right pairs.",
+  "printSettings": {
+    "material": "PLA or PETG | 4 Wall Loops | 40% Infill"
+  },
+  "assemblyGuide": [
+    "Select the correct side: left or right — they are mirror images of each other.",
+    "Align the bumper bracket over the kneeler bracket plate, engaging the pew mount pad against the pew.",
+    "Drive #8 wood screws through the roof wedge bores to secure the bracket.",
+    "Verify the tread slot opens toward the kneeler tread side and the part seats flush."
+  ],
+  "stlDownloadUrls": [
+    {
+      "label": "Left Bumper Bracket",
+      "url": "/stl/bumper-bracket-left.stl",
+      "color": "#C8B89A"
+    },
+    {
+      "label": "Right Bumper Bracket",
+      "url": "/stl/bumper-bracket-right.stl",
+      "color": "#C8B89A"
+    }
+  ],
+  "purchaseLinks": []
+}
