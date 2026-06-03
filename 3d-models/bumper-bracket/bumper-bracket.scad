@@ -392,18 +392,22 @@ module tread_cap_hardware_debug() {
                 cylinder(h = cap_nut_thickness, r = nut_r, $fn = 6);
 }
 
-// Shallow rounded-square recess on face B (−X, opposite the pew/wedge side) to
-// seat a 1" QR-code sticker flush. Cuts qr_pocket_depth_mm inward (+X), centered
-// on the flat −X rim (offsets nudge it along the face).
+// Shallow rounded-square recess on the mount block's +Y front face to seat a 1"
+// QR-code sticker flush. Cuts qr_pocket_depth_mm inward (−Y), centered on that
+// face (offsets nudge it along bracket X and Z).
 module qr_sticker_pocket() {
     s = qr_pocket_size_mm;
     r = min(qr_pocket_corner_r_mm, s / 2 - 0.01);
     half = s / 2 - r;
-    x_face = -bracket_face_wedge_x_mm;
-    yc = shell_midplane_y_mm + qr_pocket_y_offset_mm;
-    zc = qr_pocket_z_offset_mm;
-    translate([x_face - epsilon, yc, zc])
-        rotate([0, 90, 0])   // extrude axis (+Z local) → bracket +X (into the part)
+    y_face = pew_mount_block_y_hi_mm() + corner_r;   // +Y front face (incl. minkowski skin)
+    // Center on the full front face (block + flush −X reinforcement) so a 1" tile fits.
+    face_x_hi = pew_mount_block_x_center_mm() + pew_mount_block_thickness_x_mm / 2;
+    face_x_lo = pew_mount_block_x_center_mm() - pew_mount_block_thickness_x_mm / 2
+        - (pew_mount_reinforce_enabled ? pew_mount_reinforce_depth_x_mm : 0);
+    xc = (face_x_lo + face_x_hi) / 2 + qr_pocket_x_offset_mm;
+    zc = pew_mount_block_z_center_mm() + qr_pocket_z_offset_mm;
+    translate([xc, y_face + epsilon, zc])
+        rotate([90, 0, 0])   // extrude axis (+Z local) → bracket −Y (into the part)
             linear_extrude(qr_pocket_depth_mm + epsilon)
                 hull()
                     for (a = [-1, 1], b = [-1, 1])

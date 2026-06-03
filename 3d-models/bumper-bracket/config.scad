@@ -231,16 +231,19 @@ pew_mount_block_pocket_depth_x_mm     = 12.5;   // −X depth from the block's +
 pew_mount_reinforce_enabled    = true;
 pew_mount_reinforce_depth_x_mm = 6;    // −X thickness, measured from the block's −X face
 
-// ── QR-code sticker pocket (face B, −X, opposite the pew / wedge mount side) ──
-// Shallow rounded-square ("hull") recess so a 1" printed QR sticker seats flush in
-// the flat −X rim. Cuts qr_pocket_depth_mm inward (+X); centered on face B by
-// default (offsets shift it along the face).
+// ── QR-code sticker pocket (mount block +Y front face) ───────────────────────
+// Shallow rounded-square ("hull") recess so a 1" printed QR sticker seats flush
+// on the mount block's +Y front face. Cuts qr_pocket_depth_mm inward (−Y);
+// centered on the full front face (block + flush −X reinforcement) so the 1"
+// tile fits. Offsets nudge it along bracket X and Z.
 qr_pocket_enabled     = true;
 qr_pocket_size_mm     = 25.4;  // 1" square (overall, including the rounded corners)
-qr_pocket_depth_mm    = 0.1;   // sticker recess depth (into +X)
+qr_pocket_depth_mm    = 0.1;   // sticker recess depth (into −Y)
 qr_pocket_corner_r_mm = 2;     // hull corner rounding
-qr_pocket_y_offset_mm = -3;     // + toward the base (face E, bracket +Y)
-qr_pocket_z_offset_mm = 20;     // + toward the pew (face C, bracket +Z)
+qr_pocket_x_offset_mm = 0;     // + toward +X (pew-leg face), − toward the core / reinforcement
+// Push the tile up toward the +Z (pew) top, leaving a 3 mm margin from the block top.
+qr_pocket_top_margin_mm = 3;
+qr_pocket_z_offset_mm = pew_mount_block_z_len_mm() / 2 - qr_pocket_size_mm / 2 - qr_pocket_top_margin_mm;
 
 // ── Tread retention cap (−Z mouth, face D) + single central M3×20 fastener ───
 // A separate printed cap closes the tread-slot mouth so the back-to-back treads
