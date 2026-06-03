@@ -161,6 +161,11 @@ tip_breakout_margin_mm      = 25.4 * 7 / 32;  // ~7/16" shy of the far face / sp
 // mount-block thicknesses defined first (OpenSCAD evaluates these in file order).
 
 // ── Tread pockets — flange groove ────────────────────────────────────────────
+// Material left between the +Y base face (E bevel) and the topmost tread-slot
+// ceiling. Increasing it shifts ALL tread pockets (flange groove + both core
+// pockets) together in −Y, away from the base face, keeping their relative
+// spacing and depths. Tune to taste (default 1 mm).
+tread_slot_face_offset_mm = -1;
 tread_groove_shell_pocket_enabled = true;
 // Treads stacked flange-to-flange in one slot: 1 → single 3.4 mm flange slot;
 // 2 → 6.8 mm slot for two back-to-back treads. The ceiling stays pinned under the
@@ -496,6 +501,7 @@ function assembly_tread_flange_groove_ceiling_y_mm(z_bracket) =
     assembly_y_on_e_bevel_plane_bracket_z(z_bracket)
     - tread_core_pocket_depth_z_mm
     - assembly_tread_flange_groove_hull_inset_mm()
+    - tread_slot_face_offset_mm
     - epsilon;
 function assembly_tread_mate_bracket_y_mm(z_bracket) =
     assembly_tread_flange_groove_ceiling_y_mm(z_bracket)

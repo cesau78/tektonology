@@ -213,8 +213,9 @@ module shell_tread_pocket_sloped_hull(lx_center, ly_center, pocket_w, pocket_len
     x_lo = lx_center - shell_extent_qr_wedge_mm / 2 - pocket_w / 2;
     x_hi = x_lo + pocket_w;
 
-    y_top_lo = y_on_e_bevel_plane(z_lo) - ceiling_drop_mm - epsilon;
-    y_top_hi = y_on_e_bevel_plane(z_hi) - ceiling_drop_mm - epsilon;
+    // tread_slot_face_offset_mm pushes every tread pocket −Y off the +Y base face.
+    y_top_lo = y_on_e_bevel_plane(z_lo) - ceiling_drop_mm - tread_slot_face_offset_mm - epsilon;
+    y_top_hi = y_on_e_bevel_plane(z_hi) - ceiling_drop_mm - tread_slot_face_offset_mm - epsilon;
     y_bot_lo = y_top_lo - depth_y - z_pad;
     y_bot_hi = y_top_hi - depth_y - z_pad;
 
