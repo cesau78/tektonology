@@ -107,8 +107,8 @@ width_extra_half_tread = true;         // add ½ tread width along the QR↔wedg
 
 // ── Shell + wedge: overall extents ───────────────────────────────────────────
 // Right-triangle roof prism on the roof–rim section: 90° at the inset corner,
-// 60° at the roof, 30° at the rim. Apex rises toward the +X rim and lower Y.
-shell_wedge_prism_roof_angle_deg = 60;
+// 52.5° at the roof, 37.5° at the rim. Apex rises toward the +X rim and lower Y.
+shell_wedge_prism_roof_angle_deg = 52.5;
 
 shell_extent_qr_wedge_mm  =
     kneeler_bracket_plate_thickness_mm + kneeler_bumper_height_mm + (width_extra_half_tread ? tread_w / 2 : 0);
@@ -206,8 +206,12 @@ tread_core_pocket_2_depth_z_mm = 6.2;
 // −X face flush with the pre-mink shell/wedge rim; −Y face pinned at the prism apex.
 pew_mount_block_enabled        = true;
 pew_mount_block_thickness_x_mm = 20;
-// Width along +Y. Default ≈ the former flange-derived auto length so prints match.
-pew_mount_block_y_len_mm       = 80;
+// Length along +Y. The −Y end is pinned to the prism apex, which moves with the
+// wedge angle, so the length is derived to hold the +Y end a fixed gap from the
+// +Y base face (E). That keeps the insertion-face ↔ block-end distance constant
+// when shell_wedge_prism_roof_angle_deg changes (= 80 mm at the original 60°).
+pew_mount_block_y_end_gap_from_base_mm = 22.827;
+pew_mount_block_y_len_mm       = shell_envelope_apex_lz_mm - pew_mount_block_y_end_gap_from_base_mm;
 
 // ── QR-code sticker pocket (face B, −X, opposite the pew / wedge mount side) ──
 // Shallow rounded-square ("hull") recess so a 1" printed QR sticker seats flush in
