@@ -400,8 +400,11 @@ module qr_sticker_pocket() {
     r = min(qr_pocket_corner_r_mm, s / 2 - 0.01);
     half = s / 2 - r;
     y_face = pew_mount_block_y_hi_mm() + corner_r;   // +Y front face (incl. minkowski skin)
-    // Center on the full front face (block + flush −X reinforcement) so a 1" tile fits.
-    face_x_hi = pew_mount_block_x_center_mm() + pew_mount_block_thickness_x_mm / 2;
+    // Center on the full front face (block + flush −X reinforcement). The +X edge
+    // follows the pew-face trim when enabled, so the tile tracks the real surface.
+    face_x_hi = pew_mount_block_pew_face_flush_enabled
+        ? assembly_pew_leg_inner_face_x_mm()
+        : pew_mount_block_x_center_mm() + pew_mount_block_thickness_x_mm / 2;
     face_x_lo = pew_mount_block_x_center_mm() - pew_mount_block_thickness_x_mm / 2
         - (pew_mount_reinforce_enabled ? pew_mount_reinforce_depth_x_mm : 0);
     xc = (face_x_lo + face_x_hi) / 2 + qr_pocket_x_offset_mm;
@@ -432,6 +435,16 @@ module pew_mount_block_pocket_cut() {
         cube([x_hi - x_lo, y_hi - y_lo, z_hi - z_lo]);
 }
 
+// Plane off everything +X of the pew leg inner face, flattening the mount
+// block's rounded pew-facing skin so it beds flush against the pew (no overshoot,
+// no rounding). Only the mount block reaches this far in +X.
+module pew_mount_block_pew_face_trim() {
+    flush_x = assembly_pew_leg_inner_face_x_mm();
+    big = _bracket_cross_half_extent();
+    translate([flush_x, -big, -big])
+        cube([2 * big, 2 * big, 2 * big]);
+}
+
 module shell_body_difference_wedge_bores() {
     // Filleted core+prism+mount pad minus three sloped hull cutters (bevel + flange + tread).
     difference() {
@@ -455,6 +468,8 @@ module shell_body_difference_wedge_bores() {
             qr_sticker_pocket();
         if (pew_mount_block_pocket_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
             pew_mount_block_pocket_cut();
+        if (pew_mount_block_pew_face_flush_enabled && pew_mount_block_enabled)
+            pew_mount_block_pew_face_trim();
     }
 }
 

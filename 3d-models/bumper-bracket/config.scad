@@ -213,6 +213,11 @@ pew_mount_block_thickness_x_mm = 20;
 pew_mount_block_y_end_gap_from_base_mm = -23;
 pew_mount_block_y_len_mm       = shell_envelope_apex_lz_mm - pew_mount_block_y_end_gap_from_base_mm;
 
+// Plane the +X (pew-facing) face flat and flush with the pew leg inner face,
+// shaving off the minkowski rounding + ~1 mm overshoot so the block beds flat
+// against the pew instead of interfering with it.
+pew_mount_block_pew_face_flush_enabled = true;
+
 // Vertical pocket ("cube hull") cut into the +X (pew-leg–facing) face of the
 // mount block. Opens on +X and runs depth_x into the block; spans the block's
 // full Z length (open on both Z ends). The +Y window is measured from the
