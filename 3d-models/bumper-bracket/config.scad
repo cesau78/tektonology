@@ -222,6 +222,15 @@ pew_mount_block_pocket_y_from_back_mm = 66;     // +Y offset from the block's ro
 pew_mount_block_pocket_y_len_mm       = 32;     // +Y length of the pocket
 pew_mount_block_pocket_depth_x_mm     = 12.5;   // −X depth from the block's +X face
 
+// Reinforcement adjacent to the mount block on its −X side (toward the core).
+// Adds material where the E-bevel hull would otherwise thin the mount block.
+// Runs the block's full Z height and spans +Y from the roof-wedge start (deep
+// in the core) out to the block's protruding +Y front face. Added as a
+// pre-minkowski primitive (so it rounds + welds flush to the block) BEFORE the
+// hull cuts, so the tread/cap/screw cutouts carve through it unchanged.
+pew_mount_reinforce_enabled    = true;
+pew_mount_reinforce_depth_x_mm = 6;    // −X thickness, measured from the block's −X face
+
 // ── QR-code sticker pocket (face B, −X, opposite the pew / wedge mount side) ──
 // Shallow rounded-square ("hull") recess so a 1" printed QR sticker seats flush in
 // the flat −X rim. Cuts qr_pocket_depth_mm inward (+X); centered on face B by

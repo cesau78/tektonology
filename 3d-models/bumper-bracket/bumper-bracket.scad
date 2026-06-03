@@ -60,6 +60,25 @@ module shell_envelope_pre_mink(overlap_below = corner_r) {
                 ],
                 center = true
             );
+
+    // Reinforcement welded to the block's −X side: full block Z height, from the
+    // roof-wedge start out to the block's +Y front face. A pre-mink primitive so
+    // it rounds and welds flush; the hull cuts below still carve it consistently.
+    if (pew_mount_reinforce_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2) {
+        rx_hi = pew_mount_block_x_center_mm() - pew_mount_block_thickness_x_mm / 2;
+        rx_lo = rx_hi - pew_mount_reinforce_depth_x_mm;
+        ry_lo = bracket_nat_y_mid_mm - shell_height_mm;   // roof-wedge start (core/wedge seam)
+        ry_hi = pew_mount_block_y_hi_mm();                // flush with the block's +Y front face
+        translate([
+            (rx_lo + rx_hi) / 2,
+            (ry_lo + ry_hi) / 2,
+            pew_mount_block_z_center_mm(),
+        ])
+            cube(
+                [rx_hi - rx_lo, ry_hi - ry_lo, pew_mount_block_z_len_mm()],
+                center = true
+            );
+    }
 }
 
 function bracket_world_z_min() = bracket_face_tread_slot_z_mm;
@@ -159,9 +178,14 @@ module shell_tread_face_de_bevel_cut() {
 
     // When the pew mount block extends in +Y past the E-bevel plane, stop the
     // bevel cutter at the block's −X face so the angled top sits flush against
-    // the block's side wall instead of slicing diagonally through the cube.
+    // the block's side wall instead of slicing diagonally through the cube. If
+    // the −X reinforcement is present, stop at its −X face so it stays flush too.
+    block_minus_x = pew_mount_block_x_center_mm() - pew_mount_block_thickness_x_mm / 2;
+    flush_x = (pew_mount_reinforce_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
+        ? block_minus_x - pew_mount_reinforce_depth_x_mm
+        : block_minus_x;
     x_hi = (pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
-        ? pew_mount_block_x_center_mm() - pew_mount_block_thickness_x_mm / 2
+        ? flush_x
         : x_h;
 
     hull_rect_on_e_slope(
