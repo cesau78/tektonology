@@ -236,7 +236,7 @@ cap_head_height        = 3.5;   // socket head height
 cap_nut_af             = 5.5;   // hex nut across-flats
 cap_nut_clearance      = 0.2;
 cap_nut_thickness      = 2.4;
-cap_nut_pocket_z_extra = 0.5;   // hex pocket grows ±Z beyond the nut envelope
+cap_nut_pocket_z_extra = 0.5;   // hex seat grows ±Z past the slot → retention shoulder per face
 cap_nut_seat_margin_mm = 0.5;   // gap from bolt tip to far face of nut pocket
 
 cap_fit_clearance_mm = 0.15;    // cap shrink on the recess mating faces (slip fit)
@@ -427,6 +427,13 @@ function tread_cap_outer_z_mm()   = bracket_face_tread_slot_z_mm;
 function cap_bolt_head_end_z_mm() = tread_cap_outer_z_mm() + cap_head_height;
 function cap_bolt_tip_z_mm()      = cap_bolt_head_end_z_mm() + cap_bolt_length;
 function cap_nut_center_z_mm()    = cap_bolt_tip_z_mm() - cap_nut_thickness / 2 - cap_nut_seat_margin_mm;
+
+// Nut capture in Z (prayer-sole collar pattern): the slide-in slot is just tall
+// enough to pass the nut (no z_extra), while the hex seat grows cap_nut_pocket_z_extra
+// above and below it. The taller seat behind the shorter slot lip keeps the nut
+// from flopping/sliding back out once dropped in.
+function cap_nut_slot_z_height_mm()   = cap_nut_thickness + cap_nut_clearance;
+function cap_nut_pocket_z_height_mm() = cap_nut_slot_z_height_mm() + 2 * cap_nut_pocket_z_extra;
 
 // Nut slot exit Y: +Y into the cavity behind the inner tread (drop-in, slide −Y).
 function cap_nut_slot_exit_y_mm() =

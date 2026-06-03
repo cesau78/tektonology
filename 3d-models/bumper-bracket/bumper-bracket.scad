@@ -283,22 +283,26 @@ module tread_cap_bolt_channel() {
         cylinder(h = z1 - z0, d = d, $fn = preview ? 24 : 48);
 }
 
-// Hex nut pocket — axis along Z (coaxial with the bolt); flats face ±X so the
-// nut slides in along +Y (from the tread cavity) and keys against rotation.
+// Hex nut seat — axis along Z (coaxial with the bolt); flats face ±X so the nut
+// slides in along +Y (from the tread cavity) and keys against rotation. The seat
+// is cap_nut_pocket_z_extra taller than the slide-in slot on each Z face, so its
+// top/bottom shoulders trap the nut once seated (prayer-sole collar pattern).
 module tread_cap_nut_pocket() {
     nut_r = (cap_nut_af + cap_nut_clearance) / 2 / cos(30);
-    h = cap_nut_thickness + cap_nut_clearance + 2 * cap_nut_pocket_z_extra;
+    h = cap_nut_pocket_z_height_mm();
     translate([cap_bolt_x_mm, cap_bolt_y_mm(), cap_nut_center_z_mm() - h / 2])
         rotate([0, 0, 30])
             cylinder(h = h, r = nut_r, $fn = 6);
 }
 
-// Nut slide-in slot — channel running +Y from the hex pocket up into the tread-
-// slot cavity (behind the inner tread). The nut drops in through the slot and
-// slides −Y to seat; no exterior bracket face is broken.
+// Nut slide-in slot — channel running +Y from the hex seat up into the tread-slot
+// cavity (behind the inner tread). The nut drops in through the slot and slides −Y
+// to seat; no exterior bracket face is broken. Its Z height is just the nut
+// thickness + clearance (shorter than the seat), so the nut can't flop in the
+// channel and the taller seat's shoulders retain it at the end.
 module tread_cap_nut_slot() {
     w = cap_nut_af + cap_nut_clearance;   // X width (across flats; keys rotation)
-    h = cap_nut_thickness + cap_nut_clearance + 2 * cap_nut_pocket_z_extra;  // Z height
+    h = cap_nut_slot_z_height_mm();       // Z height (nut thickness + clearance, no seat extra)
     y_start = cap_bolt_y_mm();
     y_end = cap_nut_slot_exit_y_mm();
     len = abs(y_end - y_start);
