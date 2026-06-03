@@ -157,9 +157,16 @@ module shell_tread_face_de_bevel_cut() {
     y_hi = y_e + shell_wedge_leg_mm + 40;
     x_h = shell_extent_qr_wedge_mm / 2 + shell_wedge_leg_mm + 20;
 
+    // When the pew mount block extends in +Y past the E-bevel plane, stop the
+    // bevel cutter at the block's −X face so the angled top sits flush against
+    // the block's side wall instead of slicing diagonally through the cube.
+    x_hi = (pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
+        ? pew_mount_block_x_center_mm() - pew_mount_block_thickness_x_mm / 2
+        : x_h;
+
     hull_rect_on_e_slope(
         -x_h,
-        x_h,
+        x_hi,
         z_d,
         z_c,
         y_hi,
@@ -380,6 +387,23 @@ module qr_sticker_pocket() {
                             circle(r = r, $fn = preview ? 16 : 32);
 }
 
+// Vertical pocket ("cube hull") in the +X (pew-leg) face of the mount block.
+// Opens on +X (overshoots the minkowski skin), runs depth_x in −X, and spans
+// the block's full Z length (overshoots both Z ends). The +Y window is taken
+// from the block's roof-side (−Y) end.
+module pew_mount_block_pocket_cut() {
+    x_face = pew_mount_block_face_x_mm();
+    x_hi = x_face + corner_r + epsilon * 4;            // clear the rounded exterior
+    x_lo = x_face - pew_mount_block_pocket_depth_x_mm;
+    y_lo = pew_mount_block_pocket_y_lo_mm();
+    y_hi = pew_mount_block_pocket_y_hi_mm();
+    z_half = pew_mount_block_z_len_mm() / 2 + corner_r + epsilon * 4;
+    z_lo = pew_mount_block_z_center_mm() - z_half;
+    z_hi = pew_mount_block_z_center_mm() + z_half;
+    translate([x_lo, y_lo, z_lo])
+        cube([x_hi - x_lo, y_hi - y_lo, z_hi - z_lo]);
+}
+
 module shell_body_difference_wedge_bores() {
     // Filleted core+prism+mount pad minus three sloped hull cutters (bevel + flange + tread).
     difference() {
@@ -401,6 +425,8 @@ module shell_body_difference_wedge_bores() {
         tread_cap_fastener_cuts();
         if (qr_pocket_enabled)
             qr_sticker_pocket();
+        if (pew_mount_block_pocket_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
+            pew_mount_block_pocket_cut();
     }
 }
 

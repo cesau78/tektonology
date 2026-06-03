@@ -38,7 +38,7 @@ bracket_lift_to_bed = true;   // export: translate so min Z sits on the build pl
 // ── Kneeler-bracket reference (keep in sync with kneeler-bracket-visual.scad) ─
 kneeler_bracket_plate_thickness_mm   = 5;
 kneeler_bracket_plate_l_mm           = 145;
-kneeler_bracket_plate_w_mm           = 34;
+kneeler_bracket_plate_w_mm           = 32;
 kneeler_bracket_corner_r_mm          = 5;
 kneeler_bracket_peg_od_mm            = 9.4;
 kneeler_bracket_peg_top_from_base_mm = 44.5;  // plate bottom (z = 0) → peg top
@@ -210,8 +210,17 @@ pew_mount_block_thickness_x_mm = 20;
 // wedge angle, so the length is derived to hold the +Y end a fixed gap from the
 // +Y base face (E). That keeps the insertion-face ↔ block-end distance constant
 // when shell_wedge_prism_roof_angle_deg changes (= 80 mm at the original 60°).
-pew_mount_block_y_end_gap_from_base_mm = 22.827;
+pew_mount_block_y_end_gap_from_base_mm = -23;
 pew_mount_block_y_len_mm       = shell_envelope_apex_lz_mm - pew_mount_block_y_end_gap_from_base_mm;
+
+// Vertical pocket ("cube hull") cut into the +X (pew-leg–facing) face of the
+// mount block. Opens on +X and runs depth_x into the block; spans the block's
+// full Z length (open on both Z ends). The +Y window is measured from the
+// block's −Y (roof / back) end.
+pew_mount_block_pocket_enabled        = true;
+pew_mount_block_pocket_y_from_back_mm = 66;     // +Y offset from the block's roof-side (−Y) end
+pew_mount_block_pocket_y_len_mm       = 32;     // +Y length of the pocket
+pew_mount_block_pocket_depth_x_mm     = 12.5;   // −X depth from the block's +X face
 
 // ── QR-code sticker pocket (face B, −X, opposite the pew / wedge mount side) ──
 // Shallow rounded-square ("hull") recess so a 1" printed QR sticker seats flush in
@@ -264,8 +273,8 @@ cap_nut_slot_breakthrough_mm = 2;    // +Y overshoot past the inner-tread back
 assembly_bumper_group_offset     = [0, 0, 0];
 assembly_bumper_group_rotate_deg = [45, 0, 0];
 assembly_bumper_group_nudge_x_mm = 0;
-assembly_bumper_group_nudge_y_mm = -38.8;  // −Y = toward F / roof
-assembly_bumper_group_nudge_z_mm = -27.8;  // −Z = toward the tread slot
+assembly_bumper_group_nudge_y_mm = -33;  // −Y = toward F / roof
+assembly_bumper_group_nudge_z_mm = -22;  // −Z = toward the tread slot
 
 // Tread ghost native frame centers on the inset shell-core midplanes (origin).
 assembly_tread_center_qr_wedge_mm  = 0;
@@ -408,6 +417,12 @@ function pew_mount_block_y_hi_mm()    = pew_mount_block_y_lo_mm() + pew_mount_bl
 function pew_mount_block_y_center_mm() = pew_mount_block_y_lo_mm() + pew_mount_block_y_len_mm / 2;
 function pew_mount_block_z_len_mm()   = shell_envelope_core_ly_mm;
 function pew_mount_block_z_center_mm() = shell_envelope_core_z_center_mm();
+function pew_mount_block_face_x_mm()  =
+    pew_mount_block_x_center_mm() + pew_mount_block_thickness_x_mm / 2;   // +X (pew-leg) face, pre-mink
+function pew_mount_block_pocket_y_lo_mm() =
+    pew_mount_block_y_lo_mm() + pew_mount_block_pocket_y_from_back_mm;
+function pew_mount_block_pocket_y_hi_mm() =
+    pew_mount_block_pocket_y_lo_mm() + pew_mount_block_pocket_y_len_mm;
 
 // ── Tread retention cap (derived positions) ──────────────────────────────────
 // Seated tread −Z end (bracket frame): assembly.scad centers the tread bbox on

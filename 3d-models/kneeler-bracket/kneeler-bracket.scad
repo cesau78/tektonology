@@ -13,7 +13,7 @@ $fn = 64;
 mirror_side     = false;    // false = left, true = right
 
 plate_l         = 145;      // overall length  (X)
-plate_w         = 34;       // overall width   (Y)
+plate_w         = 32;       // overall width   (Y)
 plate_t         = 5;        // plate thickness (Z)
 corner_r        = 5;        // fillet radius on plate corners
 
