@@ -359,7 +359,7 @@ module tread_cap_nut_slot() {
 // real faces), so only the −Y floor (wedge start), ±X sides, and +Z face matter.
 module tread_cap_recess_volume(inset = 0) {
     x_lo = -tread_cap_recess_x_half_mm() + inset;
-    x_hi =  tread_cap_recess_x_half_mm() - inset;
+    x_hi =  tread_cap_recess_x_hi_mm() - inset;
     y_lo = tread_cap_recess_y_lo_mm() + inset;
     y_hi = tread_cap_recess_y_hi_mm();
     z_lo = tread_cap_recess_z_lo_mm() - epsilon * 4;
@@ -370,12 +370,12 @@ module tread_cap_recess_volume(inset = 0) {
 
 // Body envelope with the E-bevel only (no tread pockets) — used to carve the cap
 // so the plug is solid across the slot opening (stops the treads) yet still
-// follows the bracket's beveled top and rounded mouth faces. Uses the undercut
-// union so the cap's pew-side face is flush with the body's 45° undercut (no
-// proud overhang where the body was hulled away).
+// follows the bracket's beveled top and rounded mouth faces. The cap's +X extent
+// is pulled flush with the mount-block −X face by tread_cap_recess_x_hi_mm (not
+// carved by the angled undercut), so its pew-side edge stays flush full-length.
 module shell_solid_no_tread_pockets() {
     difference() {
-        shell_envelope_minkowski_union(undercut = true);
+        shell_envelope_minkowski_union();
         shell_tread_face_de_bevel_cut();
     }
 }
@@ -414,7 +414,7 @@ module cap_guide_pin_holes() {
                     cylinder(h = x1 - x0, r = r_bore, $fn = preview ? 16 : 32);
             // Conical lead-in at the recess-wall mouth (wide at the wall, tapering in).
             if (cap_guide_pin_mouth_chamfer_mm > 0)
-                translate([tread_cap_recess_x_half_mm() - epsilon, y, cap_guide_pin_z_mm])
+                translate([tread_cap_recess_x_hi_mm() - epsilon, y, cap_guide_pin_z_mm])
                     rotate([0, 90, 0])
                         cylinder(
                             h = cap_guide_pin_mouth_chamfer_mm + epsilon,
@@ -513,7 +513,7 @@ module pew_mount_block_pew_face_trim() {
 // sides (−X reinforcement, +X pew face, +Y front, −Z bottom).
 module pew_mount_block_bottom_undercut_cut() {
     over = corner_r + epsilon * 4;
-    x_lo = pew_mount_block_face_x_lo_mm() - over;        // through the −X reinforcement skin
+    x_lo = pew_mount_block_undercut_x_lo_mm();           // through the −X reinforcement skin
     x_hi = pew_mount_block_face_x_hi_mm() + over;        // out past the +X pew-flush face
     z_top = pew_mount_block_undercut_top_z_mm;           // flat ceiling (halfway up)
     z_bot = pew_mount_block_z_lo_mm() - over;            // below the block bottom

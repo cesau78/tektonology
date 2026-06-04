@@ -497,6 +497,9 @@ function pew_mount_block_pocket_y_hi_mm() =
 function pew_mount_block_z_lo_mm() =
     pew_mount_block_z_center_mm() - pew_mount_block_z_len_mm() / 2;
 function pew_mount_block_undercut_y_lo_mm() = pew_mount_block_pocket_y_lo_mm();
+// −X edge of the undercut cut (reinforcement −X face, less the minkowski-skin overshoot).
+function pew_mount_block_undercut_x_lo_mm() =
+    pew_mount_block_face_x_lo_mm() - (corner_r + epsilon * 4);
 function pew_mount_block_undercut_ramp_run_mm() =
     (pew_mount_block_undercut_top_z_mm - pew_mount_block_z_lo_mm())
     / tan(pew_mount_block_undercut_ramp_angle_deg);
@@ -526,8 +529,15 @@ function tread_cap_recess_z_hi_mm()   = tread_seated_bracket_z_min_mm() - cap_tr
 function tread_cap_recess_y_lo_mm()   = bracket_nat_y_mid_mm - shell_height_mm;             // wedge start (core/wedge seam)
 function tread_cap_recess_y_hi_mm()   = bracket_nat_y_mid_mm + corner_r + 2;                // above E; bevel clips the real top
 function tread_cap_recess_x_half_mm() = shell_extent_qr_wedge_mm / 2;                       // core half-width (excludes +X mount block)
+// +X (pew-side) recess bound: pulled in flush with the protruding mount-block /
+// bridge −X face so the cap doesn't reach out under the block. Falls back to the
+// symmetric core half-width when no block is present.
+function tread_cap_recess_x_hi_mm() =
+    (pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
+        ? pew_mount_block_face_x_lo_mm()
+        : tread_cap_recess_x_half_mm();
 // Cap's +X (pew-side) mating face, after the slip-fit shrink (guide-pin base).
-function tread_cap_face_x_mm() = tread_cap_recess_x_half_mm() - cap_fit_clearance_mm;
+function tread_cap_face_x_mm() = tread_cap_recess_x_hi_mm() - cap_fit_clearance_mm;
 
 // Bolt centerline Y: drop below the inner-tread back face at the mouth bevel.
 function cap_bolt_y_mm() =
