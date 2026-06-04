@@ -136,10 +136,19 @@ module bracket_cross_trim() {
     }
 }
 
-// One minkowski fillet over the pre-mink envelope union (tread ghost uses its own minkowski separately).
-module shell_envelope_minkowski_union() {
+// One minkowski fillet over the pre-mink envelope union (tread ghost uses its own
+// minkowski separately). With undercut = true the bottom undercut is removed from
+// the pre-mink solid BEFORE the sum, so the minkowski rounds/fillets the cut edges
+// (used for the body). The cap path leaves it false so the plug is unaffected.
+module shell_envelope_minkowski_union(undercut = false) {
     minkowski() {
-        shell_envelope_pre_mink();
+        if (undercut && pew_mount_block_undercut_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
+            difference() {
+                shell_envelope_pre_mink();
+                pew_mount_block_bottom_undercut_cut();
+            }
+        else
+            shell_envelope_pre_mink();
         sphere(r = corner_r, $fn = preview ? 16 : 24);
     }
 }
@@ -476,8 +485,9 @@ module pew_mount_block_bottom_undercut_cut() {
 
 module shell_body_difference_wedge_bores() {
     // Filleted core+prism+mount pad minus three sloped hull cutters (bevel + flange + tread).
+    // The bottom undercut is applied pre-minkowski (undercut = true) so its edges fillet.
     difference() {
-        shell_envelope_minkowski_union();
+        shell_envelope_minkowski_union(undercut = true);
         shell_tread_face_de_bevel_cut();
         if (tread_groove_shell_pocket_enabled)
             shell_tread_groove_pocket_cube();
@@ -499,8 +509,6 @@ module shell_body_difference_wedge_bores() {
             pew_mount_block_pocket_cut();
         if (pew_mount_block_pew_face_flush_enabled && pew_mount_block_enabled)
             pew_mount_block_pew_face_trim();
-        if (pew_mount_block_undercut_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
-            pew_mount_block_bottom_undercut_cut();
     }
 }
 
