@@ -370,11 +370,59 @@ module tread_cap_recess_volume(inset = 0) {
 
 // Body envelope with the E-bevel only (no tread pockets) — used to carve the cap
 // so the plug is solid across the slot opening (stops the treads) yet still
-// follows the bracket's beveled top and rounded mouth faces.
+// follows the bracket's beveled top and rounded mouth faces. Uses the undercut
+// union so the cap's pew-side face is flush with the body's 45° undercut (no
+// proud overhang where the body was hulled away).
 module shell_solid_no_tread_pockets() {
     difference() {
-        shell_envelope_minkowski_union();
+        shell_envelope_minkowski_union(undercut = true);
         shell_tread_face_de_bevel_cut();
+    }
+}
+
+// Guide pins protruding +X from the cap's pew-side face: a cylinder (root buried
+// in the cap for fusion) capped by a domed tip for lead-in. Added to the cap.
+module cap_guide_pins() {
+    if (cap_guide_pin_enable) {
+        x_face = tread_cap_face_x_mm();
+        for (y = cap_guide_pin_y_positions) {
+            translate([x_face - cap_guide_pin_cap_overlap_mm, y, cap_guide_pin_z_mm])
+                rotate([0, 90, 0])   // local +Z → +X
+                    cylinder(
+                        h = cap_guide_pin_cap_overlap_mm + cap_guide_pin_len_mm,
+                        r = cap_guide_pin_radius_mm,
+                        $fn = preview ? 16 : 32
+                    );
+            translate([x_face + cap_guide_pin_len_mm, y, cap_guide_pin_z_mm])
+                sphere(r = cap_guide_pin_dome_r_mm, $fn = preview ? 16 : 32);
+        }
+    }
+}
+
+// Matching clearance bores in the bracket's pew-side wall, with a conical mouth
+// lead-in so the pin can cock as the cap pivots into the mouth. Subtracted from
+// the body.
+module cap_guide_pin_holes() {
+    if (cap_guide_pin_enable) {
+        x_face = tread_cap_face_x_mm();
+        x0 = x_face - cap_guide_pin_cap_overlap_mm - epsilon;        // start in the gap, ahead of the pin root
+        x1 = x_face + cap_guide_pin_len_mm + cap_guide_pin_hole_extra_mm;  // past the domed tip
+        r_bore = cap_guide_pin_radius_mm + cap_guide_pin_hole_clear_mm;
+        for (y = cap_guide_pin_y_positions) {
+            translate([x0, y, cap_guide_pin_z_mm])
+                rotate([0, 90, 0])
+                    cylinder(h = x1 - x0, r = r_bore, $fn = preview ? 16 : 32);
+            // Conical lead-in at the recess-wall mouth (wide at the wall, tapering in).
+            if (cap_guide_pin_mouth_chamfer_mm > 0)
+                translate([tread_cap_recess_x_half_mm() - epsilon, y, cap_guide_pin_z_mm])
+                    rotate([0, 90, 0])
+                        cylinder(
+                            h = cap_guide_pin_mouth_chamfer_mm + epsilon,
+                            r1 = r_bore + cap_guide_pin_mouth_chamfer_mm,
+                            r2 = r_bore,
+                            $fn = preview ? 16 : 32
+                        );
+        }
     }
 }
 
@@ -509,6 +557,8 @@ module shell_body_difference_wedge_bores() {
             pew_mount_block_pocket_cut();
         if (pew_mount_block_pew_face_flush_enabled && pew_mount_block_enabled)
             pew_mount_block_pew_face_trim();
+        if (tread_cap_enabled)
+            cap_guide_pin_holes();
     }
 }
 

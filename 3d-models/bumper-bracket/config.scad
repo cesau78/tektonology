@@ -293,6 +293,25 @@ cap_nut_seat_margin_mm = 0.5;   // gap from bolt tip to far face of nut pocket
 cap_fit_clearance_mm = 0.15;    // cap shrink on the recess mating faces (slip fit)
 cap_tread_gap_mm     = 0.3;     // +Z gap left between the cap face and the tread ends
 
+// ── Cap guide pins (pew-side, +X) ────────────────────────────────────────────
+// Rounded guide pins protrude +X (toward the pew) from the cap's pew-side face
+// into bores in the bracket. The cap engages the pins first while tilted, then
+// pivots down into the −Z mouth (tilt-and-snap), so the pins live in the solid
+// back region of the wall, −Y of the bottom undercut bridge. Domed tips + a
+// chamfered bore mouth + radial clearance let the pin cock as the cap pivots.
+cap_guide_pin_enable         = true;
+cap_guide_pin_radius_mm      = 1.5;    // Ø3 pin
+cap_guide_pin_len_mm         = 2.5;    // +X protrusion past the cap face
+cap_guide_pin_cap_overlap_mm = 0.6;    // root buried in the cap for shell fusion
+cap_guide_pin_dome_r_mm      = 1.5;    // domed (rounded) tip for lead-in
+cap_guide_pin_hole_clear_mm  = 0.2;    // radial clearance in the bracket bore
+cap_guide_pin_hole_extra_mm  = 0.4;    // bore depth past the pin tip
+cap_guide_pin_mouth_chamfer_mm = 0.8;  // conical lead-in at the bore mouth (eases pivot)
+// Two pins on a Y-line (hinge for the pivot), in the solid wall below the undercut
+// bridge (y < pew_mount_block_undercut_y_lo_mm() ≈ 22.8) and within the cap Z.
+cap_guide_pin_y_positions    = [9, 18];
+cap_guide_pin_z_mm           = -30;
+
 // Bolt centerline: X centered on the tread; Y a fixed drop behind the inner-tread
 // back face (worst case at the mouth, where the bevel sits lowest).
 cap_bolt_x_mm                 = 0;
@@ -507,6 +526,8 @@ function tread_cap_recess_z_hi_mm()   = tread_seated_bracket_z_min_mm() - cap_tr
 function tread_cap_recess_y_lo_mm()   = bracket_nat_y_mid_mm - shell_height_mm;             // wedge start (core/wedge seam)
 function tread_cap_recess_y_hi_mm()   = bracket_nat_y_mid_mm + corner_r + 2;                // above E; bevel clips the real top
 function tread_cap_recess_x_half_mm() = shell_extent_qr_wedge_mm / 2;                       // core half-width (excludes +X mount block)
+// Cap's +X (pew-side) mating face, after the slip-fit shrink (guide-pin base).
+function tread_cap_face_x_mm() = tread_cap_recess_x_half_mm() - cap_fit_clearance_mm;
 
 // Bolt centerline Y: drop below the inner-tread back face at the mouth bevel.
 function cap_bolt_y_mm() =

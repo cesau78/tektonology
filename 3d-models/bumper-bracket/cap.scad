@@ -36,12 +36,15 @@ module tread_cap_bolt_hole() {
 // beveled body solid, so the cap is solid across the slot opening (stops the
 // treads) while matching the bracket's beveled top and rounded mouth faces.
 module tread_cap() {
-    difference() {
-        intersection() {
-            shell_solid_no_tread_pockets();
-            tread_cap_recess_volume(cap_fit_clearance_mm);
+    union() {
+        difference() {
+            intersection() {
+                shell_solid_no_tread_pockets();
+                tread_cap_recess_volume(cap_fit_clearance_mm);
+            }
+            tread_cap_bolt_hole();
         }
-        tread_cap_bolt_hole();
+        cap_guide_pins();
     }
 }
 
