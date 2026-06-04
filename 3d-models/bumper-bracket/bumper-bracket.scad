@@ -46,38 +46,39 @@ module shell_envelope_pre_mink(overlap_below = corner_r) {
         convexity = 4
     );
 
-    if (pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
-        translate([
-            pew_mount_block_x_center_mm(),
-            pew_mount_block_y_center_mm(),
-            pew_mount_block_z_center_mm(),
-        ])
-            cube(
-                [
-                    pew_mount_block_thickness_x_mm,
-                    pew_mount_block_y_len_mm,
-                    pew_mount_block_z_len_mm(),
-                ],
-                center = true
-            );
+    // Front (+Y) end extended by pew_mount_block_face_extend_y_mm and tilted by
+    // pew_mount_block_face_angle_deg, built straight into the pre-mink primitive as
+    // an extruded X-Y footprint (front edge follows the tilt line). This way the
+    // angle gets the same minkowski rounding and renders cleanly — no post-mink cut.
+    if (pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2) {
+        blk_x_lo = pew_mount_block_x_center_mm() - pew_mount_block_thickness_x_mm / 2;
+        blk_x_hi = pew_mount_block_x_center_mm() + pew_mount_block_thickness_x_mm / 2;
+        blk_y_lo = pew_mount_block_y_lo_mm();
+        translate([0, 0, pew_mount_block_z_center_mm() - pew_mount_block_z_len_mm() / 2])
+            linear_extrude(pew_mount_block_z_len_mm())
+                polygon([
+                    [blk_x_lo, blk_y_lo],
+                    [blk_x_hi, blk_y_lo],
+                    [blk_x_hi, pew_mount_block_front_y_at(blk_x_hi)],
+                    [blk_x_lo, pew_mount_block_front_y_at(blk_x_lo)],
+                ]);
+    }
 
     // Reinforcement welded to the block's −X side: full block Z height, from the
-    // roof-wedge start out to the block's +Y front face. A pre-mink primitive so
-    // it rounds and welds flush; the hull cuts below still carve it consistently.
+    // roof-wedge start out to the block's tilted +Y front. A pre-mink primitive so
+    // it rounds and welds flush; its front edge shares the same tilt line as the block.
     if (pew_mount_reinforce_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2) {
         rx_hi = pew_mount_block_x_center_mm() - pew_mount_block_thickness_x_mm / 2;
         rx_lo = rx_hi - pew_mount_reinforce_depth_x_mm;
         ry_lo = bracket_nat_y_mid_mm - shell_height_mm;   // roof-wedge start (core/wedge seam)
-        ry_hi = pew_mount_block_y_hi_mm();                // flush with the block's +Y front face
-        translate([
-            (rx_lo + rx_hi) / 2,
-            (ry_lo + ry_hi) / 2,
-            pew_mount_block_z_center_mm(),
-        ])
-            cube(
-                [rx_hi - rx_lo, ry_hi - ry_lo, pew_mount_block_z_len_mm()],
-                center = true
-            );
+        translate([0, 0, pew_mount_block_z_center_mm() - pew_mount_block_z_len_mm() / 2])
+            linear_extrude(pew_mount_block_z_len_mm())
+                polygon([
+                    [rx_lo, ry_lo],
+                    [rx_hi, ry_lo],
+                    [rx_hi, pew_mount_block_front_y_at(rx_hi)],
+                    [rx_lo, pew_mount_block_front_y_at(rx_lo)],
+                ]);
     }
 }
 
@@ -399,23 +400,25 @@ module qr_sticker_pocket() {
     s = qr_pocket_size_mm;
     r = min(qr_pocket_corner_r_mm, s / 2 - 0.01);
     half = s / 2 - r;
-    y_face = pew_mount_block_y_hi_mm() + corner_r;   // +Y front face (incl. minkowski skin)
-    // Center on the full front face (block + flush −X reinforcement). The +X edge
-    // follows the pew-face trim when enabled, so the tile tracks the real surface.
-    face_x_hi = pew_mount_block_pew_face_flush_enabled
-        ? assembly_pew_leg_inner_face_x_mm()
-        : pew_mount_block_x_center_mm() + pew_mount_block_thickness_x_mm / 2;
-    face_x_lo = pew_mount_block_x_center_mm() - pew_mount_block_thickness_x_mm / 2
-        - (pew_mount_reinforce_enabled ? pew_mount_reinforce_depth_x_mm : 0);
-    xc = (face_x_lo + face_x_hi) / 2 + qr_pocket_x_offset_mm;
+    // Lie the tile on the tilted front face: pivot at the +X (pew-flush) edge of the
+    // pre-mink front line, rotate the frame by the face angle about Z, then sit the
+    // tile on the plane. The actual face sits corner_r out along the tilted normal
+    // (minkowski skin), so push out by corner_r and add a corner_r*sin term to
+    // `along` so the normal offset's X-component doesn't shift the tile off-center.
+    x_piv = pew_mount_block_face_x_hi_mm();
+    xc = pew_mount_block_face_center_x_mm() + qr_pocket_x_offset_mm;
     zc = pew_mount_block_z_center_mm() + qr_pocket_z_offset_mm;
-    translate([xc, y_face + epsilon, zc])
-        rotate([90, 0, 0])   // extrude axis (+Z local) → bracket −Y (into the part)
-            linear_extrude(qr_pocket_depth_mm + epsilon)
-                hull()
-                    for (a = [-1, 1], b = [-1, 1])
-                        translate([a * half, b * half])
-                            circle(r = r, $fn = preview ? 16 : 32);
+    along = (xc - x_piv + corner_r * sin(pew_mount_block_face_angle_deg))
+        / cos(pew_mount_block_face_angle_deg);
+    translate([x_piv, pew_mount_block_face_flat_y_mm(), pew_mount_block_z_center_mm()])
+        rotate([0, 0, pew_mount_block_face_angle_deg])
+            translate([along, corner_r + epsilon, zc - pew_mount_block_z_center_mm()])
+                rotate([90, 0, 0])   // extrude axis (+Z local) → face inward normal
+                    linear_extrude(qr_pocket_depth_mm + epsilon)
+                        hull()
+                            for (a = [-1, 1], b = [-1, 1])
+                                translate([a * half, b * half])
+                                    circle(r = r, $fn = preview ? 16 : 32);
 }
 
 // Vertical pocket ("cube hull") in the +X (pew-leg) face of the mount block.
@@ -445,6 +448,32 @@ module pew_mount_block_pew_face_trim() {
         cube([2 * big, 2 * big, 2 * big]);
 }
 
+// "Hull off" the lower portion of the block + angled plate: a flat ceiling at
+// undercut_top_z runs from the +Y front face back to a ramp that closes down to
+// the block bottom flush with the pew-side pocket's −Y edge ("the bridge"). Built
+// as the hull of a flat-ceiling slab (front) and a thin bottom edge (at the
+// bridge). Full combined width, overshooting the minkowski skin on the open
+// sides (−X reinforcement, +X pew face, +Y front, −Z bottom).
+module pew_mount_block_bottom_undercut_cut() {
+    over = corner_r + epsilon * 4;
+    x_lo = pew_mount_block_face_x_lo_mm() - over;        // through the −X reinforcement skin
+    x_hi = pew_mount_block_face_x_hi_mm() + over;        // out past the +X pew-flush face
+    z_top = pew_mount_block_undercut_top_z_mm;           // flat ceiling (halfway up)
+    z_bot = pew_mount_block_z_lo_mm() - over;            // below the block bottom
+    y_front = pew_mount_block_face_flat_y_mm() + over;   // past the +Y front
+    y_ramp = pew_mount_block_undercut_ramp_start_y_mm(); // flat ends / ramp begins
+    y_bridge = pew_mount_block_undercut_y_lo_mm();       // ramp lands at the pocket −Y edge
+
+    hull() {
+        // Flat-ceiling slab over the front portion.
+        translate([x_lo, y_ramp, z_bot])
+            cube([x_hi - x_lo, y_front - y_ramp, z_top - z_bot]);
+        // Thin bottom edge at the bridge: the ramp tapers the ceiling to here.
+        translate([x_lo, y_bridge, z_bot])
+            cube([x_hi - x_lo, epsilon, epsilon]);
+    }
+}
+
 module shell_body_difference_wedge_bores() {
     // Filleted core+prism+mount pad minus three sloped hull cutters (bevel + flange + tread).
     difference() {
@@ -470,6 +499,8 @@ module shell_body_difference_wedge_bores() {
             pew_mount_block_pocket_cut();
         if (pew_mount_block_pew_face_flush_enabled && pew_mount_block_enabled)
             pew_mount_block_pew_face_trim();
+        if (pew_mount_block_undercut_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
+            pew_mount_block_bottom_undercut_cut();
     }
 }
 

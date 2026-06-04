@@ -218,6 +218,12 @@ pew_mount_block_y_len_mm       = shell_envelope_apex_lz_mm - pew_mount_block_y_e
 // against the pew instead of interfering with it.
 pew_mount_block_pew_face_flush_enabled = true;
 
+// Extend the block/reinforcement +Y front, then tilt that end face about Z so a
+// 1" QR tile fits on the (now longer) sloped surface. The tile's X-footprint is
+// size·cos(angle), so 10° brings the 25.4 mm tile within the ~25 mm face width.
+pew_mount_block_face_extend_y_mm = 4;    // +Y extension of the front before tilting
+pew_mount_block_face_angle_deg   = 20;   // front-face tilt about Z (0 = flat, perpendicular to Y)
+
 // Vertical pocket ("cube hull") cut into the +X (pew-leg–facing) face of the
 // mount block. Opens on +X and runs depth_x into the block; spans the block's
 // full Z length (open on both Z ends). The +Y window is measured from the
@@ -236,6 +242,16 @@ pew_mount_block_pocket_depth_x_mm     = 12.5;   // −X depth from the block's +
 pew_mount_reinforce_enabled    = true;
 pew_mount_reinforce_depth_x_mm = 6;    // −X thickness, measured from the block's −X face
 
+// ── Bottom undercut (mount block + angled plate) ─────────────────────────────
+// "Hull off" the lower portion of the block + angled plate: a flat ceiling at
+// undercut_top_z (z-center = halfway up by default) runs from the +Y front face
+// back toward the roof side, then closes down to the block bottom along a ramp
+// that lands flush with the pew-side pocket's −Y edge ("the bridge"). Full
+// combined width: −X reinforcement face through the +X pew-flush face.
+pew_mount_block_undercut_enabled        = true;
+pew_mount_block_undercut_top_z_mm       = pew_mount_block_z_center_mm();   // ceiling Z (halfway up)
+pew_mount_block_undercut_ramp_angle_deg = 45;   // closing ramp angle at the −Y (bridge) end
+
 // ── QR-code sticker pocket (mount block +Y front face) ───────────────────────
 // Shallow rounded-square ("hull") recess so a 1" printed QR sticker seats flush
 // on the mount block's +Y front face. Cuts qr_pocket_depth_mm inward (−Y);
@@ -246,9 +262,9 @@ qr_pocket_size_mm     = 25.4;  // 1" square (overall, including the rounded corn
 qr_pocket_depth_mm    = 0.1;   // sticker recess depth (into −Y)
 qr_pocket_corner_r_mm = 2;     // hull corner rounding
 qr_pocket_x_offset_mm = 0;     // + toward +X (pew-leg face), − toward the core / reinforcement
-// Push the tile up toward the +Z (pew) top, leaving a 3 mm margin from the block top.
-qr_pocket_top_margin_mm = 3;
-qr_pocket_z_offset_mm = pew_mount_block_z_len_mm() / 2 - qr_pocket_size_mm / 2 - qr_pocket_top_margin_mm;
+// Center the tile (Z) on the front face that REMAINS after the bottom undercut:
+// midway between the undercut ceiling and the block top.
+qr_pocket_z_offset_mm = pew_mount_block_face_remaining_z_center_mm() - pew_mount_block_z_center_mm();
 
 // ── Tread retention cap (−Z mouth, face D) + single central M3×20 fastener ───
 // A separate printed cap closes the tread-slot mouth so the back-to-back treads
@@ -436,10 +452,47 @@ function pew_mount_block_z_len_mm()   = shell_envelope_core_ly_mm;
 function pew_mount_block_z_center_mm() = shell_envelope_core_z_center_mm();
 function pew_mount_block_face_x_mm()  =
     pew_mount_block_x_center_mm() + pew_mount_block_thickness_x_mm / 2;   // +X (pew-leg) face, pre-mink
+// Front (+Y) face X bounds: +X follows the pew-flush trim, −X the reinforcement.
+function pew_mount_block_face_x_hi_mm() =
+    pew_mount_block_pew_face_flush_enabled
+        ? assembly_pew_leg_inner_face_x_mm()
+        : pew_mount_block_x_center_mm() + pew_mount_block_thickness_x_mm / 2;
+function pew_mount_block_face_x_lo_mm() =
+    pew_mount_block_x_center_mm() - pew_mount_block_thickness_x_mm / 2
+    - (pew_mount_reinforce_enabled ? pew_mount_reinforce_depth_x_mm : 0);
+function pew_mount_block_face_center_x_mm() =
+    (pew_mount_block_face_x_lo_mm() + pew_mount_block_face_x_hi_mm()) / 2;
+// Forward-most +Y face plane after the extension (the tilt pivots back from here).
+function pew_mount_block_face_flat_y_mm() =
+    pew_mount_block_y_hi_mm() + pew_mount_block_face_extend_y_mm;
+// Front (+Y) edge Y as a function of X — the tilt line, pivoting at the +X edge.
+function pew_mount_block_front_y_at(x) =
+    pew_mount_block_face_flat_y_mm()
+    + (x - pew_mount_block_face_x_hi_mm()) * tan(pew_mount_block_face_angle_deg);
 function pew_mount_block_pocket_y_lo_mm() =
     pew_mount_block_y_lo_mm() + pew_mount_block_pocket_y_from_back_mm;
 function pew_mount_block_pocket_y_hi_mm() =
     pew_mount_block_pocket_y_lo_mm() + pew_mount_block_pocket_y_len_mm;
+// Bottom-undercut endpoints. The ramp closes to the block bottom flush with the
+// pocket's −Y edge; its run is set by the ramp angle and the (top_z → bottom) rise.
+function pew_mount_block_z_lo_mm() =
+    pew_mount_block_z_center_mm() - pew_mount_block_z_len_mm() / 2;
+function pew_mount_block_undercut_y_lo_mm() = pew_mount_block_pocket_y_lo_mm();
+function pew_mount_block_undercut_ramp_run_mm() =
+    (pew_mount_block_undercut_top_z_mm - pew_mount_block_z_lo_mm())
+    / tan(pew_mount_block_undercut_ramp_angle_deg);
+function pew_mount_block_undercut_ramp_start_y_mm() =
+    pew_mount_block_undercut_y_lo_mm() + pew_mount_block_undercut_ramp_run_mm();
+// Z bounds / center of the +Y front face that REMAINS after the bottom undercut:
+// from the undercut ceiling (when enabled) up to the block top.
+function pew_mount_block_face_remaining_z_lo_mm() =
+    (pew_mount_block_undercut_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
+        ? pew_mount_block_undercut_top_z_mm
+        : pew_mount_block_z_lo_mm();
+function pew_mount_block_face_remaining_z_hi_mm() =
+    pew_mount_block_z_center_mm() + pew_mount_block_z_len_mm() / 2;
+function pew_mount_block_face_remaining_z_center_mm() =
+    (pew_mount_block_face_remaining_z_lo_mm() + pew_mount_block_face_remaining_z_hi_mm()) / 2;
 
 // ── Tread retention cap (derived positions) ──────────────────────────────────
 // Seated tread −Z end (bracket frame): assembly.scad centers the tread bbox on
