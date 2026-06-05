@@ -252,6 +252,17 @@ pew_mount_block_undercut_enabled        = true;
 pew_mount_block_undercut_top_z_mm       = pew_mount_block_z_center_mm();   // ceiling Z (halfway up)
 pew_mount_block_undercut_ramp_angle_deg = 45;   // closing ramp angle at the −Y (bridge) end
 
+// ── Side attachment screw (X-axis, #8, through angled front face) ────────────
+// A flat-head #8 wood screw mounts the bracket to the pew leg. The screw enters
+// the angled +Y front face at its geometric centre (just behind the QR sticker)
+// and exits the +X pew-flush face; the countersink seats the head flush with the
+// angled face. Tilted at half the face angle in the XY plane so the axis bisects
+// the face, passing exactly through the face centre regardless of the angle.
+side_screw_enabled     = true;
+side_screw_dia_mm      = 4.5;    // #8 free-fit clearance (nominal shaft 4.17 mm)
+side_screw_head_dia_mm = 8.0;    // flat-head #8 maximum countersink Ø
+side_screw_chamfer_deg = 82;     // flat-head included angle (standard #8)
+
 // ── QR-code sticker pocket (mount block +Y front face) ───────────────────────
 // Shallow rounded-square ("hull") recess so a 1" printed QR sticker seats flush
 // on the mount block's +Y front face. Cuts qr_pocket_depth_mm inward (−Y);
@@ -515,6 +526,25 @@ function pew_mount_block_face_remaining_z_hi_mm() =
     pew_mount_block_z_center_mm() + pew_mount_block_z_len_mm() / 2;
 function pew_mount_block_face_remaining_z_center_mm() =
     (pew_mount_block_face_remaining_z_lo_mm() + pew_mount_block_face_remaining_z_hi_mm()) / 2;
+
+// ── Side screw position / angle ──────────────────────────────────────────────
+// Bore runs primarily along +X (toward the pew leg / adjacent piece).
+// ▸ Change bore_x_mm to slide the bore entry along the angled face.
+//   bore_y_mm auto-follows bore_x_mm — do not edit bore_y_mm directly.
+// ▸ Change bore_x_hi_mm to extend the bore (and its chamfer) further in +X,
+//   e.g. to reach through the kneeler bracket plate into the pew leg.
+//   Entry: angled +Y front face at bore_x (screw tip exits into pew material).
+//   Exit / chamfer: bore_x_hi face (head seats here, perpendicular to that face).
+side_screw_angle_deg    = pew_mount_block_face_angle_deg / 2 * -1;
+                                          // tilt from +X toward −Y; half face angle ≈ 10°
+side_screw_bore_x_mm    = -5; //pew_mount_block_face_center_x_mm();
+                                          // X entry on angled face — slide to reposition (≈ 24.6 mm)
+side_screw_bore_y_mm    = pew_mount_block_front_y_at(side_screw_bore_x_mm);
+                                          // Y auto-follows bore_x along the face — do not edit
+side_screw_bore_z_mm    = pew_mount_block_face_remaining_z_center_mm();
+                                          // Z centre-line = QR-code Z centre (≈ 18.6 mm)
+side_screw_bore_x_hi_mm = pew_mount_block_face_x_hi_mm();
+                                          // +X exit / chamfer face; increase to reach adjacent piece
 
 // ── Tread retention cap (derived positions) ──────────────────────────────────
 // Seated tread −Z end (bracket frame): assembly.scad centers the tread bbox on

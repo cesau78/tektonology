@@ -531,6 +531,67 @@ module pew_mount_block_bottom_undercut_cut() {
     }
 }
 
+// Angled bore + flat-head countersink for a #8 wood screw that mounts the bracket
+// to the pew leg. The screw enters the angled +Y front face at its geometric
+// centre (behind the QR sticker) and exits the +X pew-flush face. Half the face
+// angle keeps the axis on the face bisector: it passes through the face centre
+// regardless of the angle magnitude.
+//
+// Coordinate note (in the rotated local frame established below):
+//   local +Z  →  [cos(ang), -sin(ang), 0] in bracket frame  (toward +X pew face)
+//   local -Z  →  outside the angled face  (countersink/head side)
+// Bore + perpendicular flat-head chamfer for a #8 wood screw that mounts the
+// bracket to the pew. The bore runs primarily along +Y (from the −X reinforcement
+// face toward the angled +Y front face), tilted 10° toward +X in the XY plane so
+// it exits at the geometric centre of the angled face. The screw head sits in a
+// circular countersink on the −X reinforcement face (axis perpendicular to that
+// face = along +X), which is the accessible inner face of the mount block.
+//
+// Local bore frame (set up by the two rotations below):
+//   local +Z  →  [sin(ang), cos(ang), 0]  (bore direction; toward angled face)
+//   z = 0       = entry on −X reinforcement face
+//   z = t_exit  = exit at angled face centre
+module side_screw_bore() {
+    if (side_screw_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2) {
+        ang      = side_screw_angle_deg;    // tilt from +X toward −Y (config variable)
+        r_sh     = side_screw_dia_mm / 2;
+        r_hd     = side_screw_head_dia_mm / 2;
+        half_ang = (180 - side_screw_chamfer_deg) / 2;  // cone half-angle (49° for 82°)
+        ch_d     = (r_hd - r_sh) / tan(half_ang);       // axial depth of chamfer
+        fn       = preview ? 16 : 32;
+        over     = corner_r + epsilon * 4;
+
+        x_c     = side_screw_bore_x_mm;    // entry X on angled face (config variable)
+        y_c     = side_screw_bore_y_mm;   // entry Y on angled face (auto-follows x_c)
+        z_c     = side_screw_bore_z_mm;   // bore Z centre-line    (config variable)
+        x_hi    = side_screw_bore_x_hi_mm; // exit / chamfer X face (config variable)
+
+        // Along-axis distance from bore reference (face centre) to +X pew face.
+        // Bore direction: [cos(ang), −sin(ang), 0] — mostly +X, slight −Y.
+        // rotate([0,0,−ang]); rotate([0,90,0]) maps cylinder Z → [cos(ang),−sin(ang),0].
+        dist_to_pew = (x_hi - x_c) / cos(ang);
+        y_pew       = y_c - dist_to_pew * sin(ang);  // Y on the +X face (chamfer centre)
+
+        // ── Shaft bore (tilted, mostly +X) ──────────────────────────────────────
+        // Origin at angled face centre; z=0 → face centre; z=dist_to_pew → +X face.
+        // Extend by 'over' past both ends so the boolean cuts cleanly.
+        translate([x_c, y_c, z_c])
+            rotate([0, 0, -ang])
+                rotate([0, 90, 0])
+                    translate([0, 0, -over])
+                        cylinder(h = dist_to_pew + 2*over, r = r_sh, $fn = fn);
+
+        // ── Perpendicular chamfer on +X pew face ────────────────────────────────
+        // Axis along −X (into block): circular opening on the +X face seats the head.
+        translate([x_hi, y_pew, z_c]) {
+            rotate([0, 90, 0])                                    // axis → +X (outward stub)
+                cylinder(h = over, r = r_hd, $fn = fn);
+            rotate([0, -90, 0])                                   // axis → −X (taper into block)
+                cylinder(h = ch_d + over, r1 = r_hd, r2 = r_sh, $fn = fn);
+        }
+    }
+}
+
 module shell_body_difference_wedge_bores() {
     // Filleted core+prism+mount pad minus three sloped hull cutters (bevel + flange + tread).
     // The bottom undercut is applied pre-minkowski (undercut = true) so its edges fillet.
@@ -559,6 +620,8 @@ module shell_body_difference_wedge_bores() {
             pew_mount_block_pew_face_trim();
         if (tread_cap_enabled)
             cap_guide_pin_holes();
+        if (side_screw_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
+            side_screw_bore();
     }
 }
 
