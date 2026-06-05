@@ -5,7 +5,7 @@
 .DESCRIPTION
     Renders bumper-bracket-left.stl, bumper-bracket-right.stl, and cap.stl
     via OpenSCAD and writes them to:
-        <repo>/3d-models/bumper-bracket/latest-build/v<Version>/
+        <repo>/3d-models/bumper-bracket/latest-builds/v<Version>/
 
     If -GitRef is provided the named commit/tag/branch is checked out into a
     temporary git worktree, built from there, then the worktree is cleaned up.
@@ -45,7 +45,7 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = $PSScriptRoot                                    # .../scripts/
 $ModelDir  = Split-Path -Parent $ScriptDir                    # .../bumper-bracket/
 $RepoRoot  = Split-Path -Parent (Split-Path -Parent $ModelDir) # repo root
-$OutDir    = Join-Path (Join-Path $ModelDir "latest-build") "v$BuildVersion"
+$OutDir    = Join-Path (Join-Path $ModelDir "latest-builds") "v$BuildVersion"
 
 # Relative path from repo root to the SCAD directory (used inside a worktree)
 $ScadRelDir = "3d-models\bumper-bracket"
@@ -104,7 +104,7 @@ try {
     foreach ($exp in $Exports) {
         $InPath  = Join-Path $BuildScadDir $exp.Scad
         $OutPath = Join-Path $OutDir       $exp.Stl
-        Write-Host "  Rendering $($exp.Scad) -> latest-build\v$BuildVersion\$($exp.Stl) ..."
+        Write-Host "  Rendering $($exp.Scad) -> latest-builds\v$BuildVersion\$($exp.Stl) ..."
         & $OpenScad @Defines -o $OutPath $InPath
         if ($LASTEXITCODE -ne 0) {
             throw "OpenSCAD failed for $($exp.Scad) (exit code $LASTEXITCODE)"
