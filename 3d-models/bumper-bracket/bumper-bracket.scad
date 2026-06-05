@@ -82,6 +82,7 @@ module shell_envelope_pre_mink(overlap_below = corner_r) {
                             [rx_lo, pew_mount_block_front_y_at(rx_lo)],
                         ]);
             }
+
         }
 
         // Rectangular hull clip: remove all geometry below y = -25 before minkowski.
@@ -96,6 +97,30 @@ module _pre_mink_y_floor_hull() {
         translate([-big, -25, -big]) cube([2 * big, 1, 2 * big]);
         translate([-big,  big, -big]) cube([2 * big, 1, 2 * big]);
     }
+}
+
+// Two hull cutters, one per gap between the 3 roof screws (fracs 1/6, 1/2, 5/6).
+// Centered at inter-screw midpoints (fracs 1/3 and 2/3), Z height = half the
+// inter-screw spacing. Subtracted pre-minkowski so cut edges get the sphere fillet.
+module _pre_mink_screw_gap_tabs_cut() {
+    tab_z_half = shell_inset_dim_tread_pew_mm / 12;
+    for (pair = [
+        [-screw_gap_tab_z_nudge_mm, 1/3],   // bottom tab, shifted −Z
+        [ screw_gap_tab_z_nudge_mm, 2/3],   // top tab, shifted +Z
+    ])
+        _pre_mink_screw_gap_tab(
+            corner_r + shell_inset_dim_tread_pew_mm * pair[1] - shell_extent_tread_pew_mm / 2 + pair[0],
+            tab_z_half
+        );
+}
+
+// Rectangular hull cutter: X −20→+30, Y −25→0, Z centered at z_center ± z_half.
+module _pre_mink_screw_gap_tab(z_center, z_half) {
+    c = HULL_VERTEX_CUBE_MM;
+    hull()
+        for (x = [-20, 30], y = [-25, 0], z = [z_center - z_half, z_center + z_half])
+            translate([x, y, z])
+                cube(c, center = true);
 }
 
 function bracket_world_z_min() = bracket_face_tread_slot_z_mm;
@@ -153,18 +178,16 @@ module bracket_cross_trim() {
 }
 
 // One minkowski fillet over the pre-mink envelope union (tread ghost uses its own
-// minkowski separately). With undercut = true the bottom undercut is removed from
-// the pre-mink solid BEFORE the sum, so the minkowski rounds/fillets the cut edges
-// (used for the body). The cap path leaves it false so the plug is unaffected.
+// minkowski separately). Pre-mink cuts (undercut, screw-gap tabs) are subtracted
+// BEFORE the sphere sweep so their edges receive the same fillet as the solid faces.
 module shell_envelope_minkowski_union(undercut = false) {
     minkowski() {
-        if (undercut && pew_mount_block_undercut_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
-            difference() {
-                shell_envelope_pre_mink();
-                pew_mount_block_bottom_undercut_cut();
-            }
-        else
+        difference() {
             shell_envelope_pre_mink();
+            if (undercut && pew_mount_block_undercut_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
+                pew_mount_block_bottom_undercut_cut();
+            _pre_mink_screw_gap_tabs_cut();
+        }
         sphere(r = corner_r, $fn = preview ? 16 : 24);
     }
 }

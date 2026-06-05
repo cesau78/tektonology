@@ -147,7 +147,15 @@ tread_face_d_e_side_y_narrow_mm = tan(tread_face_de_extra_angle_deg) * shell_ext
 
 // ── Wood screws (#8; major Ø ~0.164"); through the roof-wedge hypotenuse ──────
 wood_screw_holes_enabled    = true;
-wood_screw_hole_y_fractions = [1/6, 1/2, 5/6];  // spacing along tread↔pew (bracket +Z)
+// Shift the outer two screws outward along +Z (top) and −Z (bottom) by this many mm.
+wood_screw_outer_z_nudge_mm = 5;
+wood_screw_hole_y_fractions = [
+    1/6 - wood_screw_outer_z_nudge_mm / shell_inset_dim_tread_pew_mm,  // bottom, shifted −Z
+    1/2,                                                                 // middle, unchanged
+    5/6 + wood_screw_outer_z_nudge_mm / shell_inset_dim_tread_pew_mm,  // top, shifted +Z
+];
+// Shift the rib cutouts (inter-screw hull tabs) outward: bottom −Z, top +Z.
+screw_gap_tab_z_nudge_mm    = 2.5;
 wood_screw_gauge            = 8;
 wood_shank_nominal_mm       = 4.17;
 wood_shank_clr              = wood_shank_nominal_mm + 0.92;  // sliding fit + angled drive
