@@ -14,71 +14,87 @@ module shell_envelope_pre_mink(overlap_below = corner_r) {
     wedge_run = shell_inset_dim_qr_wedge_mm;
     wedge_depth = shell_inset_dim_tread_pew_mm;
 
-    translate(bracket_pos(core_c[0], core_c[1], core_c[2]))
-        cube(
-            [shell_envelope_core_lx_mm, shell_envelope_core_lz_mm, shell_envelope_core_ly_mm],
-            center = true
-        );
+    intersection() {
+        union() {
+            translate(bracket_pos(core_c[0], core_c[1], core_c[2]))
+                cube(
+                    [shell_envelope_core_lx_mm, shell_envelope_core_lz_mm, shell_envelope_core_ly_mm],
+                    center = true
+                );
 
-    translate(bracket_pos(
-        shell_envelope_inset_lx_mm + wedge_run / 2,
-        shell_envelope_inset_ly_mm + wedge_depth / 2,
-        shell_envelope_roof_lz_mm - overlap_below / 2
-    ))
-        cube([wedge_run, overlap_below, wedge_depth], center = true);
+            translate(bracket_pos(
+                shell_envelope_inset_lx_mm + wedge_run / 2,
+                shell_envelope_inset_ly_mm + wedge_depth / 2,
+                shell_envelope_roof_lz_mm - overlap_below / 2
+            ))
+                cube([wedge_run, overlap_below, wedge_depth], center = true);
 
-    polyhedron(
-        points = [
-            bracket_pos(shell_envelope_inset_lx_mm, shell_envelope_inset_ly_mm, shell_envelope_roof_lz_mm),
-            bracket_pos(wedge_xr, shell_envelope_inset_ly_mm, shell_envelope_roof_lz_mm),
-            bracket_pos(wedge_xr, shell_envelope_inset_ly_mm, shell_envelope_apex_lz_mm),
-            bracket_pos(shell_envelope_inset_lx_mm, shell_envelope_inset_ly_mm + wedge_depth, shell_envelope_roof_lz_mm),
-            bracket_pos(wedge_xr, shell_envelope_inset_ly_mm + wedge_depth, shell_envelope_roof_lz_mm),
-            bracket_pos(wedge_xr, shell_envelope_inset_ly_mm + wedge_depth, shell_envelope_apex_lz_mm),
-        ],
-        faces = [
-            [0, 1, 4, 3],
-            [1, 2, 5, 4],
-            [0, 3, 5, 2],
-            [0, 2, 1],
-            [3, 4, 5],
-        ],
-        convexity = 4
-    );
+            polyhedron(
+                points = [
+                    bracket_pos(shell_envelope_inset_lx_mm, shell_envelope_inset_ly_mm, shell_envelope_roof_lz_mm),
+                    bracket_pos(wedge_xr, shell_envelope_inset_ly_mm, shell_envelope_roof_lz_mm),
+                    bracket_pos(wedge_xr, shell_envelope_inset_ly_mm, shell_envelope_apex_lz_mm),
+                    bracket_pos(shell_envelope_inset_lx_mm, shell_envelope_inset_ly_mm + wedge_depth, shell_envelope_roof_lz_mm),
+                    bracket_pos(wedge_xr, shell_envelope_inset_ly_mm + wedge_depth, shell_envelope_roof_lz_mm),
+                    bracket_pos(wedge_xr, shell_envelope_inset_ly_mm + wedge_depth, shell_envelope_apex_lz_mm),
+                ],
+                faces = [
+                    [0, 1, 4, 3],
+                    [1, 2, 5, 4],
+                    [0, 3, 5, 2],
+                    [0, 2, 1],
+                    [3, 4, 5],
+                ],
+                convexity = 4
+            );
 
-    // Front (+Y) end extended by pew_mount_block_face_extend_y_mm and tilted by
-    // pew_mount_block_face_angle_deg, built straight into the pre-mink primitive as
-    // an extruded X-Y footprint (front edge follows the tilt line). This way the
-    // angle gets the same minkowski rounding and renders cleanly — no post-mink cut.
-    if (pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2) {
-        blk_x_lo = pew_mount_block_x_center_mm() - pew_mount_block_thickness_x_mm / 2;
-        blk_x_hi = pew_mount_block_x_center_mm() + pew_mount_block_thickness_x_mm / 2;
-        blk_y_lo = pew_mount_block_y_lo_mm();
-        translate([0, 0, pew_mount_block_z_center_mm() - pew_mount_block_z_len_mm() / 2])
-            linear_extrude(pew_mount_block_z_len_mm())
-                polygon([
-                    [blk_x_lo, blk_y_lo],
-                    [blk_x_hi, blk_y_lo],
-                    [blk_x_hi, pew_mount_block_front_y_at(blk_x_hi)],
-                    [blk_x_lo, pew_mount_block_front_y_at(blk_x_lo)],
-                ]);
+            // Front (+Y) end extended by pew_mount_block_face_extend_y_mm and tilted by
+            // pew_mount_block_face_angle_deg, built straight into the pre-mink primitive as
+            // an extruded X-Y footprint (front edge follows the tilt line). This way the
+            // angle gets the same minkowski rounding and renders cleanly — no post-mink cut.
+            if (pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2) {
+                blk_x_lo = pew_mount_block_x_center_mm() - pew_mount_block_thickness_x_mm / 2;
+                blk_x_hi = pew_mount_block_x_center_mm() + pew_mount_block_thickness_x_mm / 2;
+                blk_y_lo = pew_mount_block_y_lo_mm();
+                translate([0, 0, pew_mount_block_z_center_mm() - pew_mount_block_z_len_mm() / 2])
+                    linear_extrude(pew_mount_block_z_len_mm())
+                        polygon([
+                            [blk_x_lo, blk_y_lo],
+                            [blk_x_hi, blk_y_lo],
+                            [blk_x_hi, pew_mount_block_front_y_at(blk_x_hi)],
+                            [blk_x_lo, pew_mount_block_front_y_at(blk_x_lo)],
+                        ]);
+            }
+
+            // Reinforcement welded to the block's −X side: full block Z height, from the
+            // roof-wedge start out to the block's tilted +Y front. A pre-mink primitive so
+            // it rounds and welds flush; its front edge shares the same tilt line as the block.
+            if (pew_mount_reinforce_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2) {
+                rx_hi = pew_mount_block_x_center_mm() - pew_mount_block_thickness_x_mm / 2;
+                rx_lo = rx_hi - pew_mount_reinforce_depth_x_mm;
+                ry_lo = bracket_nat_y_mid_mm - shell_height_mm;   // roof-wedge start (core/wedge seam)
+                translate([0, 0, pew_mount_block_z_center_mm() - pew_mount_block_z_len_mm() / 2])
+                    linear_extrude(pew_mount_block_z_len_mm())
+                        polygon([
+                            [rx_lo, ry_lo],
+                            [rx_hi, ry_lo],
+                            [rx_hi, pew_mount_block_front_y_at(rx_hi)],
+                            [rx_lo, pew_mount_block_front_y_at(rx_lo)],
+                        ]);
+            }
+        }
+
+        // Rectangular hull clip: remove all geometry below y = -25 before minkowski.
+        // Hull of two large flat slabs produces a clean rectangular prism y ≥ -25.
+        _pre_mink_y_floor_hull();
     }
+}
 
-    // Reinforcement welded to the block's −X side: full block Z height, from the
-    // roof-wedge start out to the block's tilted +Y front. A pre-mink primitive so
-    // it rounds and welds flush; its front edge shares the same tilt line as the block.
-    if (pew_mount_reinforce_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2) {
-        rx_hi = pew_mount_block_x_center_mm() - pew_mount_block_thickness_x_mm / 2;
-        rx_lo = rx_hi - pew_mount_reinforce_depth_x_mm;
-        ry_lo = bracket_nat_y_mid_mm - shell_height_mm;   // roof-wedge start (core/wedge seam)
-        translate([0, 0, pew_mount_block_z_center_mm() - pew_mount_block_z_len_mm() / 2])
-            linear_extrude(pew_mount_block_z_len_mm())
-                polygon([
-                    [rx_lo, ry_lo],
-                    [rx_hi, ry_lo],
-                    [rx_hi, pew_mount_block_front_y_at(rx_hi)],
-                    [rx_lo, pew_mount_block_front_y_at(rx_lo)],
-                ]);
+module _pre_mink_y_floor_hull() {
+    big = _bracket_cross_half_extent();
+    hull() {
+        translate([-big, -25, -big]) cube([2 * big, 1, 2 * big]);
+        translate([-big,  big, -big]) cube([2 * big, 1, 2 * big]);
     }
 }
 
