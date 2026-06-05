@@ -566,28 +566,32 @@ module side_screw_bore() {
         z_c     = side_screw_bore_z_mm;   // bore Z centre-line    (config variable)
         x_hi    = side_screw_bore_x_hi_mm; // exit / chamfer X face (config variable)
 
-        // Along-axis distance from bore reference (face centre) to +X pew face.
+        // Along-axis distance from entry (angled face) to exit (+X pew face).
         // Bore direction: [cos(ang), −sin(ang), 0] — mostly +X, slight −Y.
         // rotate([0,0,−ang]); rotate([0,90,0]) maps cylinder Z → [cos(ang),−sin(ang),0].
         dist_to_pew = (x_hi - x_c) / cos(ang);
-        y_pew       = y_c - dist_to_pew * sin(ang);  // Y on the +X face (chamfer centre)
 
         // ── Shaft bore (tilted, mostly +X) ──────────────────────────────────────
-        // Origin at angled face centre; z=0 → face centre; z=dist_to_pew → +X face.
-        // Extend by 'over' past both ends so the boolean cuts cleanly.
+        // Origin at angled face entry; extend past both faces for a clean boolean.
         translate([x_c, y_c, z_c])
             rotate([0, 0, -ang])
                 rotate([0, 90, 0])
                     translate([0, 0, -over])
                         cylinder(h = dist_to_pew + 2*over, r = r_sh, $fn = fn);
 
-        // ── Perpendicular chamfer on +X pew face ────────────────────────────────
-        // Axis along −X (into block): circular opening on the +X face seats the head.
-        translate([x_hi, y_pew, z_c]) {
-            rotate([0, 90, 0])                                    // axis → +X (outward stub)
-                cylinder(h = over, r = r_hd, $fn = fn);
-            rotate([0, -90, 0])                                   // axis → −X (taper into block)
-                cylinder(h = ch_d + over, r1 = r_hd, r2 = r_sh, $fn = fn);
+        // ── Chamfer on the angled +Y entry face ─────────────────────────────────
+        // Screw head seats here (accessible from the QR-code / front side).
+        // Outward stub clears the face from outside; taper goes INTO the block
+        // (same bore direction [cos(ang),−sin(ang),0]) so it cuts real material.
+        translate([x_c, y_c, z_c]) {
+            // outward stub — rotate Z → [−cos(ang), +sin(ang), 0]
+            rotate([0, 0, 180 - ang])
+                rotate([0, 90, 0])
+                    cylinder(h = over, r = r_hd, $fn = fn);
+            // taper into block — rotate Z → [+cos(ang), −sin(ang), 0] (bore direction)
+            rotate([0, 0, -ang])
+                rotate([0, 90, 0])
+                    cylinder(h = ch_d + over, r1 = r_hd, r2 = r_sh, $fn = fn);
         }
     }
 }

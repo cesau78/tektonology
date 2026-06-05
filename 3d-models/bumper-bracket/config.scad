@@ -536,11 +536,11 @@ function pew_mount_block_face_remaining_z_center_mm() =
 //   Entry: angled +Y front face at bore_x (screw tip exits into pew material).
 //   Exit / chamfer: bore_x_hi face (head seats here, perpendicular to that face).
 side_screw_angle_deg    = pew_mount_block_face_angle_deg / 2 * -1;
-                                          // tilt from +X toward −Y; half face angle ≈ 10°
-side_screw_bore_x_mm    = -5; //pew_mount_block_face_center_x_mm();
+                                          // negative = bore tilts toward +Y as it travels +X
+side_screw_bore_x_mm    = 12.1;
                                           // X entry on angled face — slide to reposition (≈ 24.6 mm)
-side_screw_bore_y_mm    = pew_mount_block_front_y_at(side_screw_bore_x_mm);
-                                          // Y auto-follows bore_x along the face — do not edit
+side_screw_bore_y_mm    = 57.9;
+                                          // Y of bore entry; override freely (does not auto-follow x)
 side_screw_bore_z_mm    = pew_mount_block_face_remaining_z_center_mm();
                                           // Z centre-line = QR-code Z centre (≈ 18.6 mm)
 side_screw_bore_x_hi_mm = pew_mount_block_face_x_hi_mm();
