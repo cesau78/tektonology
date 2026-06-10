@@ -324,7 +324,7 @@ cap_tread_gap_mm     = 0.3;     // +Z gap left between the cap face and the trea
 // pivots down into the −Z mouth (tilt-and-snap), so the pins live in the solid
 // back region of the wall, −Y of the bottom undercut bridge. Domed tips + a
 // chamfered bore mouth + radial clearance let the pin cock as the cap pivots.
-cap_guide_pin_enable         = true;
+cap_guide_pin_enable         = false;
 cap_guide_pin_radius_mm      = 1.5;    // Ø3 pin
 cap_guide_pin_len_mm         = 2.5;    // +X protrusion past the cap face
 cap_guide_pin_cap_overlap_mm = 0.6;    // root buried in the cap for shell fusion
@@ -340,7 +340,8 @@ cap_guide_pin_z_mm           = -30;
 // Bolt centerline: X centered on the tread; Y a fixed drop behind the inner-tread
 // back face (worst case at the mouth, where the bevel sits lowest).
 cap_bolt_x_mm                 = 0;
-cap_bolt_behind_tread_drop_mm = 6;   // inner-tread back face → bolt centerline (−Y)
+cap_bolt_behind_tread_drop_mm = 1;   // inner-tread back face → bolt centerline (−Y)
+cap_bolt_y_nudge_mm           = 0;   // additional +Y shift applied to the bolt centerline
 inner_tread_depth_below_bevel_mm = tread_core_pocket_2_ceiling_drop_mm + tread_core_pocket_2_depth_z_mm;
 // Nut slide-in slot opens into the tread cavity (+Y), never an exterior face.
 cap_nut_slot_breakthrough_mm = 2;    // +Y overshoot past the inner-tread back
