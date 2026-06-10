@@ -323,7 +323,7 @@ module shell_tread_groove_pocket_cube() {
     // Cutter 2: flange groove (wider), behind tread core toward F.
     shell_tread_pocket_sloped_hull(
         (x_lo + x_hi) / 2,
-        -y_br + y_len / 2,
+        -y_br + y_len / 2 + tread_pocket_z_nudge_mm,
         groove_w,
         y_len,
         zh,
@@ -345,7 +345,7 @@ module shell_tread_core_pocket_cube(ceiling_drop_mm = 0, depth_z_mm = tread_core
     // Cutter 3: tread core (narrower), ceiling flush on E bevel (or dropped for tread 2).
     shell_tread_pocket_sloped_hull(
         (x_lo + x_hi) / 2,
-        -y_br + y_len / 2,
+        -y_br + y_len / 2 + tread_pocket_z_nudge_mm,
         tread_w,
         y_len,
         zh,

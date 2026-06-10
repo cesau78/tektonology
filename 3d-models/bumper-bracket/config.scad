@@ -179,6 +179,10 @@ tip_breakout_margin_mm      = 25.4 * 7 / 32;  // ~7/16" shy of the far face / sp
 // pockets) together in −Y, away from the base face, keeping their relative
 // spacing and depths. Tune to taste (default 1 mm).
 tread_slot_face_offset_mm = -1;
+// Shift ALL tread pocket hulls (flange groove + both core pockets) together along
+// bracket +Z (toward the pew side / "up" in print orientation). The −Z mouth end
+// stays clamped open for tread insertion; the +Z seating end lifts by this amount.
+tread_pocket_z_nudge_mm = 2;
 tread_groove_shell_pocket_enabled = true;
 // Treads stacked flange-to-flange in one slot: 1 → single 3.4 mm flange slot;
 // 2 → 6.8 mm slot for two back-to-back treads. The ceiling stays pinned under the
@@ -243,8 +247,8 @@ pew_mount_block_face_angle_deg   = 20;   // front-face tilt about Z (0 = flat, p
 // full Z length (open on both Z ends). The +Y window is measured from the
 // block's −Y (roof / back) end.
 pew_mount_block_pocket_enabled        = true;
-pew_mount_block_pocket_y_from_back_mm = 66;     // +Y offset from the block's roof-side (−Y) end
-pew_mount_block_pocket_y_len_mm       = 32;     // +Y length of the pocket
+pew_mount_block_pocket_y_from_back_mm = 66;  // +Y offset; centers pocket on the kneeler plate
+pew_mount_block_pocket_y_len_mm       = 32.67;     // plate width (32) + ~1 mm clearance per side
 pew_mount_block_pocket_depth_x_mm     = 12.5;   // −X depth from the block's +X face
 
 // Reinforcement adjacent to the mount block on its −X side (toward the core).
@@ -351,8 +355,8 @@ cap_nut_slot_breakthrough_mm = 2;    // +Y overshoot past the inner-tread back
 assembly_bumper_group_offset     = [0, 0, 0];
 assembly_bumper_group_rotate_deg = [45, 0, 0];
 assembly_bumper_group_nudge_x_mm = 0;
-assembly_bumper_group_nudge_y_mm = -33;  // −Y = toward F / roof
-assembly_bumper_group_nudge_z_mm = -22;  // −Z = toward the tread slot
+assembly_bumper_group_nudge_y_mm = -37;  // −Y = toward F / roof
+assembly_bumper_group_nudge_z_mm = -19;  // −Z = toward the tread slot
 
 // Tread ghost native frame centers on the inset shell-core midplanes (origin).
 assembly_tread_center_qr_wedge_mm  = 0;
@@ -566,7 +570,7 @@ side_screw_bore_x_hi_mm = pew_mount_block_face_x_hi_mm();
 // z = 0, so its −Z extent is −½·span (+ any z trim). The cap face sits just shy.
 function tread_seated_bracket_z_min_mm() =
     let (z = assembly_tread_bracket_z_min_max_at_flange_anchor())
-    -(z[1] - z[0]) / 2 + assembly_tread_z_trim_mm;
+    -(z[1] - z[0]) / 2 + assembly_tread_z_trim_mm + tread_pocket_z_nudge_mm;
 
 // Recess ("cube hull") extents — bracket frame.
 function tread_cap_recess_z_lo_mm()   = bracket_face_tread_slot_z_mm;                       // mouth / flush face
@@ -654,7 +658,7 @@ function assembly_tread_bracket_z_min_max_at_flange_anchor() =
 
 function assembly_tread_mate_bracket_z_mm() =
     let (z_mm = assembly_tread_bracket_z_min_max_at_flange_anchor())
-    -(z_mm[0] + z_mm[1]) / 2 + assembly_tread_z_trim_mm;
+    -(z_mm[0] + z_mm[1]) / 2 + assembly_tread_z_trim_mm + tread_pocket_z_nudge_mm;
 
 // Sloped E-bevel plane (bracket coords); matches bumper-bracket.scad y_on_e_bevel_plane().
 function assembly_y_on_e_bevel_plane_bracket_z(z) =
