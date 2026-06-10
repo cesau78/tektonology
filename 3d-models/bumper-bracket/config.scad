@@ -112,7 +112,8 @@ shell_wedge_prism_roof_angle_deg = 52.5;
 
 shell_extent_qr_wedge_mm  =
     kneeler_bracket_plate_thickness_mm + kneeler_bumper_height_mm + (width_extra_half_tread ? tread_w / 2 : 0);
-shell_extent_tread_pew_mm = 3 * 25.4;   // 3" pew engagement along +Y
+shell_z_inset_mm          = 5;           // trim both +Z (face C) and −Z (face D) by this amount
+shell_extent_tread_pew_mm = 3 * 25.4 - 2 * shell_z_inset_mm;   // 3" pew engagement along +Y
 shell_height_mm           = tread_z_span_mm + 2 * side_margin_each_mm;
 
 // Wedge run / leg (leg comes from the roof angle, not a fixed height).
@@ -218,6 +219,7 @@ tread_core_pocket_2_depth_z_mm = 6.2;
 // −X face flush with the pre-mink shell/wedge rim; −Y face pinned at the prism apex.
 pew_mount_block_enabled        = true;
 pew_mount_block_thickness_x_mm = 20;
+
 // Length along +Y. The −Y end is pinned to the prism apex, which moves with the
 // wedge angle, so the length is derived to hold the +Y end a fixed gap from the
 // +Y base face (E). That keeps the insertion-face ↔ block-end distance constant
