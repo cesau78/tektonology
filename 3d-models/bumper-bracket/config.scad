@@ -131,11 +131,15 @@ bracket_face_pew_z_mm        =  shell_extent_tread_pew_mm / 2;  // C (+Z pew)
 bracket_face_wedge_x_mm      =  shell_extent_qr_wedge_mm / 2;   // A (+X rim)
 
 // ── Shell envelope anchors (pre-minkowski union: core + roof wedge + pew pad) ─
-shell_envelope_inset_lx_mm = corner_r;
+// shell_envelope_inset_lx_mm: −X face of the pre-mink core (lx sizing coords).
+// = corner_r (minkowski inset) + any extra trim on the −X side.
+// Increasing this moves the −X face (face B) inward without touching the +X rim.
+shell_envelope_inset_lx_mm = corner_r + 5;
 shell_envelope_inset_ly_mm = corner_r;
 shell_envelope_roof_lz_mm  = shell_height_mm;
 shell_envelope_apex_lz_mm  = shell_height_mm + shell_wedge_leg_mm;
-shell_envelope_core_lx_mm  = shell_inset_dim_qr_wedge_mm;
+// core_lx spans from the (possibly trimmed) −X inset to the fixed +X rim (shell_extent − corner_r).
+shell_envelope_core_lx_mm  = shell_extent_qr_wedge_mm - corner_r - shell_envelope_inset_lx_mm;
 shell_envelope_core_ly_mm  = shell_inset_dim_tread_pew_mm;
 shell_envelope_core_lz_mm  = shell_height_mm - corner_r;
 
@@ -426,7 +430,7 @@ function shell_envelope_core_ly_center_mm() =
 function shell_envelope_core_z_center_mm() =
     bracket_pos(0, shell_envelope_core_ly_center_mm(), 0)[2];
 function shell_envelope_wedge_xr_lx_mm() =
-    shell_envelope_inset_lx_mm + shell_inset_dim_qr_wedge_mm;
+    shell_extent_qr_wedge_mm - corner_r;   // +X rim, independent of the −X inset
 function shell_envelope_wedge_rim_x_mm() =
     bracket_pos(shell_envelope_wedge_xr_lx_mm(), 0, 0)[0];
 function shell_envelope_prism_apex_y_mm() =
