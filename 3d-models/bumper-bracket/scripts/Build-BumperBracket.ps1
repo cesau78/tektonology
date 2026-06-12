@@ -75,7 +75,10 @@ if (-not $OpenScad) {
 $Exports = @(
     @{ Scad = "bumper-bracket.scad";       Stl = "bumper-bracket-left.stl"  },
     @{ Scad = "bumper-bracket-right.scad"; Stl = "bumper-bracket-right.stl" },
-    @{ Scad = "cap.scad";                  Stl = "cap.stl"                  }
+    @{ Scad = "tread-carriage.scad";       Stl = "tread-carriage-left.stl"  },
+    @{ Scad = "tread-carriage-right.scad"; Stl = "tread-carriage-right.stl" }
+    # cap.stl omitted — cap is fused into bumper-bracket (tread_cap_separate_print = false).
+    # Re-add @{ Scad = "cap.scad"; Stl = "cap.stl" } if separate cap printing is re-enabled.
 )
 
 # ── Worktree setup ─────────────────────────────────────────────────────────

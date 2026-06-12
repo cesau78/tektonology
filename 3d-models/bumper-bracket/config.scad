@@ -305,6 +305,7 @@ qr_pocket_z_offset_mm = pew_mount_block_face_remaining_z_center_mm() - pew_mount
 // seats in the cap and its shaft threads into an M3 hex nut held in a pocket fed
 // by a perpendicular slide-in slot.
 tread_cap_enabled = true;
+tread_cap_separate_print = false;  // false: cap fused into bumper-bracket; true: recess + cap.stl
 
 // M3×20 socket-head cap screw + M3 hex nut (keep in sync with prayer-sole config).
 cap_bolt_dia           = 3.0;
@@ -400,6 +401,24 @@ wood_bored_axial_mm = ceil(
     + wood_countersink_depth_mm
     + 8);
 
+// ── Tread-carriage split (selection cube) ────────────────────────────────────
+// When enabled, geometry inside the cube is exported as tread-carriage.scad;
+// the remainder stays in bumper-bracket.scad.
+//
+// X/Y bounds are absolute bracket-frame coordinates (origin = footprint center).
+// Z bounds use tread_carriage_z_ref (default tread_slot_face): z = 0 at face D
+// (tread-slot mouth), increasing toward the pew (+Z in bracket frame). This
+// matches the ruler on an STL laid tread-slot-down on the bed (~66 mm pew depth).
+// Set tread_carriage_z_ref = "bracket" to use the centered design-frame Z instead.
+tread_carriage_split_enabled = true;
+tread_carriage_z_ref           = "tread_slot_face";  // "tread_slot_face" | "bracket"
+tread_carriage_x_lo_mm       = -15;
+tread_carriage_x_hi_mm       =  12.25; //12.3 flush
+tread_carriage_y_lo_mm       =  10;
+tread_carriage_y_hi_mm       =  45;
+tread_carriage_z_lo_mm       =  7.7;
+tread_carriage_z_hi_mm       =  70;
+
 // ── Cross-section clip (assembly.scad overrides for preview) ─────────────────
 bracket_cross_section = false;
 bracket_cross_axis    = "y";  // "x"/"z": offset 0 = footprint center; "y": shell_midplane_y_mm
@@ -425,6 +444,24 @@ function bracket_pos(lx, ly, lz) = [
     bracket_nat_y_mid_mm - lz,
     ly - shell_extent_tread_pew_mm / 2,
 ];
+
+// ── Tread-carriage selection cube (Z ref → bracket Z) ──────────────────────
+function tread_carriage_z_ref_to_bracket(z) =
+    tread_carriage_z_ref == "tread_slot_face"
+        ? z + bracket_face_tread_slot_z_mm
+        : z;
+
+function tread_carriage_sel_z_lo_bracket() =
+    min(
+        tread_carriage_z_ref_to_bracket(tread_carriage_z_lo_mm),
+        tread_carriage_z_ref_to_bracket(tread_carriage_z_hi_mm)
+    );
+
+function tread_carriage_sel_z_hi_bracket() =
+    max(
+        tread_carriage_z_ref_to_bracket(tread_carriage_z_lo_mm),
+        tread_carriage_z_ref_to_bracket(tread_carriage_z_hi_mm)
+    );
 
 // ── Shell envelope anchors (derived centers / rims) ──────────────────────────
 function shell_envelope_core_center_lxlz() = [

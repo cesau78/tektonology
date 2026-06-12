@@ -125,6 +125,56 @@ module _pre_mink_screw_gap_tab(z_center, z_half) {
 
 function bracket_world_z_min() = bracket_face_tread_slot_z_mm;
 
+function tread_carriage_world_z_min() = tread_carriage_sel_z_lo_bracket();
+
+// Absolute bracket-frame selection prism for tread-carriage extraction.
+module tread_carriage_selection_cube() {
+    translate([
+        tread_carriage_x_lo_mm,
+        tread_carriage_y_lo_mm,
+        tread_carriage_sel_z_lo_bracket(),
+    ])
+        cube([
+            tread_carriage_x_hi_mm - tread_carriage_x_lo_mm,
+            tread_carriage_y_hi_mm - tread_carriage_y_lo_mm,
+            tread_carriage_sel_z_hi_bracket() - tread_carriage_sel_z_lo_bracket(),
+        ]);
+}
+
+// Full shell body minus the tread-carriage region (when split is enabled).
+// Integrated cap (tread_cap_separate_print = false) always stays on the bracket.
+module bumper_bracket_shell_body() {
+    if (tread_carriage_split_enabled) {
+        union() {
+            difference() {
+                shell_body_main_difference();
+                tread_carriage_selection_cube();
+            }
+            if (tread_cap_enabled && !tread_cap_separate_print)
+                tread_cap_solid(0);
+        }
+    } else {
+        shell_body_difference_wedge_bores();
+    }
+}
+
+// Geometry inside tread_carriage_selection_cube() for a separate print.
+module tread_carriage() {
+    intersection() {
+        shell_body_main_difference();
+        tread_carriage_selection_cube();
+    }
+}
+
+// Export-only Z translate (not a design-frame rotation).
+module tread_carriage_export_bed_lift() {
+    if (bracket_lift_to_bed)
+        translate([0, 0, -tread_carriage_world_z_min()])
+            children();
+    else
+        children();
+}
+
 // Export-only Z translate (not a design-frame rotation).
 module bracket_export_bed_lift() {
     if (bracket_lift_to_bed)
@@ -419,6 +469,36 @@ module shell_solid_no_tread_pockets() {
     }
 }
 
+// Through-shaft + socket-head recess, cut from the cap's outer (−Z / mouth) face.
+module tread_cap_bolt_hole() {
+    shaft_d = cap_bolt_dia + cap_bolt_clearance;
+    head_d  = cap_head_dia + cap_head_clearance + 0.1;
+    z_outer = tread_cap_outer_z_mm();
+    shaft_h = (tread_cap_recess_z_hi_mm() - z_outer) + epsilon * 8;
+    translate([cap_bolt_x_mm, cap_bolt_y_mm(), z_outer - epsilon * 4]) {
+        cylinder(h = shaft_h, d = shaft_d);
+        cylinder(h = cap_head_height + epsilon * 4, d = head_d);
+    }
+}
+
+// Flush plug: recess volume (optionally shrunk for slip fit) ∩ beveled body solid.
+module tread_cap_solid(inset = cap_fit_clearance_mm) {
+    union() {
+        difference() {
+            intersection() {
+                shell_solid_no_tread_pockets();
+                tread_cap_recess_volume(inset);
+            }
+            tread_cap_bolt_hole();
+        }
+        cap_guide_pins();
+    }
+}
+
+module tread_cap() {
+    tread_cap_solid();
+}
+
 // Guide pins protruding +X from the cap's pew-side face: a cylinder (root buried
 // in the cap for fusion) capped by a domed tip for lead-in. Added to the cap.
 module cap_guide_pins() {
@@ -635,7 +715,7 @@ module side_screw_bore() {
     }
 }
 
-module shell_body_difference_wedge_bores() {
+module shell_body_main_difference() {
     // Filleted core+prism+mount pad minus three sloped hull cutters (bevel + flange + tread).
     // The bottom undercut is applied pre-minkowski (undercut = true) so its edges fillet.
     difference() {
@@ -652,7 +732,7 @@ module shell_body_difference_wedge_bores() {
             );
         if (wood_screw_holes_enabled)
             wood_screw_pattern();
-        if (tread_cap_enabled)
+        if (tread_cap_enabled && tread_cap_separate_print)
             tread_cap_recess_volume();
         tread_cap_fastener_cuts();
         if (qr_pocket_enabled)
@@ -661,17 +741,25 @@ module shell_body_difference_wedge_bores() {
             pew_mount_block_pocket_cut();
         if (pew_mount_block_pew_face_flush_enabled && pew_mount_block_enabled)
             pew_mount_block_pew_face_trim();
-        if (tread_cap_enabled)
+        if (tread_cap_enabled && tread_cap_separate_print)
             cap_guide_pin_holes();
         if (side_screw_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
             side_screw_bore();
     }
 }
 
+module shell_body_difference_wedge_bores() {
+    union() {
+        shell_body_main_difference();
+        if (tread_cap_enabled && !tread_cap_separate_print)
+            tread_cap_solid(0);
+    }
+}
+
 module bumper_bracket() {
     bracket_export_bed_lift()
         bracket_cross_trim() {
-            shell_body_difference_wedge_bores();
+            bumper_bracket_shell_body();
             bumper_bracket_debug_face_labels();
         }
 }

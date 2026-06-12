@@ -173,11 +173,11 @@ module assembly_preview() {
                     color([0.25, 0.25, 0.25, 0.9])
                         translate(exploded_tread_offset_vec())
                             tread_mated_to_bracket();
-                if (tread_cap_enabled && show_tread_cap_in_assembly)
+                if (tread_cap_enabled && tread_cap_separate_print && show_tread_cap_in_assembly)
                     translate(exploded_cap_offset_pull)
                         color([0.20, 0.55, 0.95, 0.95])
                             tread_cap();
-                if (tread_cap_enabled && show_tread_cap_hardware_in_assembly)
+                if (tread_cap_enabled && tread_cap_separate_print && show_tread_cap_hardware_in_assembly)
                     translate(exploded_cap_offset_pull)
                         tread_cap_hardware_debug();
                 bumper_bracket_debug_face_labels();
