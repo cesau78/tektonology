@@ -10,9 +10,9 @@
 //   • Optional pew/kneeler X placement from transformed steel face, not wedge + plan offset.
 
 // cap.scad already includes bumper-bracket.scad (→ config.scad) and sets
-// render_standalone_export to suppress the bracket's root emit, so we include it
-// once here instead of pulling bumper-bracket.scad in a second time (a duplicate
-// include re-runs those files and trips OpenSCAD's cross-file override warnings).
+// BUMPER_BRACKET_INCLUDED_BY so the bracket library does not root-emit, so we
+// include it once here instead of pulling bumper-bracket.scad a second time (a
+// duplicate include re-runs those files and trips OpenSCAD's override warnings).
 // The debug-label flag defaults to false in config.scad.
 cap_suppress_root = true;   // draw the cap in-tree below, not at cap.scad root
 include <cap.scad>

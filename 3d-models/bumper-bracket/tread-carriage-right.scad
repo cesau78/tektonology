@@ -3,7 +3,7 @@
 // With a symmetric X selection cube (e.g. −15…+15) this is the same volume as the
 // left hand; included for parity with bumper-bracket-right.scad exports.
 
-render_standalone_export = false;
+BUMPER_BRACKET_INCLUDED_BY = true;
 include <bumper-bracket.scad>
 
 $fn = preview ? 32 : 64;

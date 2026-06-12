@@ -5,7 +5,7 @@
 // Modeled in the bracket coordinate frame. Standalone export lays the outer
 // face (−Z / tread-slot mouth) on the build plate.
 
-render_standalone_export = false;   // suppress bumper-bracket.scad root emit
+BUMPER_BRACKET_INCLUDED_BY = true;
 include <bumper-bracket.scad>
 
 $fn = preview ? 32 : 64;

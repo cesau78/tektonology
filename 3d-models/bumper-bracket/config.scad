@@ -404,6 +404,7 @@ wood_bored_axial_mm = ceil(
 // ── Tread-carriage split (selection cube) ────────────────────────────────────
 // When enabled, geometry inside the cube is exported as tread-carriage.scad;
 // the remainder stays in bumper-bracket.scad.
+// Preview: open bumper-bracket.scad or assembly.scad (config.scad has no geometry).
 //
 // X/Y bounds are absolute bracket-frame coordinates (origin = footprint center).
 // Z bounds use tread_carriage_z_ref (default tread_slot_face): z = 0 at face D

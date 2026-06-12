@@ -6,7 +6,7 @@
 // Modeled in the bracket coordinate frame (same as bumper-bracket.scad).
 // Standalone export rests the selection cube's −Z face on the build plate.
 
-render_standalone_export = false;   // suppress bumper-bracket.scad root emit
+BUMPER_BRACKET_INCLUDED_BY = true;
 include <bumper-bracket.scad>
 
 $fn = preview ? 32 : 64;

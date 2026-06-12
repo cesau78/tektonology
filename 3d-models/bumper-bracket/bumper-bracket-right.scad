@@ -22,7 +22,7 @@
 // translate), and mirror([1, 0, 0]) commutes with it, so min-Z still rests on the
 // build plate.
 
-render_standalone_export = false;   // suppress bumper-bracket.scad root emit
+BUMPER_BRACKET_INCLUDED_BY = true;
 include <bumper-bracket.scad>
 
 mirror([1, 0, 0])

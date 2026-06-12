@@ -3,8 +3,8 @@
 
 include <config.scad>
 
-bumper_emit_if_root_scad_tree = is_undef(render_standalone_export) ? true : render_standalone_export;
-
+// Includers (cap.scad, tread-carriage.scad, …) set BUMPER_BRACKET_INCLUDED_BY = true
+// before `include <bumper-bracket.scad>` so only the host file emits root geometry.
 $fn = preview ? 32 : 64;
 
 // Core, roof overlap + prism, and pew pad — shared envelope anchors, no per-part minkowski.
@@ -816,5 +816,5 @@ module bumper_bracket_debug_face_labels() {
     }
 }
 
-if (bumper_emit_if_root_scad_tree)
+if (is_undef(BUMPER_BRACKET_INCLUDED_BY))
     bumper_bracket();
