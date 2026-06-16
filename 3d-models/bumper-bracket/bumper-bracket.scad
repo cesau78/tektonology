@@ -141,18 +141,34 @@ module tread_carriage_selection_cube() {
         ]);
 }
 
+// Fused cap: union the plug into the body first, then cut the socket-head recess
+// through the combined solid. Cutting inside tread_cap_solid() clips the recess
+// against cap ∩ shell and only partially renders at the −Z mouth.
+module shell_body_with_integrated_cap() {
+    difference() {
+        union() {
+            children();
+            tread_cap_solid(0, cut_bolt_hole = false);
+        }
+        tread_cap_bolt_hole();
+    }
+}
+
 // Full shell body minus the tread-carriage region (when split is enabled).
 // Integrated cap (tread_cap_separate_print = false) always stays on the bracket.
 module bumper_bracket_shell_body() {
     if (tread_carriage_split_enabled) {
-        union() {
+        if (tread_cap_enabled && !tread_cap_separate_print)
+            shell_body_with_integrated_cap()
+                difference() {
+                    shell_body_main_difference();
+                    tread_carriage_selection_cube();
+                }
+        else
             difference() {
                 shell_body_main_difference();
                 tread_carriage_selection_cube();
             }
-            if (tread_cap_enabled && !tread_cap_separate_print)
-                tread_cap_solid(0);
-        }
     } else {
         shell_body_difference_wedge_bores();
     }
@@ -482,14 +498,17 @@ module tread_cap_bolt_hole() {
 }
 
 // Flush plug: recess volume (optionally shrunk for slip fit) ∩ beveled body solid.
-module tread_cap_solid(inset = cap_fit_clearance_mm) {
+// cut_bolt_hole=false for fused bracket export — shell_body_with_integrated_cap()
+// subtracts tread_cap_bolt_hole() after the cap is unioned into the body.
+module tread_cap_solid(inset = cap_fit_clearance_mm, cut_bolt_hole = true) {
     union() {
         difference() {
             intersection() {
                 shell_solid_no_tread_pockets();
                 tread_cap_recess_volume(inset);
             }
-            tread_cap_bolt_hole();
+            if (cut_bolt_hole)
+                tread_cap_bolt_hole();
         }
         cap_guide_pins();
     }
@@ -749,11 +768,11 @@ module shell_body_main_difference() {
 }
 
 module shell_body_difference_wedge_bores() {
-    union() {
+    if (tread_cap_enabled && !tread_cap_separate_print)
+        shell_body_with_integrated_cap()
+            shell_body_main_difference();
+    else
         shell_body_main_difference();
-        if (tread_cap_enabled && !tread_cap_separate_print)
-            tread_cap_solid(0);
-    }
 }
 
 module bumper_bracket() {
