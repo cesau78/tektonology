@@ -164,9 +164,15 @@ screw_gap_tab_z_nudge_mm    = 2.5;
 wood_screw_gauge            = 8;
 wood_shank_nominal_mm       = 4.17;
 wood_shank_clr              = wood_shank_nominal_mm + 0.92;  // sliding fit + angled drive
-wood_head_diameter          = 10;    // Ø for flat or trim-washer head flare
-wood_countersink_depth_mm   = 4.5;   // model depth toward wood for head recess
+wood_head_diameter          = 10;    // Ø head clearance (#8 trim / washer / round wood screw)
+wood_countersink_depth_mm   = 4.5;   // head pocket allowance for bore/screw-length math only
 screw_chamfer_lip_mm        = 0.65;  // Ø flare added for printed chamfer clearance
+// Head chamfer cone: half-angle from the bore axis (same axis as the shank hole).
+// Depth is (head − shank) / tan(angle) — not clamped by wood_countersink_depth_mm.
+// Tune wood_screw_chamfer_half_deg, or set wood_screw_chamfer_align_to_bore = true
+// to match wood_screw_bore_angle_deg() (roof-wedge ψ).
+wood_screw_chamfer_half_deg      = 45;
+wood_screw_chamfer_align_to_bore = false;
 // Thread-depth target: ~1" into solid wood, comfortably inside a 1½" leg.
 tip_breakout_margin_mm      = 25.4 * 7 / 32;  // ~7/16" shy of the far face / split line
 // NOTE: the derived bore length (wood_bored_axial_mm) + screw-length guidance live
@@ -278,8 +284,9 @@ pew_mount_block_undercut_ramp_angle_deg = 45;   // closing ramp angle at the −
 // the face, passing exactly through the face centre regardless of the angle.
 side_screw_enabled     = true;
 side_screw_dia_mm      = 4.5;    // #8 free-fit clearance (nominal shaft 4.17 mm)
-side_screw_head_dia_mm = 8.0;    // flat-head #8 maximum countersink Ø
+side_screw_head_dia_mm = 11.0;    // flat-head #8 maximum countersink Ø
 side_screw_chamfer_deg = 82;     // flat-head included angle (standard #8)
+side_screw_chamfer_lip_mm = 0.65; // Ø flare on countersink (clears minkowski skin / print artifact)
 
 // ── QR-code sticker pocket (mount block +Y front face) ───────────────────────
 // Shallow rounded-square ("hull") recess so a 1" printed QR sticker seats flush
@@ -498,7 +505,7 @@ function wood_screw_hole_lz_mm() =
       / shell_wedge_hypotenuse_run_mm;
 
 // Hypotenuse outward normal (bracket X–Y); pairs with rotate([-90,0,0]) in
-// wood_mount_hole(). Offset by corner_r to the minkowski skin (head recess at z=0).
+// wood_mount_hole_*(). Offset by corner_r to the minkowski skin (head recess at z=0).
 function wood_screw_hyp_outward_bracket_unit() =
     let (
         run = shell_wedge_hypotenuse_run_mm,
@@ -506,6 +513,15 @@ function wood_screw_hyp_outward_bracket_unit() =
         hyp = sqrt(run * run + leg * leg)
     )
     [leg / hyp, run / hyp, 0];
+
+// Roof-wedge bore tilt in the bracket X–Y plane (ψ = atan2(leg, run)).
+function wood_screw_bore_angle_deg() =
+    atan2(shell_wedge_leg_mm, shell_wedge_hypotenuse_run_mm);
+
+function wood_screw_chamfer_half_angle_deg() =
+    wood_screw_chamfer_align_to_bore
+        ? wood_screw_bore_angle_deg()
+        : wood_screw_chamfer_half_deg;
 
 function wood_screw_hole_exterior_bracket_pos(y_frac) =
     bracket_pos(

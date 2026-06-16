@@ -141,17 +141,27 @@ module tread_carriage_selection_cube() {
         ]);
 }
 
-// Fused cap: union the plug into the body first, then cut the socket-head recess
-// through the combined solid. Cutting inside tread_cap_solid() clips the recess
-// against cap ∩ shell and only partially renders at the −Z mouth.
+// Fused cap: union the plug into the body first, then cut screw-head recesses and
+// chamfers through the combined solid. Cutting them inside earlier booleans clips
+// material at exterior faces (minkowski skin, cap ∩ shell, etc.).
 module shell_body_with_integrated_cap() {
     difference() {
         union() {
             children();
             tread_cap_solid(0, cut_bolt_hole = false);
         }
-        tread_cap_bolt_hole();
+        shell_body_late_screw_cuts();
     }
+}
+
+// Head recesses and chamfers — subtract after the shell body (and fused cap) are united.
+module shell_body_late_screw_cuts() {
+    if (wood_screw_holes_enabled)
+        wood_screw_chamfer_pattern();
+    if (side_screw_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
+        side_screw_chamfer();
+    if (tread_cap_enabled && !tread_cap_separate_print)
+        tread_cap_bolt_hole();
 }
 
 // Full shell body minus the tread-carriage region (when split is enabled).
@@ -166,8 +176,11 @@ module bumper_bracket_shell_body() {
                 }
         else
             difference() {
-                shell_body_main_difference();
-                tread_carriage_selection_cube();
+                difference() {
+                    shell_body_main_difference();
+                    tread_carriage_selection_cube();
+                }
+                shell_body_late_screw_cuts();
             }
     } else {
         shell_body_difference_wedge_bores();
@@ -318,33 +331,46 @@ module shell_tread_face_de_bevel_cut() {
 function hyp_z_at_x(x) =
     shell_wedge_leg_mm * (x - corner_r) / shell_wedge_hypotenuse_run_mm;
 
-module wood_mount_hole(y_frac) {
+module wood_mount_hole_shank(y_frac) {
     psi_deg = atan2(shell_wedge_leg_mm, shell_wedge_hypotenuse_run_mm);
-    half = wood_bored_axial_mm / 2;
-    csink_h = wood_countersink_depth_mm + epsilon * 3;
     $fn = preview ? 28 : 64;
 
     // rotate([-90,0,0]): local +Z = hypotenuse outward normal (leg, run) in bracket X–Y.
-    // Anchor on minkowski exterior; shank centered through part; countersink wide at wedge face.
     translate(wood_screw_hole_exterior_bracket_pos(y_frac))
         rotate([0, 0, -psi_deg])
             rotate([-90, 0, 0])
-                union() {
-                    cylinder(h = wood_bored_axial_mm, d = wood_shank_clr, center = true);
-                    // Head recess: wide at z = 0 (exterior), tapers inward along −Z.
-                    translate([0, 0, -csink_h])
-                        cylinder(
-                            h = csink_h,
-                            r1 = wood_head_diameter / 2 + screw_chamfer_lip_mm,
-                            r2 = wood_shank_clr / 2 + epsilon,
-                            center = false
-                        );
-                }
+                cylinder(h = wood_bored_axial_mm, d = wood_shank_clr, center = true);
 }
 
-module wood_screw_pattern() {
+module wood_mount_hole_chamfer(y_frac) {
+    psi_deg = atan2(shell_wedge_leg_mm, shell_wedge_hypotenuse_run_mm);
+    head_d = wood_head_diameter + 2 * screw_chamfer_lip_mm;
+    shank_d = wood_shank_clr + epsilon * 2;
+    head_r = head_d / 2;
+    shank_r = shank_d / 2;
+    half_ang = wood_screw_chamfer_half_angle_deg();
+    flare_depth = (head_r - shank_r) / tan(half_ang);
+    over = corner_r + epsilon * 4;
+    $fn = preview ? 32 : 64;
+
+    // #8 wood screw head flare: wide at exterior skin (d2), tapers −Z to shank (d1).
+    // Subtracted in shell_body_late_screw_cuts() after all unions so the cone is not
+    // clipped by the minkowski skin or earlier booleans.
+    translate(wood_screw_hole_exterior_bracket_pos(y_frac))
+        rotate([0, 0, -psi_deg])
+            rotate([0, 90, 270])
+                translate([0, 0, -flare_depth - over + 0.3])
+                    cylinder(h = flare_depth + over, d1 = shank_d, d2 = head_d);
+}
+
+module wood_screw_shank_pattern() {
     for (yf = wood_screw_hole_y_fractions)
-        wood_mount_hole(yf);
+        wood_mount_hole_shank(yf);
+}
+
+module wood_screw_chamfer_pattern() {
+    for (yf = wood_screw_hole_y_fractions)
+        wood_mount_hole_chamfer(yf);
 }
 
 // Cutter 2/3: rectangular pocket; ceiling on y_on_e_bevel_plane − ceiling_drop; floor parallel below by depth_y.
@@ -689,39 +715,45 @@ module pew_mount_block_bottom_undercut_cut() {
 //   local +Z  →  [sin(ang), cos(ang), 0]  (bore direction; toward angled face)
 //   z = 0       = entry on −X reinforcement face
 //   z = t_exit  = exit at angled face centre
-module side_screw_bore() {
+module side_screw_shaft() {
     if (side_screw_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2) {
-        ang      = side_screw_angle_deg;    // tilt from +X toward −Y (config variable)
-        r_sh     = side_screw_dia_mm / 2;
-        r_hd     = side_screw_head_dia_mm / 2;
-        half_ang = (180 - side_screw_chamfer_deg) / 2;  // cone half-angle (49° for 82°)
-        ch_d     = (r_hd - r_sh) / tan(half_ang);       // axial depth of chamfer
-        fn       = preview ? 16 : 32;
-        over     = corner_r + epsilon * 4;
+        ang   = side_screw_angle_deg;
+        r_sh  = side_screw_dia_mm / 2;
+        fn    = preview ? 16 : 32;
+        over  = corner_r + epsilon * 4;
 
-        x_c     = side_screw_bore_x_mm;    // entry X on angled face (config variable)
-        y_c     = side_screw_bore_y_mm;   // entry Y on angled face (auto-follows x_c)
-        z_c     = side_screw_bore_z_mm;   // bore Z centre-line    (config variable)
-        x_hi    = side_screw_bore_x_hi_mm; // exit / chamfer X face (config variable)
+        x_c  = side_screw_bore_x_mm;
+        y_c  = side_screw_bore_y_mm;
+        z_c  = side_screw_bore_z_mm;
+        x_hi = side_screw_bore_x_hi_mm;
 
-        // Along-axis distance from entry (angled face) to exit (+X pew face).
         // Bore direction: [cos(ang), −sin(ang), 0] — mostly +X, slight −Y.
-        // rotate([0,0,−ang]); rotate([0,90,0]) maps cylinder Z → [cos(ang),−sin(ang),0].
         dist_to_pew = (x_hi - x_c) / cos(ang);
 
-        // ── Shaft bore (tilted, mostly +X) ──────────────────────────────────────
-        // Origin at angled face entry; extend past both faces for a clean boolean.
         translate([x_c, y_c, z_c])
             rotate([0, 0, -ang])
                 rotate([0, 90, 0])
                     translate([0, 0, -over])
-                        cylinder(h = dist_to_pew + 2*over, r = r_sh, $fn = fn);
+                        cylinder(h = dist_to_pew + 2 * over, r = r_sh, $fn = fn);
+    }
+}
 
-        // ── Chamfer on the angled +Y entry face ─────────────────────────────────
-        // Screw head seats here (accessible from the QR-code / front side).
-        // Outward stub clears the face from outside; taper goes INTO the block
-        // (same bore direction [cos(ang),−sin(ang),0]) so it cuts real material.
-        translate([x_c, y_c, z_c]) {
+module side_screw_chamfer() {
+    if (side_screw_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2) {
+        ang      = side_screw_angle_deg;
+        r_sh     = side_screw_dia_mm / 2;
+        r_hd     = side_screw_head_dia_mm / 2 + side_screw_chamfer_lip_mm;
+        half_ang = (180 - side_screw_chamfer_deg) / 2;
+        ch_d     = (r_hd - r_sh) / tan(half_ang);
+        fn       = preview ? 16 : 32;
+        over     = corner_r + epsilon * 4;
+
+        x_c = side_screw_bore_x_mm;
+        y_c = side_screw_bore_y_mm;
+        z_c = side_screw_bore_z_mm;
+
+        // Chamfer on the angled +Y entry face (accessible from the QR-code / front side).
+        translate([x_c - 1, y_c, z_c]) {
             // outward stub — rotate Z → [−cos(ang), +sin(ang), 0]
             rotate([0, 0, 180 - ang])
                 rotate([0, 90, 0])
@@ -750,7 +782,7 @@ module shell_body_main_difference() {
                 tread_core_pocket_2_depth_z_mm
             );
         if (wood_screw_holes_enabled)
-            wood_screw_pattern();
+            wood_screw_shank_pattern();
         if (tread_cap_enabled && tread_cap_separate_print)
             tread_cap_recess_volume();
         tread_cap_fastener_cuts();
@@ -763,7 +795,7 @@ module shell_body_main_difference() {
         if (tread_cap_enabled && tread_cap_separate_print)
             cap_guide_pin_holes();
         if (side_screw_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
-            side_screw_bore();
+            side_screw_shaft();
     }
 }
 
@@ -772,7 +804,10 @@ module shell_body_difference_wedge_bores() {
         shell_body_with_integrated_cap()
             shell_body_main_difference();
     else
-        shell_body_main_difference();
+        difference() {
+            shell_body_main_difference();
+            shell_body_late_screw_cuts();
+        }
 }
 
 module bumper_bracket() {
