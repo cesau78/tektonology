@@ -125,7 +125,9 @@ module _pre_mink_screw_gap_tab(z_center, z_half) {
 
 function bracket_world_z_min() = bracket_face_tread_slot_z_mm;
 
-function tread_carriage_world_z_min() = tread_carriage_sel_z_lo_bracket();
+// Exported carriage min Z after post-extraction −Z shave (bed lift only).
+function tread_carriage_world_z_min() =
+    tread_carriage_sel_z_lo_bracket() + tread_carriage_z_lo_trim_mm;
 
 // Absolute bracket-frame selection prism for tread-carriage extraction.
 module tread_carriage_selection_cube() {
@@ -139,6 +141,37 @@ module tread_carriage_selection_cube() {
             tread_carriage_y_hi_mm - tread_carriage_y_lo_mm,
             tread_carriage_sel_z_hi_bracket() - tread_carriage_sel_z_lo_bracket(),
         ]);
+}
+
+// Shave slabs off the extracted carriage solid; selection cube / bracket cavity unchanged.
+module tread_carriage_post_extract_trim() {
+    trim_margin = 10;
+    difference() {
+        children();
+        if (tread_carriage_x_lo_trim_mm > 0)
+            translate([
+                tread_carriage_x_lo_mm,
+                tread_carriage_y_lo_mm - trim_margin,
+                tread_carriage_sel_z_lo_bracket() - trim_margin,
+            ])
+                cube([
+                    tread_carriage_x_lo_trim_mm,
+                    tread_carriage_y_hi_mm - tread_carriage_y_lo_mm + 2 * trim_margin,
+                    tread_carriage_sel_z_hi_bracket() - tread_carriage_sel_z_lo_bracket()
+                        + 2 * trim_margin,
+                ]);
+        if (tread_carriage_z_lo_trim_mm > 0)
+            translate([
+                tread_carriage_x_lo_mm - trim_margin,
+                tread_carriage_y_lo_mm - trim_margin,
+                tread_carriage_sel_z_lo_bracket(),
+            ])
+                cube([
+                    tread_carriage_x_hi_mm - tread_carriage_x_lo_mm + 2 * trim_margin,
+                    tread_carriage_y_hi_mm - tread_carriage_y_lo_mm + 2 * trim_margin,
+                    tread_carriage_z_lo_trim_mm,
+                ]);
+    }
 }
 
 // Fused cap: union the plug into the body first, then cut screw-head recesses and
@@ -189,10 +222,11 @@ module bumper_bracket_shell_body() {
 
 // Geometry inside tread_carriage_selection_cube() for a separate print.
 module tread_carriage() {
-    intersection() {
-        shell_body_main_difference();
-        tread_carriage_selection_cube();
-    }
+    tread_carriage_post_extract_trim()
+        intersection() {
+            shell_body_main_difference();
+            tread_carriage_selection_cube();
+        };
 }
 
 // Export-only Z translate (not a design-frame rotation).
@@ -414,7 +448,7 @@ module shell_tread_groove_pocket_cube() {
     core_zh = tread_core_pocket_depth_z_mm + epsilon * 4;
     // Cutter 2: flange groove (wider), behind tread core toward F.
     shell_tread_pocket_sloped_hull(
-        (x_lo + x_hi) / 2,
+        tread_pocket_lx_center_mm(),
         -y_br + y_len / 2 + tread_pocket_z_nudge_mm,
         groove_w,
         y_len,
@@ -436,7 +470,7 @@ module shell_tread_core_pocket_cube(ceiling_drop_mm = 0, depth_z_mm = tread_core
     zh = depth_z_mm + epsilon * 4;
     // Cutter 3: tread core (narrower), ceiling flush on E bevel (or dropped for tread 2).
     shell_tread_pocket_sloped_hull(
-        (x_lo + x_hi) / 2,
+        tread_pocket_lx_center_mm(),
         -y_br + y_len / 2 + tread_pocket_z_nudge_mm,
         tread_w,
         y_len,
@@ -452,7 +486,7 @@ module tread_cap_bolt_channel() {
     d = cap_bolt_dia + cap_bolt_clearance;
     z0 = tread_cap_mouth_z_mm() - epsilon * 4;
     z1 = cap_bolt_tip_z_mm() + 0.5;
-    translate([cap_bolt_x_mm, cap_bolt_y_mm(), z0])
+    translate([cap_bolt_x_bracket_mm(), cap_bolt_y_mm(), z0])
         cylinder(h = z1 - z0, d = d, $fn = preview ? 24 : 48);
 }
 
@@ -463,7 +497,7 @@ module tread_cap_bolt_channel() {
 module tread_cap_nut_pocket() {
     nut_r = (cap_nut_af + cap_nut_clearance) / 2 / cos(30);
     h = cap_nut_pocket_z_height_mm();
-    translate([cap_bolt_x_mm, cap_bolt_y_mm(), cap_nut_center_z_mm() - h / 2])
+    translate([cap_bolt_x_bracket_mm(), cap_bolt_y_mm(), cap_nut_center_z_mm() - h / 2])
         rotate([0, 0, 30])
             cylinder(h = h, r = nut_r, $fn = 6);
 }
@@ -479,7 +513,7 @@ module tread_cap_nut_slot() {
     y_start = cap_bolt_y_mm();
     y_end = cap_nut_slot_exit_y_mm();
     len = abs(y_end - y_start);
-    translate([cap_bolt_x_mm - w / 2, min(y_start, y_end), cap_nut_center_z_mm() - h / 2])
+    translate([cap_bolt_x_bracket_mm() - w / 2, min(y_start, y_end), cap_nut_center_z_mm() - h / 2])
         cube([w, len, h]);
 }
 
@@ -489,8 +523,8 @@ module tread_cap_nut_slot() {
 // runs proud of the mouth and the top runs above E (the bevel/envelope clip the
 // real faces), so only the −Y floor (wedge start), ±X sides, and +Z face matter.
 module tread_cap_recess_volume(inset = 0) {
-    x_lo = -tread_cap_recess_x_half_mm() + inset;
-    x_hi =  tread_cap_recess_x_hi_mm() - inset;
+    x_lo = tread_cap_recess_x_lo_bracket_mm(inset);
+    x_hi = tread_cap_recess_x_hi_bracket_mm(inset);
     y_lo = tread_cap_recess_y_lo_mm() + inset;
     y_hi = tread_cap_recess_y_hi_mm();
     z_lo = tread_cap_recess_z_lo_mm() - epsilon * 4;
@@ -517,7 +551,7 @@ module tread_cap_bolt_hole() {
     head_d  = cap_head_dia + cap_head_clearance + 0.1;
     z_outer = tread_cap_outer_z_mm();
     shaft_h = (tread_cap_recess_z_hi_mm() - z_outer) + epsilon * 8;
-    translate([cap_bolt_x_mm, cap_bolt_y_mm(), z_outer - epsilon * 4]) {
+    translate([cap_bolt_x_bracket_mm(), cap_bolt_y_mm(), z_outer - epsilon * 4]) {
         cylinder(h = shaft_h, d = shaft_d);
         cylinder(h = cap_head_height + epsilon * 4, d = head_d);
     }
@@ -548,7 +582,7 @@ module tread_cap() {
 // in the cap for fusion) capped by a domed tip for lead-in. Added to the cap.
 module cap_guide_pins() {
     if (cap_guide_pin_enable) {
-        x_face = tread_cap_face_x_mm();
+        x_face = tread_cap_face_x_bracket_mm();
         for (y = cap_guide_pin_y_positions) {
             translate([x_face - cap_guide_pin_cap_overlap_mm, y, cap_guide_pin_z_mm])
                 rotate([0, 90, 0])   // local +Z → +X
@@ -568,7 +602,7 @@ module cap_guide_pins() {
 // the body.
 module cap_guide_pin_holes() {
     if (cap_guide_pin_enable) {
-        x_face = tread_cap_face_x_mm();
+        x_face = tread_cap_face_x_bracket_mm();
         x0 = x_face - cap_guide_pin_cap_overlap_mm - epsilon;        // start in the gap, ahead of the pin root
         x1 = x_face + cap_guide_pin_len_mm + cap_guide_pin_hole_extra_mm;  // past the domed tip
         r_bore = cap_guide_pin_radius_mm + cap_guide_pin_hole_clear_mm;
@@ -578,7 +612,7 @@ module cap_guide_pin_holes() {
                     cylinder(h = x1 - x0, r = r_bore, $fn = preview ? 16 : 32);
             // Conical lead-in at the recess-wall mouth (wide at the wall, tapering in).
             if (cap_guide_pin_mouth_chamfer_mm > 0)
-                translate([tread_cap_recess_x_hi_mm() - epsilon, y, cap_guide_pin_z_mm])
+                translate([tread_cap_recess_x_hi_bracket_mm() - epsilon, y, cap_guide_pin_z_mm])
                     rotate([0, 90, 0])
                         cylinder(
                             h = cap_guide_pin_mouth_chamfer_mm + epsilon,
@@ -602,14 +636,14 @@ module tread_cap_fastener_cuts() {
 module tread_cap_hardware_debug() {
     head_top_z = tread_cap_outer_z_mm();
     color("silver", 0.85) {
-        translate([cap_bolt_x_mm, cap_bolt_y_mm(), head_top_z])
+        translate([cap_bolt_x_bracket_mm(), cap_bolt_y_mm(), head_top_z])
             cylinder(h = cap_head_height, d = cap_head_dia, $fn = 40);
-        translate([cap_bolt_x_mm, cap_bolt_y_mm(), cap_bolt_head_end_z_mm()])
+        translate([cap_bolt_x_bracket_mm(), cap_bolt_y_mm(), cap_bolt_head_end_z_mm()])
             cylinder(h = cap_bolt_length, d = cap_bolt_dia, $fn = 28);
     }
     nut_r = cap_nut_af / 2 / cos(30);
     color("green", 0.7)
-        translate([cap_bolt_x_mm, cap_bolt_y_mm(), cap_nut_center_z_mm() - cap_nut_thickness / 2])
+        translate([cap_bolt_x_bracket_mm(), cap_bolt_y_mm(), cap_nut_center_z_mm() - cap_nut_thickness / 2])
             rotate([0, 0, 30])
                 cylinder(h = cap_nut_thickness, r = nut_r, $fn = 6);
 }

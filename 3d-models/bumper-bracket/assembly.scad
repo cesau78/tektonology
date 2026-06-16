@@ -49,7 +49,7 @@ function assembly_tread_groove_ceiling_pos() = bracket_pos(
 
 function assembly_tread_mate_pos() =
     let (z = assembly_tread_mate_bracket_z_mm())
-    [0, assembly_tread_mate_bracket_y_mm(z), z];
+    [tread_pocket_x_nudge_mm, assembly_tread_mate_bracket_y_mm(z), z];
 
 module tread_mated_to_bracket() {
     p = assembly_tread_mate_pos();

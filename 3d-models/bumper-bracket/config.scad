@@ -189,6 +189,9 @@ tread_slot_face_offset_mm = -1;
 // bracket +Z (toward the pew side / "up" in print orientation). The −Z mouth end
 // stays clamped open for tread insertion; the +Z seating end lifts by this amount.
 tread_pocket_z_nudge_mm = 2;
+// Shift tread pockets, cap recess, and cap fastener (bolt shaft, nut seat/slot,
+// socket-head bore) together along bracket +X (+ toward pew side, − toward core).
+tread_pocket_x_nudge_mm = -1;
 tread_groove_shell_pocket_enabled = true;
 // Treads stacked flange-to-flange in one slot: 1 → single 3.4 mm flange slot;
 // 2 → 6.8 mm slot for two back-to-back treads. The ceiling stays pinned under the
@@ -349,8 +352,8 @@ cap_guide_pin_mouth_chamfer_mm = 0.8;  // conical lead-in at the bore mouth (eas
 cap_guide_pin_y_positions    = [9, 18];
 cap_guide_pin_z_mm           = -30;
 
-// Bolt centerline: X centered on the tread; Y a fixed drop behind the inner-tread
-// back face (worst case at the mouth, where the bevel sits lowest).
+// Bolt centerline: X offset from tread center (see tread_pocket_x_nudge_mm for the
+// shared tread/cap/fastener shift); Y a fixed drop behind the inner-tread back face.
 cap_bolt_x_mm                 = 0;
 cap_bolt_behind_tread_drop_mm = 1;   // inner-tread back face → bolt centerline (−Y)
 cap_bolt_y_nudge_mm           = 0;   // additional +Y shift applied to the bolt centerline
@@ -367,7 +370,8 @@ assembly_bumper_group_nudge_y_mm = -37;  // −Y = toward F / roof
 assembly_bumper_group_nudge_z_mm = -19;  // −Z = toward the tread slot
 
 // Tread ghost native frame centers on the inset shell-core midplanes (origin).
-assembly_tread_center_qr_wedge_mm  = 0;
+// X/Y tread mate in assembly.scad follows tread_pocket_x_nudge_mm and Y trims below.
+assembly_tread_center_qr_wedge_mm  = 0;  // unused; see tread_pocket_x_nudge_mm
 assembly_tread_center_tread_pew_mm = 0;
 assembly_tread_z_trim_mm               = 0;   // fine-tune tread bbox center on bracket Z
 assembly_tread_flange_groove_y_trim_mm = -2;  // fine-tune flange ↔ groove ceiling (+ = toward E)
@@ -426,6 +430,9 @@ tread_carriage_y_lo_mm       =  10;
 tread_carriage_y_hi_mm       =  45;
 tread_carriage_z_lo_mm       =  7.7;
 tread_carriage_z_hi_mm       =  70;
+// Post-extraction shave on tread_carriage export only (−X low face, −Z bottom).
+tread_carriage_x_lo_trim_mm  =  1;
+tread_carriage_z_lo_trim_mm  =  1;
 
 // ── Cross-section clip (assembly.scad overrides for preview) ─────────────────
 bracket_cross_section = false;
@@ -641,6 +648,15 @@ function tread_cap_recess_x_hi_mm() =
         : tread_cap_recess_x_half_mm();
 // Cap's +X (pew-side) mating face, after the slip-fit shrink (guide-pin base).
 function tread_cap_face_x_mm() = tread_cap_recess_x_hi_mm() - cap_fit_clearance_mm;
+
+// Tread-pocket / cap-fastener X nudge (bracket frame).
+function tread_pocket_lx_center_mm() = shell_extent_qr_wedge_mm / 2 + tread_pocket_x_nudge_mm;
+function cap_bolt_x_bracket_mm() = cap_bolt_x_mm + tread_pocket_x_nudge_mm;
+function tread_cap_recess_x_lo_bracket_mm(inset = 0) =
+    -tread_cap_recess_x_half_mm() + inset + tread_pocket_x_nudge_mm;
+function tread_cap_recess_x_hi_bracket_mm(inset = 0) =
+    tread_cap_recess_x_hi_mm() - inset + tread_pocket_x_nudge_mm;
+function tread_cap_face_x_bracket_mm() = tread_cap_face_x_mm() + tread_pocket_x_nudge_mm;
 
 // Bolt centerline Y: drop below the inner-tread back face at the mouth bevel.
 function cap_bolt_y_mm() =
