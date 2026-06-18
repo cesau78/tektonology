@@ -1,13 +1,16 @@
 {
   "id": "bumper-bracket",
-  "name": "Bumper Bracket",
+  "name": "Bumper Bracket (v2.1)",
   "category": "Kneeler Replacement Parts",
-  "description": "A 3D-printed bracket that mounts to the kneeler bracket plate, providing a structured shell envelope (core, roof wedge, and pew mount pad) with #8 wood-screw bores through the roof wedge. Sold in mirrored left and right pairs.",
+  "description": "A 3D-printed bracket that mounts to the kneeler bracket plate, providing a structured shell envelope (core, roof wedge, and pew mount pad) with #8 wood-screw bores through the roof wedge. v2.1 splits the tread-side carriage into a separate print for easier bed placement. Sold in mirrored left and right pairs.",
   "printSettings": {
-    "material": "PLA or PETG | 4 Wall Loops | 40% Infill"
+    "bracketShell": "PLA or PETG | 4 Wall Loops | 40% Infill",
+    "treadCarriage": "PLA or PETG | 4 Wall Loops | 40% Infill"
   },
   "assemblyGuide": [
     "Select the correct side: left or right — they are mirror images of each other.",
+    "Print the matching tread carriage for each bracket shell.",
+    "Mate the tread carriage into the bracket shell before installation.",
     "Align the bumper bracket over the kneeler bracket plate, engaging the pew mount pad against the pew.",
     "Drive #8 wood screws through the roof wedge bores to secure the bracket.",
     "Verify the tread slot opens toward the kneeler tread side and the part seats flush."
@@ -23,6 +26,18 @@
       "label": "Right Bumper Bracket",
       "url": "/stl/bumper-bracket-right.stl",
       "color": "#1c1c1c",
+      "edgeColor": "#6b7280"
+    },
+    {
+      "label": "Left Tread Carriage",
+      "url": "/stl/tread-carriage-left.stl",
+      "color": "#2a2a2a",
+      "edgeColor": "#6b7280"
+    },
+    {
+      "label": "Right Tread Carriage",
+      "url": "/stl/tread-carriage-right.stl",
+      "color": "#2a2a2a",
       "edgeColor": "#6b7280"
     }
   ],
