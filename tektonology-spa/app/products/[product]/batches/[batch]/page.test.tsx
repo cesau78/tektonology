@@ -124,43 +124,6 @@ describe("BatchPage", () => {
     expect(hasNotes).toBe(false);
   });
 
-  it("renders print settings with camelCase labels", async () => {
-    const product = makeProduct({
-      printSettings: { layerHeight: "0.2mm", infillDensity: "20%" },
-    });
-    const batch = makeBatch();
-
-    mockReadFileSync.mockReturnValueOnce(JSON.stringify(product));
-    mockReaddirSync.mockReturnValue(["batch-001.json"]);
-    mockReadFileSync.mockReturnValueOnce(JSON.stringify(batch));
-
-    const { default: BatchPage } = await import("./page");
-    const { container } = render(await BatchPage({ params: Promise.resolve({ product: "kneeler-boot", batch: "batch-001" }) }));
-
-    expect(container).toHaveTextContent("Layer Height");
-    expect(container).toHaveTextContent("0.2mm");
-    expect(container).toHaveTextContent("Infill Density");
-    expect(container).toHaveTextContent("20%");
-  });
-
-  it("renders assembly guide steps", async () => {
-    const product = makeProduct({
-      assemblyGuide: ["Print the part", "Sand edges"],
-    });
-    const batch = makeBatch();
-
-    mockReadFileSync.mockReturnValueOnce(JSON.stringify(product));
-    mockReaddirSync.mockReturnValue(["batch-001.json"]);
-    mockReadFileSync.mockReturnValueOnce(JSON.stringify(batch));
-
-    const { default: BatchPage } = await import("./page");
-    const { container } = render(await BatchPage({ params: Promise.resolve({ product: "kneeler-boot", batch: "batch-001" }) }));
-
-    expect(container).toHaveTextContent("Assembly Guide");
-    expect(container).toHaveTextContent("Print the part");
-    expect(container).toHaveTextContent("Sand edges");
-  });
-
   it("renders download links", async () => {
     const product = makeProduct({
       stlDownloadUrls: [{ label: "Boot STL", url: "/boot.stl" }],

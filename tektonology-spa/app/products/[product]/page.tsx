@@ -9,10 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { StlViewer, StlAssemblyViewer } from "@/components/stl-viewer";
 
-function camelToLabel(key: string): string {
-  return key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
-}
-
 function getProduct(id: string): Product | null {
   try {
     return JSON.parse(readFileSync(join(process.cwd(), "data", "products", `${id}.json`), "utf-8")) as Product;
@@ -69,41 +65,6 @@ export default async function ProductPage({
       <Separator className="mb-6" />
 
       <div className="grid gap-4 [&>*]:shadow-sm">
-        {/* Print Settings */}
-        {Object.keys(product.printSettings).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Print Settings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="space-y-3">
-              {Object.entries(product.printSettings).map(([key, value]) => (
-                <div key={key}>
-                  <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
-                    {camelToLabel(key)}
-                  </dt>
-                  <dd className="text-foreground text-sm">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </CardContent>
-        </Card>
-        )}
-
-        {/* Assembly Guide */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Assembly Guide</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ol className="space-y-2 list-decimal list-inside">
-              {product.assemblyGuide.map((step, i) => (
-                <li key={i} className="text-foreground text-sm">{step}</li>
-              ))}
-            </ol>
-          </CardContent>
-        </Card>
-
         {/* Downloads */}
         <Card>
           <CardHeader>

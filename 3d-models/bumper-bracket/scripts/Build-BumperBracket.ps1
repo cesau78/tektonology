@@ -71,6 +71,13 @@ if (-not $OpenScad) {
     throw "OpenSCAD not found. Install OpenSCAD or set the OPENSCAD_PATH environment variable."
 }
 
+$AssemblyExports = @(
+    @{ Part = 0; Stl = "bumper-bracket-assembly-shell.stl"    },
+    @{ Part = 1; Stl = "bumper-bracket-assembly-carriage.stl"  },
+    @{ Part = 2; Stl = "bumper-bracket-assembly-tread-1.stl"   },
+    @{ Part = 3; Stl = "bumper-bracket-assembly-tread-2.stl"  }
+)
+
 # ── Exports: [ scad-filename, stl-filename ] ───────────────────────────────
 $Exports = @(
     @{ Scad = "bumper-bracket.scad";       Stl = "bumper-bracket-left.stl"  },
@@ -111,6 +118,16 @@ try {
         & $OpenScad @Defines -o $OutPath $InPath
         if ($LASTEXITCODE -ne 0) {
             throw "OpenSCAD failed for $($exp.Scad) (exit code $LASTEXITCODE)"
+        }
+    }
+
+    foreach ($exp in $AssemblyExports) {
+        $InPath  = Join-Path $BuildScadDir "assembly-export.scad"
+        $OutPath = Join-Path $OutDir       $exp.Stl
+        Write-Host "  Rendering assembly-export.scad (part $($exp.Part)) -> latest-builds\v$BuildVersion\$($exp.Stl) ..."
+        & $OpenScad @Defines -D "export_part=$($exp.Part)" -o $OutPath $InPath
+        if ($LASTEXITCODE -ne 0) {
+            throw "OpenSCAD failed for assembly-export part $($exp.Part) (exit code $LASTEXITCODE)"
         }
     }
 

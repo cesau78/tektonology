@@ -86,36 +86,6 @@ describe("ProductPage", () => {
     expect(productsLink).toHaveTextContent("Products");
   });
 
-  it("renders print settings with camelCase keys converted to labels", async () => {
-    const product = makeProduct({
-      printSettings: { layerHeight: "0.2mm", infillDensity: "20%" },
-    });
-    mockReadFileSync.mockReturnValue(JSON.stringify(product));
-    mockReaddirSync.mockReturnValue([]);
-
-    const { default: ProductPage } = await import("./page");
-    const { container } = render(await ProductPage({ params: Promise.resolve({ product: "kneeler-boot" }) }));
-
-    expect(container).toHaveTextContent("Layer Height");
-    expect(container).toHaveTextContent("0.2mm");
-    expect(container).toHaveTextContent("Infill Density");
-    expect(container).toHaveTextContent("20%");
-  });
-
-  it("renders assembly guide steps", async () => {
-    const product = makeProduct({
-      assemblyGuide: ["Print the part", "Sand edges"],
-    });
-    mockReadFileSync.mockReturnValue(JSON.stringify(product));
-    mockReaddirSync.mockReturnValue([]);
-
-    const { default: ProductPage } = await import("./page");
-    const { container } = render(await ProductPage({ params: Promise.resolve({ product: "kneeler-boot" }) }));
-
-    expect(container).toHaveTextContent("Print the part");
-    expect(container).toHaveTextContent("Sand edges");
-  });
-
   it("renders download links", async () => {
     const product = makeProduct({
       stlDownloadUrls: [{ label: "Boot STL", url: "/boot.stl" }],
@@ -356,47 +326,5 @@ describe("generateStaticParams", () => {
     const params = await generateStaticParams();
 
     expect(params).toEqual([]);
-  });
-});
-
-describe("camelToLabel", () => {
-  afterEach(cleanup);
-
-  beforeEach(() => {
-    vi.resetModules();
-    mockReaddirSync.mockReset();
-    mockReadFileSync.mockReset();
-  });
-
-  it("converts camelCase to title-case label", async () => {
-    const product = makeProduct({
-      printSettings: {
-        layerHeight: "0.2mm",
-        wallCount: "4",
-        topBottomLayers: "5",
-      },
-    });
-    mockReadFileSync.mockReturnValue(JSON.stringify(product));
-    mockReaddirSync.mockReturnValue([]);
-
-    const { default: ProductPage } = await import("./page");
-    const { container } = render(await ProductPage({ params: Promise.resolve({ product: "kneeler-boot" }) }));
-
-    expect(container).toHaveTextContent("Layer Height");
-    expect(container).toHaveTextContent("Wall Count");
-    expect(container).toHaveTextContent("Top Bottom Layers");
-  });
-
-  it("handles single-word keys", async () => {
-    const product = makeProduct({
-      printSettings: { material: "PLA" },
-    });
-    mockReadFileSync.mockReturnValue(JSON.stringify(product));
-    mockReaddirSync.mockReturnValue([]);
-
-    const { default: ProductPage } = await import("./page");
-    const { container } = render(await ProductPage({ params: Promise.resolve({ product: "kneeler-boot" }) }));
-
-    expect(container).toHaveTextContent("Material");
   });
 });
