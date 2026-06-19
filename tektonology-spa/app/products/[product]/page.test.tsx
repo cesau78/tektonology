@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, cleanup } from "@testing-library/react";
-import type { Product, Batch } from "@/data/types";
+import type { Product } from "@/data/types";
 
 const mockReaddirSync = vi.fn();
 const mockReadFileSync = vi.fn();
@@ -38,15 +38,6 @@ const makeProduct = (overrides: Partial<Product> = {}): Product => ({
   assemblyGuide: ["Print the part", "Sand edges", "Install on kneeler"],
   stlDownloadUrls: [{ label: "Boot STL", url: "/boot.stl" }],
   purchaseLinks: [{ label: "Etsy", url: "https://etsy.com/boot" }],
-  ...overrides,
-});
-
-const makeBatch = (overrides: Partial<Batch> = {}): Batch => ({
-  id: "batch-001",
-  productId: "kneeler-boot",
-  printedDate: "2025-01-15",
-  notes: "First batch",
-  quantity: 10,
   ...overrides,
 });
 
@@ -192,74 +183,6 @@ describe("ProductPage", () => {
     expect(container).not.toHaveTextContent("Where to Buy");
   });
 
-  it("renders batches when present", async () => {
-    const product = makeProduct();
-    const batch = makeBatch({ id: "batch-001", productId: "kneeler-boot", printedDate: "2025-01-15", quantity: 10 });
-
-    mockReadFileSync
-      .mockReturnValueOnce(JSON.stringify(product))
-      .mockReturnValueOnce(JSON.stringify(batch));
-    mockReaddirSync.mockReturnValue(["batch-001.json"]);
-
-    const { default: ProductPage } = await import("./page");
-    const { container } = render(await ProductPage({ params: Promise.resolve({ product: "kneeler-boot" }) }));
-
-    expect(container).toHaveTextContent("Print Batches");
-    expect(container).toHaveTextContent("Batch batch-001");
-    expect(container).toHaveTextContent("2025-01-15");
-    expect(container).toHaveTextContent("Qty: 10");
-  });
-
-  it("does not render batches section when no batches exist", async () => {
-    const product = makeProduct();
-    mockReadFileSync.mockReturnValue(JSON.stringify(product));
-    mockReaddirSync.mockReturnValue([]);
-
-    const { default: ProductPage } = await import("./page");
-    const { container } = render(await ProductPage({ params: Promise.resolve({ product: "kneeler-boot" }) }));
-
-    expect(container).not.toHaveTextContent("Print Batches");
-  });
-
-  it("filters batches to only those matching the product", async () => {
-    const product = makeProduct({ id: "kneeler-boot" });
-    const matchingBatch = makeBatch({ id: "b1", productId: "kneeler-boot" });
-    const otherBatch = makeBatch({ id: "b2", productId: "other-product" });
-
-    mockReaddirSync.mockReturnValue(["b1.json", "b2.json"]);
-    mockReadFileSync
-      .mockReturnValueOnce(JSON.stringify(product))
-      .mockReturnValueOnce(JSON.stringify(matchingBatch))
-      .mockReturnValueOnce(JSON.stringify(otherBatch));
-
-    const { default: ProductPage } = await import("./page");
-    const { container } = render(await ProductPage({ params: Promise.resolve({ product: "kneeler-boot" }) }));
-
-    expect(container).toHaveTextContent("Batch b1");
-    expect(container).not.toHaveTextContent("Batch b2");
-  });
-
-  it("sorts batches by printedDate descending", async () => {
-    const product = makeProduct();
-    const batchOld = makeBatch({ id: "old", productId: "kneeler-boot", printedDate: "2024-01-01" });
-    const batchNew = makeBatch({ id: "new", productId: "kneeler-boot", printedDate: "2025-06-01" });
-
-    mockReaddirSync.mockReturnValue(["old.json", "new.json"]);
-    mockReadFileSync
-      .mockReturnValueOnce(JSON.stringify(product))
-      .mockReturnValueOnce(JSON.stringify(batchOld))
-      .mockReturnValueOnce(JSON.stringify(batchNew));
-
-    const { default: ProductPage } = await import("./page");
-    const { container } = render(await ProductPage({ params: Promise.resolve({ product: "kneeler-boot" }) }));
-
-    const batchTexts = Array.from(container.querySelectorAll("a"))
-      .map((a) => a.textContent)
-      .filter((t) => t && t.startsWith("Batch "));
-    expect(batchTexts[0]).toContain("Batch new");
-    expect(batchTexts[1]).toContain("Batch old");
-  });
-
   it("calls notFound when product does not exist", async () => {
     mockReadFileSync.mockImplementation(() => {
       throw new Error("ENOENT");
@@ -270,22 +193,6 @@ describe("ProductPage", () => {
     const { default: ProductPage } = await import("./page");
     await expect(ProductPage({ params: Promise.resolve({ product: "nonexistent" }) })).rejects.toThrow("NEXT_NOT_FOUND");
     expect(mockNotFound).toHaveBeenCalled();
-  });
-
-  it("filters non-json files from batch directory listing", async () => {
-    const product = makeProduct();
-    const batch = makeBatch({ productId: "kneeler-boot" });
-
-    mockReaddirSync.mockReturnValue(["batch-001.json", ".gitkeep", "notes.txt"]);
-    mockReadFileSync
-      .mockReturnValueOnce(JSON.stringify(product))
-      .mockReturnValueOnce(JSON.stringify(batch));
-
-    const { default: ProductPage } = await import("./page");
-    render(await ProductPage({ params: Promise.resolve({ product: "kneeler-boot" }) }));
-
-    // Only 2 readFileSync calls: 1 for product + 1 for the single .json batch file
-    expect(mockReadFileSync).toHaveBeenCalledTimes(2);
   });
 });
 

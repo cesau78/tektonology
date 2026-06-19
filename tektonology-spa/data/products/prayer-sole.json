@@ -1,18 +1,20 @@
 {
   "id": "prayer-sole",
-  "name": "Prayer Sole — Compound Fastened (v3)",
+  "name": "Prayer Sole — Compound Fastened (v3.9.1)",
   "category": "Kneeler Replacement Parts",
-  "description": "A three-piece Prayer Sole: rigid PLA collar, soft TPU tread, and a cap secured with mechanical fasteners to the kneeler leg — no glue required.",
+  "description": "A three-piece Prayer Sole: rigid PLA collar, soft TPU tread, and a cap secured with M3×20 socket-head cap screws to the kneeler leg — no glue required. Optional PETG bolt retainers clip onto the cap screws to prevent loss during assembly.",
   "printSettings": {
     "cap": "Polymaker PLA Pro (Burgundy) | 4 Wall Loops | 35% Gyroid Infill",
     "collar": "Polymaker PLA Pro (Burgundy) | 4 Wall Loops | 35% Gyroid Infill",
-    "tread": "TPU 90A (Black) | 4 Wall Loops | 35% Gyroid Infill | Print Speed < 40mm/s"
+    "tread": "TPU 90A (Black) | 4 Wall Loops | 35% Gyroid Infill | Print Speed < 40mm/s",
+    "boltRetainer": "PETG or Nylon | 4 Wall Loops | Print Qty: 2"
   },
   "assemblyGuide": [
     "Clean surfaces: remove any stringing from the internal wedge cavity.",
     "Press-fit: press the TPU tread into the PLA cavity until flush.",
     "Slide the assembly onto the kneeler leg.",
-    "Secure with the included fastener — no adhesive needed."
+    "Install two M3×20 socket-head cap screws through the cap bosses into the collar nut pockets.",
+    "Optional: push a bolt retainer onto each screw shank at the cap split face."
   ],
   "stlDownloadUrls": [
     {
@@ -29,6 +31,11 @@
       "label": "Collar (PLA)",
       "url": "/stl/collar.stl",
       "color": "#800000"
+    },
+    {
+      "label": "Bolt Retainer (PETG, print 2)",
+      "url": "/stl/bolt-retainer.stl",
+      "color": "#4a5568"
     }
   ],
   "purchaseLinks": [],

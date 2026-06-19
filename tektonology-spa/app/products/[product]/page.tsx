@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "fs";
 import { join } from "path";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import type { Product, Batch } from "@/data/types";
+import type { Product } from "@/data/types";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,15 +15,6 @@ function getProduct(id: string): Product | null {
   } catch {
     return null;
   }
-}
-
-function getBatchesForProduct(productId: string): Batch[] {
-  const dir = join(process.cwd(), "data", "batches");
-  return readdirSync(dir)
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => JSON.parse(readFileSync(join(dir, f), "utf-8")) as Batch)
-    .filter((b) => b.productId === productId)
-    .sort((a, b) => b.printedDate.localeCompare(a.printedDate));
 }
 
 export async function generateStaticParams() {
@@ -41,8 +32,6 @@ export default async function ProductPage({
   const { product: productId } = await params;
   const product = getProduct(productId);
   if (!product) notFound();
-
-  const batches = getBatchesForProduct(productId);
 
   return (
     <div>
@@ -107,32 +96,6 @@ export default async function ProductPage({
                       {link.label} ↗
                     </a>
                   </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Batches */}
-        {batches.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Print Batches</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {batches.map((batch) => (
-                  <Link
-                    key={batch.id}
-                    href={`/products/${productId}/batches/${batch.id}`}
-                    className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent transition-all"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-foreground">Batch {batch.id}</span>
-                      <span className="text-xs text-muted-foreground">{batch.printedDate}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">Qty: {batch.quantity} →</span>
-                  </Link>
                 ))}
               </div>
             </CardContent>
