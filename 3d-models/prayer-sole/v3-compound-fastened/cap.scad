@@ -10,26 +10,24 @@ include <config.scad>
 // =====================================================================
 
 head_pocket_diameter = head_dia + head_clearance + tolerance;
+bolt_hole_dia = bolt_dia + bolt_clearance;
 
 // Shaft through-hole (full span along +X).
 module bolt_shaft_hole(z_pos, y_pos) {
-    hole_dia = bolt_dia + bolt_clearance;
     translate([split_x - 1, y_pos, z_pos])
         rotate([0, 90, 0])
-            cylinder(h=outer_extent - split_x + 2, d=hole_dia);
+            cylinder(h=outer_extent - split_x + 2, d=bolt_hole_dia);
 }
 
-// Socket-head pocket (+X from outer face inward), hulled collar-side neck.
+// Socket-head pocket (+X from outer face inward) with collar-side chamfer.
 module bolt_head_pocket_hole(z_pos, y_pos) {
     pocket_collar_x = outer_extent - head_height + tolerance;
-    hull() {
-        translate([pocket_collar_x, y_pos, z_pos])
-            rotate([0, 90, 0])
-                cylinder(h=head_height + 1, d=head_pocket_diameter);
-        translate([pocket_collar_x, y_pos, z_pos])
-            rotate([0, -90, 0])
-                cylinder(h=head_pocket_bridge_len, d=head_pocket_bridge_dia);
-    }
+    translate([pocket_collar_x, y_pos, z_pos])
+        rotate([0, 90, 0])
+            cylinder(h=head_height + 1, d=head_pocket_diameter);
+    translate([pocket_collar_x + head_pocket_chamfer_x_offset, y_pos, z_pos])
+        rotate([0, -90, 0])
+            cylinder(h=head_pocket_chamfer_len, d1=head_pocket_diameter, d2=bolt_hole_dia);
 }
 
 // Bolt through-hole + socket head recess in the cap piece.

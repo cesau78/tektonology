@@ -59,8 +59,8 @@ nut_pocket_x_extra = 0.5; // hex pocket extends this far ±X beyond nut_thicknes
 head_dia        = 6.0;  // M3 socket head cap screw head diameter
 head_clearance  = tolerance;
 head_height     = 3.5;   // M3 socket head height
-head_pocket_bridge_dia = 5.2;  // hulled collar-side neck on head pocket (mm)
-head_pocket_bridge_len = 0.25; // length toward collar (−X) from pocket inner face
+head_pocket_chamfer_len     = 2.0; // chamfer depth toward collar (−X) from chamfer start
+head_pocket_chamfer_x_offset = 0.1; // shift chamfer start +X from pocket inner face (mm)
 
 // Nut X position: derived so bolt tip fully engages the nut with 0.5mm margin
 // bolt shaft starts at outer_extent - head_height, tip = start - bolt_length
