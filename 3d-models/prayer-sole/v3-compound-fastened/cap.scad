@@ -38,17 +38,6 @@ module bolt_hole(z_pos, y_pos) {
     bolt_head_pocket_hole(z_pos, y_pos);
 }
 
-// Shallow pocket on split face for bolt retainer (collar / guide-rod side).
-// Cuts +X into the cap from split_x (cap_half_space is x >= split_x).
-module cap_washer_sockets() {
-    if (washer_socket_enable) {
-        for (pos = bolt_positions)
-            translate([split_x - washer_socket_split_overlap, pos[1], pos[0]])
-                rotate([0, 90, 0])
-                    cylinder(h=washer_socket_depth + washer_socket_split_overlap + 0.02, d=washer_socket_od);
-    }
-}
-
 // Cap side bosses — half-cylinders on each Y edge of the cap
 module cap_side_bosses() {
     boss_len = outer_extent - split_x; // full cap depth along X
@@ -213,7 +202,6 @@ module cap() {
             }
             for (pos = bolt_positions)
                 bolt_hole(pos[0], pos[1]);
-            cap_washer_sockets();
             // Re-cut top socket through lip
             if (enable_top_lip) top_socket_cut();
             //alignment_groove();

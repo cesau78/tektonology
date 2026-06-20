@@ -9,7 +9,7 @@
 thread_major = 3.0;   // M3 nominal major diameter (mm)
 thread_pitch = 0.5;
 
-// --- Outer seating ring (keep in sync with washer_ring_od in config.scad) ---
+// --- Outer seating ring ---
 ring_od      = 5.5;   // seats on cap boss / wall (cf. commercial panel retainer ≈ 4.3)
 ring_id      = 4.4;   // inner bore — prongs root on this wall
 ring_height  = 0.75;  // rigid seat flange (Z)

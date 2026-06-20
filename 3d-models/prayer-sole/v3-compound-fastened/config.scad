@@ -49,8 +49,8 @@ lip_inner_x = leg_l + tolerance;
 lip_inner_y = leg_w + tolerance; // add some clearance around the leg for easy fit and print tolerance
 
 // --- M3x30 Socket Head Cap Screw Hardware ---
-bolt_dia        = 3.0;
-bolt_clearance  = 0.3;  // clearance for bolt holes (0 for snug fit, increase if needed for print tolerance)
+bolt_dia        = 2.92;
+bolt_clearance  = 0.0;  // clearance for bolt holes (0 for snug fit, increase if needed for print tolerance)
 bolt_length     = 20;   // M3x20 — shaft length under head (very common size)
 nut_af          = 5.5;  // hex nut across-flats
 nut_clearance   = 0.2;  // clearance for nut pockets
@@ -74,14 +74,6 @@ bolt_channel_length = split_x - bolt_channel_start + 1;
 // Bolt position: two screws aligned with cap side bosses (Y = ±cap_width/2)
 bolt_z = (bolt_dia / 2) + 0.5; // bottom of bolt hole 0.5mm above z=0
 bolt_positions = [[bolt_z, cap_width / 2], [bolt_z, -cap_width / 2]];
-
-// --- Bolt retainer seat (cap split face) — matches bolt-retainer.scad ---
-washer_socket_enable    = true;
-washer_ring_od          = 5.5;
-washer_socket_depth          = 1.5;   // pocket depth along +X into cap from split (mm)
-washer_socket_split_overlap  = 0.1;   // extend −X past split face to clean surface edge
-washer_socket_clearance      = 0.15;
-washer_socket_od        = washer_ring_od + washer_socket_clearance;
 
 // --- Cap Side Bosses ---
 boss_dia       = head_dia;    // matches cap screw head diameter
