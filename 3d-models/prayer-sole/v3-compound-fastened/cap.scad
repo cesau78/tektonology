@@ -1,8 +1,8 @@
 // --- TEKTONOLOGY PRAYER SOLE V3 — CAP ---
 // The cap bolts onto the hidden end of the kneeler foot to lock the collar
 // in place. Two M3 socket-head cap screws thread through side bosses into
-// hex nut pockets in the collar. The cap lip fills the far short-end gap
-// between the collar's overhanging lips.
+// hex nut pockets in the collar. The cap lip carries the +X short-end bar
+// and long-side overhangs on the cap end.
 include <config.scad>
 
 // =====================================================================

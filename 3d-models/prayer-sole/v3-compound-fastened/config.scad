@@ -242,27 +242,34 @@ module top_lip() {
 // SPLIT LIP MODULES
 // =====================================================================
 
-// Collar lip: full ring MINUS the far short-end bar (cap's portion).
+// Collar lip: -X short end and long-side overhangs on the entrance (-X) end only.
 module collar_lip() {
+    lip_x_max = lip_inner_x / 2;
     intersection() {
         top_lip();
         union() {
             translate([-big, -big, -big])
-                cube([big + lip_inner_x / 2, big * 2, big * 2]);
+                cube([big + lip_x_max, big * 2, big * 2]);
             translate([-big, lip_inner_y / 2, -big])
-                cube([big * 2, big, big * 2]);
+                cube([big + lip_x_max, big, big * 2]);
             translate([-big, -big - lip_inner_y / 2, -big])
-                cube([big * 2, big, big * 2]);
+                cube([big + lip_x_max, big, big * 2]);
         }
     }
 }
 
-// Cap lip: only the far short-end bar between the collar's overhanging lips.
+// Cap lip: +X short-end bar plus long-side overhangs on the cap (+X) end.
 module cap_lip() {
     intersection() {
         top_lip();
-        translate([lip_inner_x / 2, -lip_inner_y / 2, -big])
-            cube([big, lip_inner_y, big * 2]);
+        union() {
+            translate([lip_inner_x / 2, -lip_inner_y / 2, -big])
+                cube([big, lip_inner_y, big * 2]);
+            translate([lip_inner_x / 2, lip_inner_y / 2, -big])
+                cube([big, big, big * 2]);
+            translate([lip_inner_x / 2, -big - lip_inner_y / 2, -big])
+                cube([big, big, big * 2]);
+        }
     }
 }
 

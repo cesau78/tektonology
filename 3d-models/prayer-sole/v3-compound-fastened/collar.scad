@@ -1,7 +1,7 @@
 // --- TEKTONOLOGY PRAYER SOLE V3 — COLLAR ---
 // The collar slides over the steel kneeler foot from one end.
-// Its top lip extends over the cap on both long sides, creating an
-// interlocking overlap. Hex nut pockets and bolt channels live in the
+// Its top lip overhangs on the entrance (-X) end and long sides there;
+// the cap carries the +X-end lip overhangs. Hex nut pockets and bolt
 // side walls; hardware faces the wall so worshipers never see it.
 include <config.scad>
 
