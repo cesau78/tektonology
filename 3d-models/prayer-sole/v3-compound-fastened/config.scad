@@ -49,8 +49,8 @@ lip_inner_x = leg_l + tolerance;
 lip_inner_y = leg_w + tolerance; // add some clearance around the leg for easy fit and print tolerance
 
 // --- M3x30 Socket Head Cap Screw Hardware ---
-bolt_dia        = 2.92;
-bolt_clearance  = 0.0;  // clearance for bolt holes (0 for snug fit, increase if needed for print tolerance)
+bolt_dia        = 3.0;
+bolt_clearance  = 0.1;  // clearance for bolt holes (0 for snug fit, increase if needed for print tolerance)
 bolt_length     = 20;   // M3x20 — shaft length under head (very common size)
 nut_af          = 5.5;  // hex nut across-flats
 nut_clearance   = 0.2;  // clearance for nut pockets
