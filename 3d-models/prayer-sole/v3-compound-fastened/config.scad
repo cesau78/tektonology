@@ -50,10 +50,10 @@ lip_inner_y = leg_w + tolerance; // add some clearance around the leg for easy f
 
 // --- M3x30 Socket Head Cap Screw Hardware ---
 bolt_dia        = 3.0;
-bolt_clearance  = 0.2;  // clearance for bolt holes (0 for snug fit, increase if needed for print tolerance)
+bolt_clearance  = 0.22;  // clearance for bolt holes (0 for snug fit, increase if needed for print tolerance)
 bolt_length     = 20;   // M3x20 — shaft length under head (very common size)
 nut_af          = 5.5;  // hex nut across-flats
-nut_clearance   = 0.2;  // clearance for nut pockets
+nut_clearance   = 0.25;  // clearance for nut pockets
 nut_thickness   = 2.4;  // typical M3 nut thickness, adjust if using thinner/heavier nuts
 nut_pocket_x_extra = 0.5; // hex pocket extends this far ±X beyond nut_thickness envelope; slot unchanged
 head_dia        = 6.0;  // M3 socket head cap screw head diameter
@@ -113,7 +113,7 @@ guide_pin_len         = 2.0;              // mm rod protrusion from cap split (�
 guide_pin_hole_depth  = 4.1;              // mm collar bore depth from split face
 guide_pin_cap_overlap = 0.5;              // rod starts this far +X of split for shell fusion
 guide_pin_dome_radius = 2;                // domed tip sphere at collar-facing end
-guide_pin_hole_clearance = 0.0;           // extra hole radius for easy peg fit
+guide_pin_hole_clearance = 0.05;           // extra hole radius for easy peg fit
 guide_pin_hole_cap_extra = 0.1;             // bore extends +X past split for preview gap
 // Z: midway between bolt-hole bottom and shell exterior bottom
 bolt_hole_bottom_z = bolt_z - (bolt_dia / 2);

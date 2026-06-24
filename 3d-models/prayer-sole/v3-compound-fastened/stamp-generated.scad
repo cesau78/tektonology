@@ -3,7 +3,7 @@
 
 info_stamp_line1 = "Tektonology";
 info_stamp_line2 = "";
-info_stamp_line3 = "Prayer Sole v3.9.4";
+info_stamp_line3 = "Prayer Sole v3.9.5";
 info_stamp_line4 = "Psalm 145:14";
 tread_stamp_bottom = false;
 tread_stamp_top = true;
