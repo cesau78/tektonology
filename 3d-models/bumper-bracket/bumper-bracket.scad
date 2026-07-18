@@ -648,18 +648,14 @@ module tread_cap_hardware_debug() {
                 cylinder(h = cap_nut_thickness, r = nut_r, $fn = 6);
 }
 
-// Shallow rounded-square recess on the mount block's +Y front face to seat a 1"
-// QR-code sticker flush. Cuts qr_pocket_depth_mm inward (−Y), centered on that
-// face (offsets nudge it along bracket X and Z).
-module qr_sticker_pocket() {
-    s = qr_pocket_size_mm;
-    r = min(qr_pocket_corner_r_mm, s / 2 - 0.01);
-    half = s / 2 - r;
-    // Lie the tile on the tilted front face: pivot at the +X (pew-flush) edge of the
-    // pre-mink front line, rotate the frame by the face angle about Z, then sit the
-    // tile on the plane. The actual face sits corner_r out along the tilted normal
-    // (minkowski skin), so push out by corner_r and add a corner_r*sin term to
-    // `along` so the normal offset's X-component doesn't shift the tile off-center.
+// Place a 2D profile (children) onto the mount block's tilted +Y front face and
+// engrave it depth mm inward (−Y along the face normal), centered on the QR tile
+// position. Lie the profile on the tilted front face: pivot at the +X (pew-flush)
+// edge of the pre-mink front line, rotate the frame by the face angle about Z,
+// then sit it on the plane. The actual face sits corner_r out along the tilted
+// normal (minkowski skin), so push out by corner_r and add a corner_r*sin term to
+// `along` so the normal offset's X-component doesn't shift the profile off-center.
+module qr_face_engrave(depth) {
     x_piv = pew_mount_block_face_x_hi_mm();
     xc = pew_mount_block_face_center_x_mm() + qr_pocket_x_offset_mm;
     zc = pew_mount_block_z_center_mm() + qr_pocket_z_offset_mm;
@@ -669,11 +665,40 @@ module qr_sticker_pocket() {
         rotate([0, 0, pew_mount_block_face_angle_deg])
             translate([along, corner_r + epsilon, zc - pew_mount_block_z_center_mm()])
                 rotate([90, 0, 0])   // extrude axis (+Z local) → face inward normal
-                    linear_extrude(qr_pocket_depth_mm + epsilon)
-                        hull()
-                            for (a = [-1, 1], b = [-1, 1])
-                                translate([a * half, b * half])
-                                    circle(r = r, $fn = preview ? 16 : 32);
+                    linear_extrude(depth + epsilon)
+                        children();
+}
+
+// Rounded square, corner radius r, centered on the origin.
+module qr_rounded_square_2d(size, r_in) {
+    r = min(r_in, size / 2 - 0.01);
+    half = size / 2 - r;
+    hull()
+        for (a = [-1, 1], b = [-1, 1])
+            translate([a * half, b * half])
+                circle(r = r, $fn = preview ? 16 : 32);
+}
+
+// Shallow rounded-square recess on the mount block's +Y front face to seat a 1"
+// QR-code sticker flush. Cuts qr_pocket_depth_mm inward (−Y), centered on that
+// face (offsets nudge it along bracket X and Z).
+module qr_sticker_pocket() {
+    qr_face_engrave(qr_pocket_depth_mm)
+        qr_rounded_square_2d(qr_pocket_size_mm, qr_pocket_corner_r_mm);
+}
+
+// Engraved alignment frame around the sticker recess (bait-station style): a
+// thin square groove qr_frame_gap_mm outside the tile edge so the sticker can
+// be sighted into place. Corner radii grow with the offset so the groove width
+// stays constant around the corners.
+module qr_frame_groove() {
+    inner = qr_pocket_size_mm + 2 * qr_frame_gap_mm;
+    outer = inner + 2 * qr_frame_line_w_mm;
+    qr_face_engrave(qr_frame_depth_mm)
+        difference() {
+            qr_rounded_square_2d(outer, qr_pocket_corner_r_mm + qr_frame_gap_mm + qr_frame_line_w_mm);
+            qr_rounded_square_2d(inner, qr_pocket_corner_r_mm + qr_frame_gap_mm);
+        }
 }
 
 // Vertical pocket ("cube hull") in the +X (pew-leg) face of the mount block.
@@ -822,6 +847,8 @@ module shell_body_main_difference() {
         tread_cap_fastener_cuts();
         if (qr_pocket_enabled)
             qr_sticker_pocket();
+        if (qr_frame_enabled)
+            qr_frame_groove();
         if (pew_mount_block_pocket_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
             pew_mount_block_pocket_cut();
         if (pew_mount_block_pew_face_flush_enabled && pew_mount_block_enabled)

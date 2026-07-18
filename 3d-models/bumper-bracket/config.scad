@@ -150,7 +150,7 @@ tread_face_de_extra_angle_deg = 9.8;
 // Y inset at D∩E for the nominal C↔D span (≈12.8 mm at the default depth).
 tread_face_d_e_side_y_narrow_mm = tan(tread_face_de_extra_angle_deg) * shell_extent_tread_pew_mm;
 
-// ── Wood screws (#8; major Ø ~0.164"); through the roof-wedge hypotenuse ──────
+// ── Wood screws (#10; major Ø ~0.190"); through the roof-wedge hypotenuse ─────
 wood_screw_holes_enabled    = true;
 // Shift the outer two screws outward along +Z (top) and −Z (bottom) by this many mm.
 wood_screw_outer_z_nudge_mm = 5;
@@ -161,10 +161,10 @@ wood_screw_hole_y_fractions = [
 ];
 // Shift the rib cutouts (inter-screw hull tabs) outward: bottom −Z, top +Z.
 screw_gap_tab_z_nudge_mm    = 2.5;
-wood_screw_gauge            = 8;
-wood_shank_nominal_mm       = 4.17;
+wood_screw_gauge            = 10;
+wood_shank_nominal_mm       = 4.83;  // #10 major Ø (0.190")
 wood_shank_clr              = wood_shank_nominal_mm + 0.92;  // sliding fit + angled drive
-wood_head_diameter          = 10;    // Ø head clearance (#8 trim / washer / round wood screw)
+wood_head_diameter          = 10;    // Ø head clearance (#10 trim / washer / round wood screw)
 wood_countersink_depth_mm   = 4.5;   // head pocket allowance for bore/screw-length math only
 screw_chamfer_lip_mm        = 0.65;  // Ø flare added for printed chamfer clearance
 // Head chamfer cone: half-angle from the bore axis (same axis as the shank hole).
@@ -279,16 +279,16 @@ pew_mount_block_undercut_enabled        = true;
 pew_mount_block_undercut_top_z_mm       = pew_mount_block_z_center_mm();   // ceiling Z (halfway up)
 pew_mount_block_undercut_ramp_angle_deg = 45;   // closing ramp angle at the −Y (bridge) end
 
-// ── Side attachment screw (X-axis, #8, through angled front face) ────────────
-// A flat-head #8 wood screw mounts the bracket to the pew leg. The screw enters
+// ── Side attachment screw (X-axis, #10, through angled front face) ───────────
+// A flat-head #10 wood screw mounts the bracket to the pew leg. The screw enters
 // the angled +Y front face at its geometric centre (just behind the QR sticker)
 // and exits the +X pew-flush face; the countersink seats the head flush with the
 // angled face. Tilted at half the face angle in the XY plane so the axis bisects
 // the face, passing exactly through the face centre regardless of the angle.
 side_screw_enabled     = true;
-side_screw_dia_mm      = 4.5;    // #8 free-fit clearance (nominal shaft 4.17 mm)
-side_screw_head_dia_mm = 11.0;    // flat-head #8 maximum countersink Ø
-side_screw_chamfer_deg = 82;     // flat-head included angle (standard #8)
+side_screw_dia_mm      = wood_shank_clr;  // same Ø as the 3 angled bores (#10 free fit)
+side_screw_head_dia_mm = 11.0;    // flat-head #10 maximum countersink Ø
+side_screw_chamfer_deg = 82;     // flat-head included angle (standard #10)
 side_screw_chamfer_lip_mm = 0.65; // Ø flare on countersink (clears minkowski skin / print artifact)
 
 // ── QR-code sticker pocket (mount block +Y front face) ───────────────────────
@@ -304,6 +304,17 @@ qr_pocket_x_offset_mm = 0;     // + toward +X (pew-leg face), − toward the cor
 // Center the tile (Z) on the front face that REMAINS after the bottom undercut:
 // midway between the undercut ceiling and the block top.
 qr_pocket_z_offset_mm = pew_mount_block_face_remaining_z_center_mm() - pew_mount_block_z_center_mm();
+
+// Engraved alignment frame around the QR sticker recess (liquid-bait-station
+// style). The flat face is only ~26.7 mm across the tilt vs the 25.4 mm tile
+// (≈0.6 mm/side), so the frame is slimmer than the bait station's 0.5 gap +
+// 0.8 line: at 0.3 + 0.5 the side legs' outer ~0.2 mm graze the 1 mm edge
+// round-over, where the surface drop (~0.015 mm) is negligible vs the groove
+// depth. Z has ~3.3 mm/side — no constraint there.
+qr_frame_enabled   = true;
+qr_frame_gap_mm    = 0.3;   // sticker edge → groove inner wall
+qr_frame_line_w_mm = 0.5;   // groove width
+qr_frame_depth_mm  = 0.4;   // groove depth into the face (0.1 mm pocket is too faint to sight)
 
 // ── Tread retention cap (−Z mouth, face D) + single central M3×20 fastener ───
 // A separate printed cap closes the tread-slot mouth so the back-to-back treads
