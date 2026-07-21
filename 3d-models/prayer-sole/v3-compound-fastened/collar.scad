@@ -12,7 +12,7 @@ include <config.scad>
 // Hex nut pocket — centered at nut_x in the collar body.
 module hex_nut_pocket(z_pos, y_pos) {
     nut_r = (nut_af + nut_clearance) / 2 / cos(30);
-    pocket_depth = nut_thickness + tolerance;
+    pocket_depth = nut_thickness + nut_clearance;
     pocket_x_len = pocket_depth + (2 * nut_pocket_x_extra);
 
     translate([nut_x - pocket_x_len / 2, y_pos, z_pos])
@@ -24,7 +24,7 @@ module hex_nut_pocket(z_pos, y_pos) {
 // Hex nut slide-in slot — 45° toward center from nut pocket through shell.
 module hex_nut_slot(z_pos, y_pos) {
     slot_width = nut_af + nut_clearance;
-    pocket_depth = nut_thickness + tolerance;
+    pocket_depth = nut_thickness + nut_clearance;
     // Slot length: pocket center to shell wall along the 45° path, +1mm overshoot
     shell_y = sole_plate_w / 2 + wall;
     slot_h = (shell_y - abs(y_pos)) / sin(45) + 1;
