@@ -34,6 +34,9 @@ preview             = true;
 epsilon             = 0.02;   // manifold fudge for booleans + thin slabs
 corner_r            = 1;      // exterior fillet radius (minkowski sphere)
 bracket_lift_to_bed = true;   // export: translate so min Z sits on the build plate
+// Rectangular "hull" cutters are hulls of cubes this size CENTERED on the nominal
+// corner points, so every hull cutter overshoots its nominal bounds by half this.
+HULL_VERTEX_CUBE_MM = 0.5;
 
 // ── Kneeler-bracket reference (keep in sync with kneeler-bracket-visual.scad) ─
 kneeler_bracket_plate_thickness_mm   = 5;
@@ -246,10 +249,16 @@ pew_mount_block_y_len_mm       = shell_envelope_apex_lz_mm - pew_mount_block_y_e
 pew_mount_block_pew_face_flush_enabled = true;
 
 // Extend the block/reinforcement +Y front, then tilt that end face about Z so a
-// 1" QR tile fits on the (now longer) sloped surface. The tile's X-footprint is
-// size·cos(angle), so 10° brings the 25.4 mm tile within the ~25 mm face width.
-pew_mount_block_face_extend_y_mm = 4;    // +Y extension of the front before tilting
-pew_mount_block_face_angle_deg   = 20;   // front-face tilt about Z (0 = flat, perpendicular to Y)
+// 1" QR tile fits on the (now longer) sloped surface. The extension is sized so
+// the side-screw countersink (Ø ≈ 12.3 mm centered at y = side_screw_bore_y_mm on
+// the −X reinforcement face) still lands fully on that face: the steeper derived
+// tilt below pulls the face's −X end back toward −Y (front_y_at(x_lo) ≈ 66 mm,
+// vs ≈ 64 mm needed for the countersink + edge round-over).
+pew_mount_block_face_extend_y_mm = 19;   // +Y extension of the front before tilting
+
+// Front-face tilt about Z (0 = flat, perpendicular to Y): derived for an equal
+// QR border — see pew_mount_block_face_angle_deg below the pew-leg assembly
+// parameters (its inputs are file-order dependencies in OpenSCAD).
 
 // Vertical pocket ("cube hull") cut into the +X (pew-leg–facing) face of the
 // mount block. Opens on +X and runs depth_x into the block; spans the block's
@@ -400,6 +409,27 @@ assembly_pew_leg_positive_y_fraction = 1 / 8; // fraction of the pew span in +Y
 assembly_kneeler_bracket_rotate_x_deg = 45;   // kneeler tilt inside assembly_kneeler_pose
 assembly_kneeler_support_top_lz_mm    = kneeler_bracket_support_h_mm;  // peg boss top
 assembly_kneeler_arm_rotate_x_deg     = -13.5;  // arm spin about bracket +X at the hole
+
+// ── Derived QR front-face tilt (needs assembly_pew_leg_side_gap_mm above) ─────
+// Tilt so the flat front face is square: width measured ACROSS the tilt equals
+// the face's remaining Z span (undercut ceiling → block top). The QR pocket +
+// frame are centered on the face in both directions, so this yields an equal
+// border around the engraved alignment groove on all four sides.
+//
+// Both side edges of the visible face are PLANAR post-mink trims at exactly
+// x_lo and x_hi — the E-bevel cutter's flush plane sits at the reinforcement −X
+// face (x_lo), and the pew-flush trim plane at x_hi — so the width across the
+// tilt is simply (x_hi − x_lo)/cos(angle), no corner_r terms.
+//   (x_hi − x_lo)/cos(a) = z_span  →  a = acos(w/s)
+// ≈ 38.7° at current dims; face ≈ 32.1 mm square, border ≈ 2.55 mm/side.
+//
+// Defined here (not with the other block face params) because its inputs —
+// assembly_pew_leg_side_gap_mm and the undercut params — are assigned above in
+// file order, which OpenSCAD requires for top-level derivations.
+pew_mount_block_face_angle_deg = acos(
+    (pew_mount_block_face_x_hi_mm() - pew_mount_block_face_x_lo_mm())
+    / (pew_mount_block_face_remaining_z_hi_mm() - pew_mount_block_face_remaining_z_lo_mm())
+);
 
 // ── Derived wood-screw lengths (need pew-leg + mount-block thickness above) ───
 // Max solid printed path ⟂ the angled bore (≈ run × leg over the hypotenuse).

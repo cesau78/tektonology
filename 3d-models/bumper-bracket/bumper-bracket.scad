@@ -306,7 +306,7 @@ module shell_envelope_minkowski_union(undercut = false) {
 }
 
 // Solid rule cube minus three rectangular hull(CUBE) cutters on the 9.8° E-bevel plane (no polyhedron).
-HULL_VERTEX_CUBE_MM = 0.5;
+// (HULL_VERTEX_CUBE_MM lives in config.scad — the QR face-angle derivation needs it.)
 
 function y_on_e_bevel_plane(z) =
     bracket_nat_y_mid_mm - tread_face_e_bevel_slope_k() * (bracket_face_pew_z_mm - z);
@@ -342,12 +342,15 @@ module shell_tread_face_de_bevel_cut() {
     // bevel cutter at the block's −X face so the angled top sits flush against
     // the block's side wall instead of slicing diagonally through the cube. If
     // the −X reinforcement is present, stop at its −X face so it stays flush too.
+    // The hull vertex cubes are CENTERED on the bound, so pull it in by half a
+    // cube so the cut plane lands exactly ON the flush face instead of 0.25 mm
+    // into it (that bite also ate into the QR front face's −X border).
     block_minus_x = pew_mount_block_x_center_mm() - pew_mount_block_thickness_x_mm / 2;
     flush_x = (pew_mount_reinforce_enabled && pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
         ? block_minus_x - pew_mount_reinforce_depth_x_mm
         : block_minus_x;
     x_hi = (pew_mount_block_enabled && pew_mount_block_y_len_mm > 0.2)
-        ? flush_x
+        ? flush_x - HULL_VERTEX_CUBE_MM / 2
         : x_h;
 
     hull_rect_on_e_slope(
@@ -655,6 +658,9 @@ module tread_cap_hardware_debug() {
 // then sit it on the plane. The actual face sits corner_r out along the tilted
 // normal (minkowski skin), so push out by corner_r and add a corner_r*sin term to
 // `along` so the normal offset's X-component doesn't shift the profile off-center.
+// (Both side edges of the visible face are planar trims at exactly x_lo / x_hi —
+// see pew_mount_block_face_angle_deg in config.scad — so centering on the nominal
+// (x_lo + x_hi)/2 centers on the visible face too.)
 module qr_face_engrave(depth) {
     x_piv = pew_mount_block_face_x_hi_mm();
     xc = pew_mount_block_face_center_x_mm() + qr_pocket_x_offset_mm;
