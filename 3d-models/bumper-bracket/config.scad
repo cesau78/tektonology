@@ -309,15 +309,22 @@ side_screw_chamfer_deg = 82;     // flat-head included angle (standard #10)
 side_screw_chamfer_lip_mm = 0.65; // Ø flare on countersink (clears minkowski skin / print artifact)
 
 // ── QR-code sticker pocket (mount block +Y front face) ───────────────────────
-// Shallow rounded-square ("hull") recess so a 1" printed QR sticker seats flush
-// on the mount block's +Y front face. Cuts qr_pocket_depth_mm inward (−Y);
-// centered on the full front face (block + flush −X reinforcement) so the 1"
-// tile fits. Offsets nudge it along bracket X and Z.
-qr_pocket_enabled     = true;
-qr_pocket_size_mm     = 25.4;  // 1" square (overall, including the rounded corners)
-qr_pocket_depth_mm    = 0.1;   // sticker recess depth (into −Y)
-qr_pocket_corner_r_mm = 2;     // hull corner rounding
-qr_pocket_x_offset_mm = 0;     // + toward +X (pew-leg face), − toward the core / reinforcement
+// Rounded-square ("hull") recess on the mount block's +Y front face, deep enough
+// to act as a self-aligning fence for a 1" printed QR sticker: drop the tile in
+// and the pocket walls register it. Cuts qr_pocket_depth_mm inward (−Y); the
+// walls sit qr_pocket_clearance_mm outside the tile on each side. Centered on
+// the full front face (block + flush −X reinforcement) so the 1" tile fits.
+// Offsets nudge it along bracket X and Z. The face prints as a vertical wall,
+// so the pocket depth resolves at XY resolution (crisp), not layer height.
+qr_pocket_enabled      = true;
+qr_pocket_size_mm      = 25.4;  // 1" square tile (overall, including the rounded corners)
+qr_pocket_depth_mm     = 0.5;   // fence depth (into −Y); tile seats ~0.35 mm sub-flush
+qr_pocket_clearance_mm = 0.25;  // per-side gap so the tile drops in (pocket = size + 2×this)
+// Corner radius: a rounded pocket corner encroaches on a square tile corner by
+// r·(√2−1) along the diagonal; at r = 0.6 that is ~0.25 mm vs the ~0.35 mm
+// diagonal clearance from the 0.25 mm/side gap, so square-cornered tiles seat.
+qr_pocket_corner_r_mm  = 0.6;   // hull corner rounding
+qr_pocket_x_offset_mm  = 0;     // + toward +X (pew-leg face), − toward the core / reinforcement
 // Center the tile (Z) on the front face that REMAINS after the bottom undercut:
 // midway between the undercut ceiling and the block top.
 qr_pocket_z_offset_mm = pew_mount_block_face_remaining_z_center_mm() - pew_mount_block_z_center_mm();
@@ -328,7 +335,10 @@ qr_pocket_z_offset_mm = pew_mount_block_face_remaining_z_center_mm() - pew_mount
 // 0.8 line: at 0.3 + 0.5 the side legs' outer ~0.2 mm graze the 1 mm edge
 // round-over, where the surface drop (~0.015 mm) is negligible vs the groove
 // depth. Z has ~3.3 mm/side — no constraint there.
-qr_frame_enabled   = true;
+// DISABLED: superseded by the deep self-aligning pocket fence above; keeping it
+// would also leave a fragile ~0.15 mm land between the enlarged pocket wall and
+// the groove's inner wall.
+qr_frame_enabled   = false;
 qr_frame_gap_mm    = 0.3;   // sticker edge → groove inner wall
 qr_frame_line_w_mm = 0.5;   // groove width
 qr_frame_depth_mm  = 0.4;   // groove depth into the face (0.1 mm pocket is too faint to sight)

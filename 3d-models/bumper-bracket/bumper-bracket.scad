@@ -685,12 +685,15 @@ module qr_rounded_square_2d(size, r_in) {
                 circle(r = r, $fn = preview ? 16 : 32);
 }
 
-// Shallow rounded-square recess on the mount block's +Y front face to seat a 1"
-// QR-code sticker flush. Cuts qr_pocket_depth_mm inward (−Y), centered on that
-// face (offsets nudge it along bracket X and Z).
+// Rounded-square recess on the mount block's +Y front face: a self-aligning
+// fence for the 1" QR-code sticker. Cuts qr_pocket_depth_mm inward (−Y) with
+// qr_pocket_clearance_mm of gap per side so the tile drops in and the pocket
+// walls register it. Centered on that face (offsets nudge it along bracket X/Z).
 module qr_sticker_pocket() {
     qr_face_engrave(qr_pocket_depth_mm)
-        qr_rounded_square_2d(qr_pocket_size_mm, qr_pocket_corner_r_mm);
+        qr_rounded_square_2d(
+            qr_pocket_size_mm + 2 * qr_pocket_clearance_mm,
+            qr_pocket_corner_r_mm);
 }
 
 // Engraved alignment frame around the sticker recess (bait-station style): a
