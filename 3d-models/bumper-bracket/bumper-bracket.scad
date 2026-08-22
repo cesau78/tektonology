@@ -819,17 +819,31 @@ module side_screw_chamfer() {
         x_c = side_screw_bore_x_mm;
         y_c = side_screw_bore_y_mm;
         z_c = side_screw_bore_z_mm;
+        recess = side_screw_chamfer_recess_mm;
+        bridge_face = side_screw_chamfer_bridge_face_mm;
+        inward  = [ cos(ang), -sin(ang), 0];
+        outward = [-cos(ang),  sin(ang), 0];
 
         // Chamfer on the angled +Y entry face (accessible from the QR-code / front side).
-        translate([x_c - 1, y_c, z_c]) {
-            // outward stub — rotate Z → [−cos(ang), +sin(ang), 0]
-            rotate([0, 0, 180 - ang])
-                rotate([0, 90, 0])
-                    cylinder(h = over, r = r_hd, $fn = fn);
-            // taper into block — rotate Z → [+cos(ang), −sin(ang), 0] (bore direction)
-            rotate([0, 0, -ang])
-                rotate([0, 90, 0])
-                    cylinder(h = ch_d + over, r1 = r_hd, r2 = r_sh, $fn = fn);
+        // Recess along the bore axis so the flat-head lip clears the tilted face skin; a
+        // cylindrical hull bridges outward to the skin and inward to the countersink mouth.
+        translate([x_c, y_c, z_c]) {
+            if (recess > epsilon || bridge_face > epsilon)
+                hull() {
+                    translate(outward * bridge_face)
+                        rotate([0, 0, 180 - ang])
+                            rotate([0, 90, 0])
+                                cylinder(h = over, r = r_hd, $fn = fn);
+                    translate(inward * recess)
+                        rotate([0, 0, -ang])
+                            rotate([0, 90, 0])
+                                translate([0, 0, -epsilon * 4])
+                                    cylinder(h = epsilon * 4, r = r_hd, $fn = fn);
+                }
+            translate(inward * recess)
+                rotate([0, 0, -ang])
+                    rotate([0, 90, 0])
+                        cylinder(h = ch_d + over, r1 = r_hd, r2 = r_sh, $fn = fn);
         }
     }
 }

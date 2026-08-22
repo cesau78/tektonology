@@ -307,6 +307,8 @@ side_screw_dia_mm      = wood_shank_clr;  // same Ø as the 3 angled bores (#10 
 side_screw_head_dia_mm = 11.0;    // flat-head #10 maximum countersink Ø
 side_screw_chamfer_deg = 82;     // flat-head included angle (standard #10)
 side_screw_chamfer_lip_mm = 0.65; // Ø flare on countersink (clears minkowski skin / print artifact)
+side_screw_chamfer_recess_mm = 3; // set-back into block along bore; hull bridges skin ↔ countersink
+side_screw_chamfer_bridge_face_mm = 2; // hull reach outward toward angled face skin (increase if mouth still buried)
 
 // ── QR-code sticker pocket (mount block +Y front face) ───────────────────────
 // Rounded-square ("hull") recess on the mount block's +Y front face, deep enough
